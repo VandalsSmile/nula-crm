@@ -5,7 +5,7 @@ import { MarketingJsonLd } from "@/components/marketing/marketing-json-ld"
 
 export default function HomePage() {
   return (
-    <div className="flex min-h-svh flex-col bg-nula-paper">
+    <div className="light flex min-h-svh flex-col bg-nula-paper text-nula-ink">
       <MarketingJsonLd />
       <MarketingHeader />
       <main className="flex-1">
