@@ -1,13 +1,21 @@
 "use client"
 
+import { useState, useTransition } from "react"
 import Link from "next/link"
-import { ArrowLeft, Mail, Phone, MapPin, Sparkles } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { ArrowLeft, Mail, MapPin, Pencil, Phone, Plus, Sparkles, Trash2 } from "lucide-react"
+import { toast } from "sonner"
 
 import { LifecycleBadge, LeadScoreBadge } from "@/components/lifecycle-badge"
 import { ActivityFeed } from "@/components/activity-feed"
+import { EditContactDialog } from "@/components/edit-contact-dialog"
+import { ContactRelationsEditor } from "@/components/contact-relations-editor"
+import { DealFormDialog } from "@/components/deal-form-dialog"
+import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import {
   Breadcrumb,
@@ -17,17 +25,67 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
+import { addContactNote } from "@/app/actions/activities"
+import { deleteContact } from "@/app/actions/contacts"
+import { deleteDeal } from "@/app/actions/deals"
 import { formatDateTime } from "@/lib/format"
-import { formatRevenue, type Activity, type Contact } from "@/lib/crm-types"
+import { formatRevenue, type Activity, type Contact, type Deal, type Group, type Tag } from "@/lib/crm-types"
 import { APP_ROUTES } from "@/lib/routes"
 
 export function ContactProfile({
   contact,
   activities,
+  deals,
+  allTags,
+  allGroups,
 }: {
   contact: Contact
   activities: Activity[]
+  deals: Deal[]
+  allTags: Tag[]
+  allGroups: Group[]
 }) {
+  const router = useRouter()
+  const [editOpen, setEditOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [dealOpen, setDealOpen] = useState(false)
+  const [editDeal, setEditDeal] = useState<Deal | null>(null)
+  const [note, setNote] = useState("")
+  const [pending, startTransition] = useTransition()
+
+  async function handleDelete() {
+    await deleteContact(contact.id)
+    toast.success("Contact deleted")
+    router.push(APP_ROUTES.contacts)
+    router.refresh()
+  }
+
+  function saveNote() {
+    if (!note.trim()) return
+    startTransition(async () => {
+      try {
+        await addContactNote(contact.id, note)
+        setNote("")
+        toast.success("Note added")
+        router.refresh()
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Could not add note")
+      }
+    })
+  }
+
+  function removeDeal(dealId: string) {
+    startTransition(async () => {
+      try {
+        await deleteDeal(dealId)
+        toast.success("Deal deleted")
+        router.refresh()
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Could not delete deal")
+      }
+    })
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <Breadcrumb>
@@ -51,10 +109,20 @@ export function ContactProfile({
             {contact.source ? <Badge variant="secondary">Source: {contact.source}</Badge> : null}
           </div>
         </div>
-        <Button variant="outline" render={<Link href={APP_ROUTES.contacts} />}>
-          <ArrowLeft data-icon="inline-start" />
-          Back
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" render={<Link href={APP_ROUTES.contacts} />}>
+            <ArrowLeft data-icon="inline-start" />
+            Back
+          </Button>
+          <Button variant="outline" onClick={() => setEditOpen(true)}>
+            <Pencil data-icon="inline-start" />
+            Edit
+          </Button>
+          <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
+            <Trash2 data-icon="inline-start" />
+            Delete
+          </Button>
+        </div>
       </div>
 
       {contact.aiSummary || contact.recommendedNextAction ? (
@@ -116,38 +184,56 @@ export function ContactProfile({
           <CardHeader>
             <CardTitle>Tags & groups</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <div>
-              <p className="mb-2 text-xs font-medium text-muted-foreground">Tags</p>
-              <div className="flex flex-wrap gap-1.5">
-                {contact.tags.length ? (
-                  contact.tags.map((t) => (
-                    <Badge key={t.id} variant="outline">
-                      {t.name}
-                    </Badge>
-                  ))
-                ) : (
-                  <span className="text-sm text-muted-foreground">No tags</span>
-                )}
-              </div>
-            </div>
-            <div>
-              <p className="mb-2 text-xs font-medium text-muted-foreground">Groups</p>
-              <div className="flex flex-wrap gap-1.5">
-                {contact.groups.length ? (
-                  contact.groups.map((g) => (
-                    <Badge key={g.id} variant="secondary">
-                      {g.name}
-                    </Badge>
-                  ))
-                ) : (
-                  <span className="text-sm text-muted-foreground">No groups</span>
-                )}
-              </div>
-            </div>
+          <CardContent>
+            <ContactRelationsEditor contact={contact} allTags={allTags} allGroups={allGroups} />
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader className="flex-row items-center justify-between gap-4">
+          <CardTitle>Deals</CardTitle>
+          <Button size="sm" variant="outline" onClick={() => { setEditDeal(null); setDealOpen(true) }}>
+            <Plus data-icon="inline-start" />
+            Add deal
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {deals.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No deals yet.</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {deals.map((deal) => (
+                <li key={deal.id} className="flex items-center justify-between gap-3 py-3">
+                  <div>
+                    <p className="font-medium">{deal.title}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {deal.stage} · {formatRevenue(deal.estimatedValueCents)}
+                    </p>
+                  </div>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => { setEditDeal(deal); setDealOpen(true) }}
+                    >
+                      <Pencil />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      disabled={pending}
+                      onClick={() => removeDeal(deal.id)}
+                    >
+                      <Trash2 />
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
 
       {contact.notes ? (
         <Card>
@@ -162,10 +248,36 @@ export function ContactProfile({
         <CardHeader>
           <CardTitle>Timeline</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-4">
+          <div className="flex gap-2">
+            <Input
+              placeholder="Add a note to the timeline..."
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && saveNote()}
+            />
+            <Button onClick={saveNote} disabled={pending || !note.trim()}>
+              Add
+            </Button>
+          </div>
           <ActivityFeed items={activities} />
         </CardContent>
       </Card>
+
+      <EditContactDialog open={editOpen} onOpenChange={setEditOpen} contact={contact} />
+      <DealFormDialog
+        open={dealOpen}
+        onOpenChange={(open) => { setDealOpen(open); if (!open) setEditDeal(null) }}
+        contactId={contact.id}
+        deal={editDeal}
+      />
+      <ConfirmDeleteDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Delete contact?"
+        description={`Permanently remove ${contact.fullName} and all related data?`}
+        onConfirm={handleDelete}
+      />
     </div>
   )
 }

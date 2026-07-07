@@ -1,13 +1,34 @@
 import { notFound } from "next/navigation"
-import { getActivities, getContactById } from "@/lib/queries"
+
+import {
+  getActivitiesForContact,
+  getContactById,
+  getDealsForContact,
+  getGroups,
+  getTags,
+} from "@/lib/queries"
 import { ContactProfile } from "./contact-profile"
 
 export const dynamic = "force-dynamic"
 
 export default async function ContactPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const [contact, activities] = await Promise.all([getContactById(id), getActivities(30)])
+  const [contact, activities, deals, allTags, allGroups] = await Promise.all([
+    getContactById(id),
+    getActivitiesForContact(id),
+    getDealsForContact(id),
+    getTags(),
+    getGroups(),
+  ])
   if (!contact) notFound()
-  const timeline = activities.filter((a) => a.contactId === id || !a.contactId)
-  return <ContactProfile contact={contact} activities={timeline} />
+
+  return (
+    <ContactProfile
+      contact={contact}
+      activities={activities}
+      deals={deals}
+      allTags={allTags}
+      allGroups={allGroups}
+    />
+  )
 }

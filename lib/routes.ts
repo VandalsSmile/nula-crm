@@ -5,6 +5,7 @@ export const APP_ROUTES = {
   dashboard: `${APP_BASE}/dashboard`,
   contacts: `${APP_BASE}/contacts`,
   groups: `${APP_BASE}/groups`,
+  tags: `${APP_BASE}/tags`,
   campaigns: `${APP_BASE}/campaigns`,
   inbox: `${APP_BASE}/inbox`,
   automations: `${APP_BASE}/automations`,
@@ -27,6 +28,10 @@ export function contactPath(id: string) {
   return `${APP_BASE}/contacts/${id}`
 }
 
+export function groupPath(id: string) {
+  return `${APP_BASE}/groups/${id}`
+}
+
 /** Accept only same-origin relative paths to prevent open redirects. */
 export function safeRedirectPath(
   value: string | null | undefined,
@@ -39,7 +44,7 @@ export function safeRedirectPath(
   if (trimmed.includes("://")) return fallback
 
   // Legacy paths from before /app prefix
-  const legacy = ["/dashboard", "/contacts", "/groups", "/campaigns", "/inbox", "/automations", "/ai", "/reports", "/settings"]
+  const legacy = ["/dashboard", "/contacts", "/groups", "/tags", "/campaigns", "/inbox", "/automations", "/ai", "/reports", "/settings"]
   for (const prefix of legacy) {
     if (trimmed === prefix || trimmed.startsWith(`${prefix}/`) || trimmed.startsWith(`${prefix}?`)) {
       return appPath(trimmed)

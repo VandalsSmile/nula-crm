@@ -3,14 +3,21 @@
 import { useState, useTransition } from "react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
-import { Play, RefreshCw } from "lucide-react"
+import { Pencil, Play, Plus, RefreshCw, Trash2 } from "lucide-react"
 
 import { PageHeader } from "@/components/page-header"
+import { AutomationFormDialog } from "@/components/automation-form-dialog"
+import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
-import { listAutomations, runInactiveDetectionNow, toggleAutomation } from "@/app/actions/automations"
+import {
+  deleteAutomation,
+  listAutomations,
+  runInactiveDetectionNow,
+  toggleAutomation,
+} from "@/app/actions/automations"
 
 type AutomationRow = Awaited<ReturnType<typeof listAutomations>>[number]
 
@@ -25,6 +32,9 @@ export function AutomationsView({ automations }: { automations: AutomationRow[] 
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [running, setRunning] = useState(false)
+  const [createOpen, setCreateOpen] = useState(false)
+  const [editAuto, setEditAuto] = useState<AutomationRow | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<AutomationRow | null>(null)
 
   function handleToggle(id: string, enabled: boolean) {
     startTransition(async () => {
@@ -54,16 +64,35 @@ export function AutomationsView({ automations }: { automations: AutomationRow[] 
     }
   }
 
+  function handleDelete(auto: AutomationRow) {
+    startTransition(async () => {
+      try {
+        await deleteAutomation(auto.id)
+        toast.success(`Deleted "${auto.name}"`)
+        router.refresh()
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Could not delete automation")
+        throw err
+      }
+    })
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Automations"
         description="When this happens, do that — simple rules that keep your CRM moving."
         actions={
-          <Button variant="outline" onClick={runInactiveNow} disabled={running}>
-            <RefreshCw className={running ? "animate-spin" : ""} data-icon="inline-start" />
-            Run inactive check now
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={runInactiveNow} disabled={running}>
+              <RefreshCw className={running ? "animate-spin" : ""} data-icon="inline-start" />
+              Run inactive check now
+            </Button>
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus data-icon="inline-start" />
+              Create automation
+            </Button>
+          </div>
         }
       />
 
@@ -75,7 +104,7 @@ export function AutomationsView({ automations }: { automations: AutomationRow[] 
                 <CardTitle className="text-base">{auto.name}</CardTitle>
                 <CardDescription>{TRIGGER_LABELS[auto.trigger] ?? auto.trigger}</CardDescription>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <Badge variant={auto.enabled ? "default" : "secondary"}>
                   {auto.enabled ? "On" : "Off"}
                 </Badge>
@@ -84,6 +113,12 @@ export function AutomationsView({ automations }: { automations: AutomationRow[] 
                   disabled={pending}
                   onCheckedChange={(checked) => handleToggle(auto.id, checked)}
                 />
+                <Button variant="ghost" size="icon-sm" onClick={() => setEditAuto(auto)}>
+                  <Pencil />
+                </Button>
+                <Button variant="ghost" size="icon-sm" onClick={() => setDeleteTarget(auto)}>
+                  <Trash2 />
+                </Button>
               </div>
             </CardHeader>
             <CardContent className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
@@ -101,6 +136,22 @@ export function AutomationsView({ automations }: { automations: AutomationRow[] 
           </Card>
         ))}
       </div>
+
+      <AutomationFormDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <AutomationFormDialog
+        open={!!editAuto}
+        onOpenChange={(open) => !open && setEditAuto(null)}
+        automation={editAuto}
+      />
+      <ConfirmDeleteDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Delete automation?"
+        description={`Remove "${deleteTarget?.name}"?`}
+        onConfirm={async () => {
+          if (deleteTarget) await handleDelete(deleteTarget)
+        }}
+      />
     </div>
   )
 }

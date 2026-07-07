@@ -1,13 +1,17 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import Link from "next/link"
-import { Plus, Mail, Phone, Pencil, MoreHorizontal, Upload } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { MoreHorizontal, Pencil, Plus, Trash2, Upload } from "lucide-react"
+import { toast } from "sonner"
 
 import { PageHeader } from "@/components/page-header"
 import { LifecycleBadge, LeadScoreBadge } from "@/components/lifecycle-badge"
 import { AddContactDialog } from "@/components/add-contact-dialog"
+import { EditContactDialog } from "@/components/edit-contact-dialog"
 import { CsvImportDialog } from "@/components/csv-import-dialog"
+import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -17,12 +21,31 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { initials, type Contact } from "@/lib/crm-types"
-import { APP_ROUTES, contactPath } from "@/lib/routes"
+import { deleteContact } from "@/app/actions/contacts"
+import { Mail, Phone } from "lucide-react"
+import { type Contact } from "@/lib/crm-types"
+import { contactPath } from "@/lib/routes"
 
 export function ContactsView({ contacts }: { contacts: Contact[] }) {
+  const router = useRouter()
   const [addOpen, setAddOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
+  const [editContact, setEditContact] = useState<Contact | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Contact | null>(null)
+  const [, startTransition] = useTransition()
+
+  function handleDelete(contact: Contact) {
+    startTransition(async () => {
+      try {
+        await deleteContact(contact.id)
+        toast.success(`Deleted ${contact.fullName}`)
+        router.refresh()
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Could not delete contact")
+        throw err
+      }
+    })
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -75,8 +98,15 @@ export function ContactsView({ contacts }: { contacts: Contact[] }) {
                   />
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem render={<Link href={contactPath(contact.id)} />}>
-                      <Pencil />
                       View profile
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setEditContact(contact)}>
+                      <Pencil />
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(contact)}>
+                      <Trash2 />
+                      Delete
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -111,6 +141,22 @@ export function ContactsView({ contacts }: { contacts: Contact[] }) {
 
       <AddContactDialog open={addOpen} onOpenChange={setAddOpen} />
       <CsvImportDialog open={importOpen} onOpenChange={setImportOpen} />
+      {editContact ? (
+        <EditContactDialog
+          open={!!editContact}
+          onOpenChange={(open) => !open && setEditContact(null)}
+          contact={editContact}
+        />
+      ) : null}
+      <ConfirmDeleteDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Delete contact?"
+        description={`Permanently remove ${deleteTarget?.fullName}?`}
+        onConfirm={async () => {
+          if (deleteTarget) await handleDelete(deleteTarget)
+        }}
+      />
     </div>
   )
 }

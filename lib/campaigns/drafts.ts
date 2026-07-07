@@ -45,11 +45,24 @@ export async function createCampaignDraftForWorkspace(workspaceId: string, input
 
   if (!groupId && input.groupName) {
     const slug = slugifyTag(input.groupName)
-    const [group] = await db
+    let [group] = await db
       .select()
       .from(groups)
       .where(and(workspaceUserIdMatches(groups.userId, scopeIds), eq(groups.slug, slug)))
       .limit(1)
+    if (!group) {
+      ;[group] = await db
+        .insert(groups)
+        .values({
+          id: randomId("g"),
+          userId: workspaceId,
+          name: input.groupName,
+          slug,
+          description: `Audience for ${input.name}`,
+          type: "audience",
+        })
+        .returning()
+    }
     groupId = group?.id ?? null
   }
 

@@ -136,6 +136,46 @@ export async function getGroups() {
   return groupRows.map((g) => mapGroup(g, countMap.get(g.id) ?? 0))
 }
 
+export async function getGroupById(id: string) {
+  const { scopeIds } = await getWorkspaceScope()
+  const [row] = await db
+    .select()
+    .from(groups)
+    .where(and(eq(groups.id, id), workspaceUserIdMatches(groups.userId, scopeIds)))
+    .limit(1)
+  if (!row) return null
+
+  const [countRow] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(contactGroups)
+    .innerJoin(contacts, eq(contacts.id, contactGroups.contactId))
+    .where(and(eq(contactGroups.groupId, id), workspaceUserIdMatches(contacts.userId, scopeIds)))
+
+  return mapGroup(row, countRow?.count ?? 0)
+}
+
+export async function getActivitiesForContact(contactId: string, limit = 30) {
+  const { scopeIds } = await getWorkspaceScope()
+  const [rows, contact, labels] = await Promise.all([
+    db
+      .select()
+      .from(activities)
+      .where(
+        and(
+          eq(activities.contactId, contactId),
+          workspaceUserIdMatches(activities.userId, scopeIds),
+        ),
+      )
+      .orderBy(desc(activities.at))
+      .limit(limit),
+    getContactById(contactId),
+    contactLabels(),
+  ])
+
+  const contactName = contact?.fullName ?? ""
+  return rows.map((row) => mapActivity(row, labels, contactName))
+}
+
 export async function getCampaigns() {
   const { scopeIds } = await getWorkspaceScope()
   const rows = await db

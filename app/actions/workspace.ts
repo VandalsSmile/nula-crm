@@ -78,25 +78,31 @@ export async function seedWorkspaceDefaults(businessType: BusinessTypeId = "iv-t
   await seedDefaultAutomations(workspaceId)
 
   revalidatePath(APP_ROUTES.groups)
+  revalidatePath(APP_ROUTES.tags)
   revalidatePath(APP_ROUTES.dashboard)
   return { ok: true, seeded: true }
 }
 
-export async function createGroup(name: string, description = "") {
+export async function updateWorkspaceSettings(input: { businessType?: BusinessTypeId }) {
   const { workspaceId } = await getActingUser()
-  const slug = slugifyTag(name)
+
   const [row] = await db
-    .insert(groups)
+    .insert(workspaceSettings)
     .values({
-      id: randomId("g"),
-      userId: workspaceId,
-      name: name.trim(),
-      slug,
-      description,
-      type: "audience",
+      workspaceId,
+      businessType: input.businessType ?? "iv-therapy",
+      onboardingComplete: true,
+    })
+    .onConflictDoUpdate({
+      target: workspaceSettings.workspaceId,
+      set: {
+        businessType: input.businessType ?? "iv-therapy",
+        updatedAt: new Date(),
+      },
     })
     .returning()
-  revalidatePath(APP_ROUTES.groups)
+
+  revalidatePath(APP_ROUTES.settings)
   return row
 }
 
