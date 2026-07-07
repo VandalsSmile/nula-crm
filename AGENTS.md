@@ -19,6 +19,15 @@ This is a **standalone workspace** for `VandalsSmile/nula-crm` — separate from
 
 Full environment setup, secrets, and migration notes: `docs/cursor-cloud-workspace.md`
 
+### Local dev database (when no `DATABASE_URL` secret is provided)
+
+When no remote Neon `DATABASE_URL` secret is available, this VM runs a local PostgreSQL 16 instead. The Postgres install, the `nula_crm` database (user `nula`/`nula`), applied migrations, and `.env.local` all persist in the VM snapshot, so future agents normally only need to (re)start the DB.
+
+- **Start Postgres** (not auto-started on boot): `sudo pg_ctlcluster 16 main start`. Verify with `pg_lsclusters`.
+- **Local config** lives in `.env.local` (gitignored, snapshot-persisted): `DATABASE_URL=postgresql://nula:nula@localhost:5432/nula_crm` plus `BETTER_AUTH_SECRET` / `BETTER_AUTH_URL` / `NEXT_PUBLIC_APP_URL` set to `http://localhost:3000`.
+- **`db:migrate` / `db:bootstrap` do not auto-load `.env.local`.** Run them with an explicit env file, e.g. `node --env-file=.env.local scripts/migrate.mjs` and `BOOTSTRAP_ADMIN_EMAIL=you@example.com node --env-file=.env.local scripts/bootstrap-invite.mjs`. `npm run dev` does load `.env.local` on its own.
+- **First `/app/dashboard` load after a brand-new signup** can show "Something went wrong" — `seedWorkspaceDefaults()` calls `revalidatePath` during render (pre-existing app-code issue, unsupported in Next.js 16). Reload once; seeding completes and the dashboard renders normally.
+
 ## Product model
 
 AI-first small business CRM. Core objects: **Contacts**, **Tags**, **Groups**, **Activities**, **Deals**, **Campaigns**.
