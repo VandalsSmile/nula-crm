@@ -83,6 +83,9 @@ const NAV: NavGroup[] = [
   },
 ]
 
+const navLinkClass =
+  "rounded-full px-3.5 py-2 text-sm font-medium text-nula-ink/70 transition-colors hover:bg-white hover:text-nula-ink"
+
 function NavDropdown({ group }: { group: NavGroup }) {
   const [open, setOpen] = useState(false)
 
@@ -94,24 +97,24 @@ function NavDropdown({ group }: { group: NavGroup }) {
     >
       <button
         type="button"
-        className="flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium text-nula-ink/80 transition-colors hover:bg-white/60 hover:text-nula-ink"
+        className={cn(navLinkClass, "flex items-center gap-1")}
         onClick={() => setOpen((v) => !v)}
       >
         {group.title}
-        <ChevronDown className={cn("size-4 transition-transform", open && "rotate-180")} />
+        <ChevronDown className={cn("size-4 transition-transform duration-200", open && "rotate-180")} />
       </button>
       {open ? (
-        <div className="absolute left-0 top-full z-50 mt-1 w-72 rounded-xl border border-border/80 bg-white p-2 shadow-xl shadow-nula-violet/10">
+        <div className="absolute left-0 top-full z-50 mt-2 w-72 rounded-2xl border border-border/60 bg-white/95 p-2 shadow-xl shadow-nula-violet/10 backdrop-blur-md">
           {group.items.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="block rounded-lg px-3 py-2.5 transition-colors hover:bg-nula-paper"
+              className="block rounded-xl px-3.5 py-3 transition-colors hover:bg-nula-paper"
               onClick={() => setOpen(false)}
             >
               <div className="text-sm font-medium text-nula-ink">{item.label}</div>
               {item.description ? (
-                <div className="mt-0.5 text-xs leading-relaxed text-nula-mist">{item.description}</div>
+                <div className="mt-0.5 text-xs leading-relaxed text-nula-ink/55">{item.description}</div>
               ) : null}
             </Link>
           ))}
@@ -125,39 +128,44 @@ export function MarketingHeader() {
   const [mobileOpen, setMobileOpen] = useState(false)
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/60 bg-nula-paper/80 backdrop-blur-lg">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 md:px-6">
-        <Link href="/" className="flex items-center gap-2.5">
-          <Logo className="size-9" />
-          <span className="text-lg font-semibold tracking-tight text-nula-ink">Nula</span>
+    <header className="sticky top-0 z-40 border-b border-border/40 bg-nula-paper/70 backdrop-blur-xl">
+      <div className="mx-auto flex h-[4.25rem] max-w-6xl items-center justify-between gap-4 px-4 md:px-6">
+        <Link href="/" className="group flex items-center gap-2.5">
+          <Logo className="size-9 transition-transform group-hover:scale-105" />
+          <div className="flex flex-col leading-tight">
+            <span className="text-lg font-semibold tracking-tight text-nula-ink">Nula</span>
+            <span className="hidden text-[10px] font-medium text-nula-ink/45 sm:block">
+              CRM for small business
+            </span>
+          </div>
         </Link>
 
-        <nav className="hidden items-center gap-1 lg:flex">
+        <nav className="hidden items-center gap-0.5 lg:flex">
           {NAV.map((group) => (
             <NavDropdown key={group.title} group={group} />
           ))}
-          <Link
-            href="#about"
-            className="rounded-lg px-3 py-2 text-sm font-medium text-nula-ink/80 transition-colors hover:bg-white/60 hover:text-nula-ink"
-          >
+          <Link href="#about" className={navLinkClass}>
             About
           </Link>
-          <Link
-            href="#contact"
-            className="rounded-lg px-3 py-2 text-sm font-medium text-nula-ink/80 transition-colors hover:bg-white/60 hover:text-nula-ink"
-          >
+          <Link href="#contact" className={navLinkClass}>
             Contact
           </Link>
         </nav>
 
         <div className="flex items-center gap-2">
-          <Button render={<Link href={APP_ROUTES.login} />} variant="ghost" className="hidden sm:inline-flex">
+          <Button
+            render={<Link href={APP_ROUTES.login} />}
+            variant="ghost"
+            className="hidden rounded-full sm:inline-flex"
+          >
             Login
           </Button>
-          <Button render={<Link href={APP_ROUTES.login} />}>Get started</Button>
+          <Button render={<Link href={APP_ROUTES.login} />} className="rounded-full px-5 shadow-md shadow-nula-violet/15">
+            Get started
+          </Button>
           <button
             type="button"
-            className="inline-flex rounded-lg p-2 text-nula-ink lg:hidden"
+            className="inline-flex rounded-full p-2.5 text-nula-ink transition-colors hover:bg-white lg:hidden"
             onClick={() => setMobileOpen((v) => !v)}
             aria-label="Toggle menu"
           >
@@ -167,19 +175,19 @@ export function MarketingHeader() {
       </div>
 
       {mobileOpen ? (
-        <div className="border-t border-border/60 bg-white px-4 py-4 lg:hidden">
+        <div className="border-t border-border/40 bg-white/95 px-4 py-5 backdrop-blur-md lg:hidden">
           <div className="flex flex-col gap-4">
             {NAV.map((group) => (
               <div key={group.title}>
-                <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-nula-mist">
+                <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-nula-ink/40">
                   {group.title}
                 </div>
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-0.5">
                   {group.items.map((item) => (
                     <Link
                       key={item.href}
                       href={item.href}
-                      className="rounded-lg px-3 py-2 text-sm text-nula-ink hover:bg-nula-paper"
+                      className="rounded-xl px-3 py-2.5 text-sm text-nula-ink hover:bg-nula-paper"
                       onClick={() => setMobileOpen(false)}
                     >
                       {item.label}
@@ -188,10 +196,18 @@ export function MarketingHeader() {
                 </div>
               </div>
             ))}
-            <Link href="#about" className="px-3 py-2 text-sm font-medium" onClick={() => setMobileOpen(false)}>
+            <Link
+              href="#about"
+              className="rounded-xl px-3 py-2.5 text-sm font-medium text-nula-ink hover:bg-nula-paper"
+              onClick={() => setMobileOpen(false)}
+            >
               About
             </Link>
-            <Link href="#contact" className="px-3 py-2 text-sm font-medium" onClick={() => setMobileOpen(false)}>
+            <Link
+              href="#contact"
+              className="rounded-xl px-3 py-2.5 text-sm font-medium text-nula-ink hover:bg-nula-paper"
+              onClick={() => setMobileOpen(false)}
+            >
               Contact
             </Link>
           </div>

@@ -3,8 +3,13 @@ import {
   ArrowRight,
   Bot,
   Clock,
+  HandHeart,
+  HeartHandshake,
   Layers,
   Megaphone,
+  MessageCircle,
+  Rocket,
+  ShieldCheck,
   Sparkles,
   Target,
   TrendingUp,
@@ -16,58 +21,92 @@ import {
 import { Button } from "@/components/ui/button"
 import { APP_ROUTES } from "@/lib/routes"
 
+function SectionEyebrow({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="inline-flex w-fit items-center gap-2 rounded-full bg-nula-violet/10 px-3.5 py-1.5 text-xs font-medium tracking-wide text-nula-violet">
+      {children}
+    </p>
+  )
+}
+
 export function MarketingHome() {
   return (
     <>
       {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(79,61,245,0.18),transparent)]" />
-        <div className="pointer-events-none absolute -right-24 top-20 size-72 rounded-full bg-nula-signal/10 blur-3xl" />
-        <div className="mx-auto grid max-w-6xl gap-12 px-4 py-20 md:grid-cols-2 md:items-center md:px-6 md:py-28">
+      <section className="relative overflow-hidden marketing-warm-bg">
+        <div className="pointer-events-none absolute -left-16 bottom-0 size-64 rounded-full bg-nula-signal/15 blur-3xl" />
+        <div className="pointer-events-none absolute -right-20 top-24 size-80 rounded-full bg-nula-violet/10 blur-3xl" />
+        <div className="mx-auto grid max-w-6xl gap-12 px-4 py-16 md:grid-cols-2 md:items-center md:px-6 md:py-24 lg:py-28">
           <div className="flex flex-col gap-6">
-            <p className="inline-flex w-fit items-center gap-2 rounded-full border border-nula-violet/20 bg-white px-3 py-1 text-xs font-medium text-nula-violet">
-              <Sparkles className="size-3.5" />
-              AI-first customer management
-            </p>
-            <h1 className="text-4xl font-semibold leading-[1.1] tracking-tight text-nula-ink md:text-5xl lg:text-6xl">
-              Sell more.{" "}
-              <span className="bg-gradient-to-r from-nula-violet to-[#6B5FF7] bg-clip-text text-transparent">
-                Spend less time
-              </span>{" "}
-              in your CRM.
+            <SectionEyebrow>
+              <HandHeart className="size-3.5" />
+              Made for small business owners
+            </SectionEyebrow>
+            <h1 className="text-4xl font-semibold leading-[1.12] tracking-tight text-nula-ink md:text-5xl lg:text-[3.25rem]">
+              A better, easier way to{" "}
+              <span className="bg-gradient-to-r from-nula-violet via-[#6B5FF7] to-[#5b4de8] bg-clip-text text-transparent">
+                manage customers
+              </span>
+              .
             </h1>
-            <p className="max-w-lg text-lg leading-relaxed text-nula-mist">
-              The easier way for small businesses to manage customers — powered by AI that
-              responds to you, not the other way around.
+            <p className="max-w-lg text-lg leading-relaxed text-nula-ink/65">
+              Sell more without the CRM headache. Nula listens to what you need, keeps your contacts
+              tidy, and helps you follow up — so you can get back to the people who matter.
             </p>
             <div className="flex flex-wrap gap-3">
-              <Button size="lg" render={<Link href={APP_ROUTES.login} />}>
-                Get started free
+              <Button
+                size="lg"
+                className="rounded-full px-6 shadow-md shadow-nula-violet/20"
+                render={<Link href={APP_ROUTES.login} />}
+              >
+                Get started — it&apos;s free
                 <ArrowRight data-icon="inline-end" />
               </Button>
-              <Button size="lg" variant="outline" render={<Link href="#how-it-works" />}>
+              <Button
+                size="lg"
+                variant="outline"
+                className="rounded-full border-nula-violet/15 bg-white/80 px-6 hover:bg-white"
+                render={<Link href="#how-it-works" />}
+              >
                 See how it works
               </Button>
             </div>
+            <div className="flex flex-wrap gap-x-6 gap-y-2 pt-2 text-sm text-nula-ink/55">
+              <span className="flex items-center gap-1.5">
+                <Check className="size-4 text-nula-signal" />
+                No IT team needed
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Check className="size-4 text-nula-signal" />
+                You approve every action
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Check className="size-4 text-nula-signal" />
+                Plain English, not jargon
+              </span>
+            </div>
           </div>
           <div className="relative">
-            <div className="rounded-2xl border border-border/80 bg-white p-6 shadow-2xl shadow-nula-violet/10">
-              <div className="mb-4 flex items-center gap-2 text-sm text-nula-mist">
-                <Bot className="size-4 text-nula-signal" />
-                What do you want to do?
+            <div className="absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-nula-violet/10 via-transparent to-nula-signal/10" />
+            <div className="relative rounded-[1.75rem] border border-white/80 bg-white/90 p-6 backdrop-blur-sm marketing-card-soft md:p-7">
+              <div className="mb-4 flex items-center gap-2.5 text-sm text-nula-ink/60">
+                <span className="flex size-8 items-center justify-center rounded-full bg-nula-signal/15">
+                  <Bot className="size-4 text-[#0d8a75]" />
+                </span>
+                <span>Hey — what would you like to do today?</span>
               </div>
-              <div className="rounded-xl border border-nula-violet/15 bg-nula-paper p-4 text-sm text-nula-ink">
-                &quot;Find customers who haven&apos;t bought in 90 days and draft a reactivation
-                campaign.&quot;
+              <div className="rounded-2xl border border-nula-violet/10 bg-gradient-to-br from-nula-paper to-white p-4 text-sm leading-relaxed text-nula-ink">
+                &quot;Find customers who haven&apos;t bought in 90 days and draft a friendly
+                reactivation email for me.&quot;
               </div>
-              <div className="mt-4 space-y-2">
-                <div className="flex items-center gap-2 rounded-lg bg-nula-signal/10 px-3 py-2 text-xs text-[#0d5c4e]">
-                  <Check className="size-3.5" />
-                  Found 42 inactive customers
+              <div className="mt-4 space-y-2.5">
+                <div className="flex items-center gap-2.5 rounded-xl bg-nula-signal/12 px-3.5 py-2.5 text-xs font-medium text-[#0d6b5c]">
+                  <Check className="size-3.5 shrink-0" />
+                  Found 42 customers — ready when you are
                 </div>
-                <div className="flex items-center gap-2 rounded-lg bg-secondary px-3 py-2 text-xs text-nula-ink">
-                  <Check className="size-3.5 text-nula-violet" />
-                  Campaign draft ready for your approval
+                <div className="flex items-center gap-2.5 rounded-xl bg-secondary/80 px-3.5 py-2.5 text-xs text-nula-ink/80">
+                  <Check className="size-3.5 shrink-0 text-nula-violet" />
+                  Draft campaign waiting for your thumbs-up
                 </div>
               </div>
             </div>
@@ -76,41 +115,53 @@ export function MarketingHome() {
       </section>
 
       {/* What is Nula */}
-      <section id="what-is-nula" className="border-t border-border bg-white py-20 md:py-24">
+      <section id="what-is-nula" className="border-t border-border/60 bg-white py-20 md:py-24">
         <div className="mx-auto max-w-6xl px-4 md:px-6">
           <div className="max-w-2xl">
-            <h2 className="text-3xl font-semibold tracking-tight text-nula-ink md:text-4xl">
+            <SectionEyebrow>
+              <Sparkles className="size-3.5" />
               What is Nula?
+            </SectionEyebrow>
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-nula-ink md:text-4xl">
+              Your CRM, without the complexity
             </h2>
-            <p className="mt-4 text-lg text-nula-mist">
-              Nula is a simple, AI-first CRM for small businesses. Tell it what you want done — it
-              organizes your contacts, suggests the right next move, and helps you execute safely.
+            <p className="mt-4 text-lg leading-relaxed text-nula-ink/65">
+              Nula is a friendly, AI-first CRM built for small teams. Tell it what you want — it
+              organizes your people, suggests your next step, and never runs ahead without your OK.
             </p>
           </div>
-          <div id="how-it-works" className="mt-12 grid gap-6 md:grid-cols-3">
+          <div id="how-it-works" className="mt-12 grid gap-5 md:grid-cols-3">
             {[
               {
-                step: "1",
+                icon: MessageCircle,
                 title: "Say what you need",
-                body: "Use plain language. No complex filters, no training manual.",
+                body: "Just type or speak in everyday language. No filters to build, no manual to read.",
+                tint: "bg-nula-violet/10 text-nula-violet",
               },
               {
-                step: "2",
+                icon: ShieldCheck,
                 title: "Preview before it runs",
-                body: "Nula shows you exactly what will change — you approve bulk actions.",
+                body: "See exactly what will change before anything happens. You're always in the driver's seat.",
+                tint: "bg-nula-signal/15 text-[#0d8a75]",
               },
               {
-                step: "3",
-                title: "Execute and grow",
-                body: "Follow-ups, segments, and campaigns go out. You stay focused on selling.",
+                icon: Rocket,
+                title: "Grow with confidence",
+                body: "Follow-ups go out, segments stay fresh, and you stay focused on customers — not software.",
+                tint: "bg-secondary text-nula-violet",
               },
             ].map((item) => (
-              <div key={item.step} className="rounded-2xl border border-border bg-nula-paper p-6">
-                <div className="flex size-8 items-center justify-center rounded-full bg-nula-violet text-sm font-bold text-white">
-                  {item.step}
+              <div
+                key={item.title}
+                className="group rounded-3xl border border-border/70 bg-nula-paper/50 p-6 transition-all hover:border-nula-violet/20 hover:bg-white hover:shadow-lg hover:shadow-nula-violet/5"
+              >
+                <div
+                  className={`flex size-11 items-center justify-center rounded-2xl ${item.tint} transition-transform group-hover:scale-105`}
+                >
+                  <item.icon className="size-5" />
                 </div>
                 <h3 className="mt-4 text-lg font-semibold text-nula-ink">{item.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-nula-mist">{item.body}</p>
+                <p className="mt-2 text-sm leading-relaxed text-nula-ink/60">{item.body}</p>
               </div>
             ))}
           </div>
@@ -118,17 +169,31 @@ export function MarketingHome() {
       </section>
 
       {/* Who it's for */}
-      <section id="who-its-for" className="border-t border-border py-20 md:py-24">
+      <section id="who-its-for" className="border-t border-border/60 py-20 md:py-24">
         <div className="mx-auto max-w-6xl px-4 md:px-6">
-          <div className="rounded-3xl bg-gradient-to-br from-nula-violet to-[#2a1f6e] p-8 text-white md:p-12">
-            <h2 className="text-2xl font-semibold md:text-3xl">Built for owners, not IT departments</h2>
-            <p className="mt-4 max-w-2xl text-lg text-white/80">
-              Med spas, wellness studios, home services, local retail — if you need customers to come
-              back and referrals to grow, but don&apos;t have time for Salesforce, Nula is for you.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
+          <div className="overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#5c4de8] via-nula-violet to-[#3d2fb8] p-8 text-white md:p-12">
+            <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+              <div className="max-w-xl">
+                <SectionEyebrow>
+                  <HeartHandshake className="size-3.5 text-white" />
+                  <span className="text-white/95">Who it&apos;s for</span>
+                </SectionEyebrow>
+                <h2 className="mt-4 text-2xl font-semibold md:text-3xl">
+                  Built for owners who&apos;d rather serve customers than wrestle software
+                </h2>
+                <p className="mt-4 text-lg leading-relaxed text-white/85">
+                  Whether you run a med spa, wellness studio, home service, or local shop — if you
+                  want customers coming back (without a Salesforce-sized headache), you&apos;re in the
+                  right place.
+                </p>
+              </div>
+            </div>
+            <div className="mt-8 flex flex-wrap gap-2.5">
               {["IV & wellness", "Med spa", "Home services", "Fitness", "Local retail"].map((tag) => (
-                <span key={tag} className="rounded-full bg-white/10 px-4 py-1.5 text-sm">
+                <span
+                  key={tag}
+                  className="rounded-full border border-white/20 bg-white/15 px-4 py-2 text-sm backdrop-blur-sm"
+                >
                   {tag}
                 </span>
               ))}
@@ -138,33 +203,39 @@ export function MarketingHome() {
       </section>
 
       {/* Why Nula - comparison */}
-      <section id="why-nula" className="border-t border-border bg-white py-20 md:py-24">
+      <section id="why-nula" className="border-t border-border/60 bg-white py-20 md:py-24">
         <div className="mx-auto max-w-6xl px-4 md:px-6">
           <div className="text-center">
-            <h2 className="text-3xl font-semibold tracking-tight text-nula-ink md:text-4xl">
+            <SectionEyebrow>
+              <Sparkles className="size-3.5" />
               Why Nula?
+            </SectionEyebrow>
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-nula-ink md:text-4xl">
+              CRM shouldn&apos;t feel like a second job
             </h2>
-            <p id="ai-advantage" className="mx-auto mt-4 max-w-2xl text-lg text-nula-mist">
-              Old CRMs were built for data hoarding. Nula is built for revenue — with AI that makes
-              the hard stuff look easy.
+            <p id="ai-advantage" className="mx-auto mt-4 max-w-2xl text-lg leading-relaxed text-nula-ink/65">
+              Most CRMs were built to store data. Nula was built to help you grow — with AI that
+              makes the hard parts feel simple.
             </p>
           </div>
           <div className="mt-12 grid gap-6 md:grid-cols-2">
-            <div className="rounded-2xl border border-border p-6 md:p-8">
-              <h3 className="flex items-center gap-2 text-lg font-semibold text-nula-mist">
-                <X className="size-5" />
-                The old way
+            <div className="rounded-3xl border border-border/70 bg-nula-paper/40 p-6 md:p-8">
+              <h3 className="flex items-center gap-2 text-lg font-semibold text-nula-ink/50">
+                <span className="flex size-8 items-center justify-center rounded-full bg-muted">
+                  <X className="size-4" />
+                </span>
+                Sound familiar?
               </h3>
-              <ul className="mt-6 space-y-4 text-sm text-nula-mist">
+              <ul className="mt-6 space-y-4 text-sm leading-relaxed text-nula-ink/55">
                 {[
-                  "Messy tags nobody maintains",
-                  "Leads slip through the cracks",
-                  "Complex filters only power users understand",
-                  "CRM becomes a second job",
-                  "Campaigns take hours to set up",
+                  "Tags and lists that nobody keeps up with",
+                  "Leads that quietly go cold",
+                  "Filters only your most technical person understands",
+                  "Hours lost clicking around instead of selling",
+                  "Campaigns that feel impossible to launch",
                 ].map((item) => (
                   <li key={item} className="flex gap-3">
-                    <X className="mt-0.5 size-4 shrink-0 text-destructive/70" />
+                    <X className="mt-0.5 size-4 shrink-0 text-nula-mist" />
                     {item}
                   </li>
                 ))}
@@ -172,19 +243,21 @@ export function MarketingHome() {
             </div>
             <div
               id="less-overhead"
-              className="rounded-2xl border-2 border-nula-violet/30 bg-nula-paper p-6 shadow-lg shadow-nula-violet/5 md:p-8"
+              className="rounded-3xl border-2 border-nula-violet/20 bg-gradient-to-br from-white to-nula-paper p-6 marketing-card-soft md:p-8"
             >
               <h3 className="flex items-center gap-2 text-lg font-semibold text-nula-violet">
-                <Sparkles className="size-5 text-nula-signal" />
-                The Nula way
+                <span className="flex size-8 items-center justify-center rounded-full bg-nula-signal/20">
+                  <Sparkles className="size-4 text-[#0d8a75]" />
+                </span>
+                There&apos;s a kinder way
               </h3>
-              <ul className="mt-6 space-y-4 text-sm text-nula-ink">
+              <ul className="mt-6 space-y-4 text-sm leading-relaxed text-nula-ink/75">
                 {[
-                  "AI cleans and organizes as you go",
-                  "Every lead scored and summarized automatically",
-                  "Segments in plain English",
-                  "Zero overhead — it responds to you",
-                  "Campaigns drafted in seconds, approved by you",
+                  "AI keeps things organized as you work",
+                  "Every lead scored and summarized for you",
+                  "Segments in plain English — just ask",
+                  "Your CRM responds to you, not the other way around",
+                  "Campaigns drafted in seconds, launched when you're ready",
                 ].map((item) => (
                   <li key={item} className="flex gap-3">
                     <Check className="mt-0.5 size-4 shrink-0 text-nula-signal" />
@@ -198,62 +271,72 @@ export function MarketingHome() {
       </section>
 
       {/* How we help */}
-      <section id="how-we-help" className="border-t border-border py-20 md:py-24">
+      <section id="how-we-help" className="border-t border-border/60 marketing-warm-bg py-20 md:py-24">
         <div className="mx-auto max-w-6xl px-4 md:px-6">
           <div className="max-w-2xl">
-            <h2 className="text-3xl font-semibold tracking-tight text-nula-ink md:text-4xl">
-              How we help you sell more
+            <SectionEyebrow>
+              <HandHeart className="size-3.5" />
+              How we help
+            </SectionEyebrow>
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-nula-ink md:text-4xl">
+              We handle the busywork. You handle the relationships.
             </h2>
-            <p className="mt-4 text-lg text-nula-mist">
-              CRMs should do one thing well: help you grow. Nula handles the busywork so you can
-              focus on customers.
+            <p className="mt-4 text-lg leading-relaxed text-nula-ink/65">
+              A good CRM does one thing: helps you sell more. Nula takes care of the messy middle so
+              you can show up for your customers.
             </p>
           </div>
-          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {[
               {
                 id: "segmentation",
                 icon: Layers,
                 title: "Sort contacts instantly",
-                body: "Who hasn't bought in 90 days? Who's a hot lead? Just ask.",
+                body: "Who hasn't bought in 90 days? Who's ready to hear from you? Just ask.",
+                tint: "bg-nula-violet/10 text-nula-violet",
               },
               {
                 icon: Clock,
-                title: "Lead follow-up on autopilot",
-                body: "New inquiries get scored, summarized, and routed — automatically.",
+                title: "Warm lead follow-up",
+                body: "New inquiries get scored, summarized, and routed — so nobody slips away.",
+                tint: "bg-nula-signal/15 text-[#0d8a75]",
               },
               {
                 id: "campaigns",
                 icon: Megaphone,
-                title: "Outreach that converts",
-                body: "Reactivation, nurture, win-back — AI drafts, you approve, Nula tracks.",
+                title: "Outreach that feels personal",
+                body: "Reactivation and nurture emails drafted for you — edit, approve, send.",
+                tint: "bg-amber-50 text-amber-700",
               },
               {
                 icon: Users,
-                title: "Contacts that stay clean",
-                body: "Duplicate detection, tag normalization, and smart intake — no decay.",
+                title: "Contacts that stay tidy",
+                body: "Duplicates caught, tags normalized, intake handled — without the decay.",
+                tint: "bg-sky-50 text-sky-700",
               },
               {
                 icon: Target,
-                title: "Know your next move",
-                body: "Every contact gets a recommended action. No guessing.",
+                title: "Clear next steps",
+                body: "Every contact gets a suggested action. Less guessing, more doing.",
+                tint: "bg-rose-50 text-rose-700",
               },
               {
                 icon: TrendingUp,
                 title: "Grow without the grind",
-                body: "Less time in software. More time with customers who buy.",
+                body: "Less time in software. More time with the people who keep your business going.",
+                tint: "bg-secondary text-nula-violet",
               },
             ].map((feature) => (
               <div
                 key={feature.title}
                 id={feature.id}
-                className="rounded-2xl border border-border bg-white p-6 transition-shadow hover:shadow-lg hover:shadow-nula-violet/5"
+                className="rounded-3xl border border-white/80 bg-white/90 p-6 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-nula-violet/8"
               >
-                <div className="flex size-10 items-center justify-center rounded-xl bg-nula-violet/10 text-nula-violet">
+                <div className={`flex size-11 items-center justify-center rounded-2xl ${feature.tint}`}>
                   <feature.icon className="size-5" />
                 </div>
                 <h3 className="mt-4 font-semibold text-nula-ink">{feature.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-nula-mist">{feature.body}</p>
+                <p className="mt-2 text-sm leading-relaxed text-nula-ink/60">{feature.body}</p>
               </div>
             ))}
           </div>
@@ -261,48 +344,66 @@ export function MarketingHome() {
       </section>
 
       {/* About */}
-      <section id="about" className="border-t border-border bg-white py-20 md:py-24">
+      <section id="about" className="border-t border-border/60 bg-white py-20 md:py-24">
         <div className="mx-auto max-w-3xl px-4 text-center md:px-6">
-          <h2 className="text-3xl font-semibold tracking-tight text-nula-ink md:text-4xl">About Nula</h2>
-          <p className="mt-6 text-lg leading-relaxed text-nula-mist">
-            We built Nula because small business owners deserve better than bloated enterprise CRMs.
-            You shouldn&apos;t need a marketing ops expert to follow up with leads, segment customers,
-            or run a reactivation campaign. AI finally makes that possible — simple by default,
-            powerful when you need it.
+          <SectionEyebrow>
+            <HeartHandshake className="size-3.5" />
+            About us
+          </SectionEyebrow>
+          <h2 className="mt-4 text-3xl font-semibold tracking-tight text-nula-ink md:text-4xl">
+            We built Nula for people like you
+          </h2>
+          <p className="mt-6 text-lg leading-relaxed text-nula-ink/65">
+            Small business owners deserve tools that respect their time. You shouldn&apos;t need a
+            marketing ops expert to follow up with a lead, sort your best customers, or send a
+            win-back email. AI finally makes that possible — simple when you want simple, powerful
+            when you need it.
           </p>
+          <blockquote className="mt-10 rounded-3xl border border-nula-violet/10 bg-nula-paper/60 px-6 py-8 text-left md:px-8">
+            <p className="text-base leading-relaxed text-nula-ink/75 italic">
+              &quot;We started Nula because we kept hearing the same story: owners loved their
+              customers but hated their CRM. It was always too much tool and not enough help.&quot;
+            </p>
+            <footer className="mt-4 text-sm font-medium text-nula-violet">— The Nula team</footer>
+          </blockquote>
         </div>
       </section>
 
       {/* Contact CTA */}
-      <section id="contact" className="border-t border-border py-20 md:py-24">
+      <section id="contact" className="border-t border-border/60 py-20 md:py-24">
         <div className="mx-auto max-w-6xl px-4 md:px-6">
-          <div className="rounded-3xl bg-gradient-to-br from-nula-ink to-[#2d2454] px-8 py-12 text-center md:px-16 md:py-16">
-            <h2 className="text-3xl font-semibold text-white md:text-4xl">
-              Ready for a CRM that works for you?
+          <div className="overflow-hidden rounded-[2rem] bg-gradient-to-br from-nula-ink via-[#2a2248] to-[#3d3280] px-8 py-12 text-center md:px-16 md:py-16">
+            <div className="pointer-events-none absolute inset-0 opacity-30" />
+            <p className="text-sm font-medium uppercase tracking-wider text-nula-signal">
+              You&apos;re invited
+            </p>
+            <h2 className="mt-3 text-3xl font-semibold text-white md:text-4xl">
+              Ready for a CRM that actually helps?
             </h2>
-            <p className="mx-auto mt-4 max-w-xl text-lg text-white/70">
-              Stop fighting your software. Start growing your business.
+            <p className="mx-auto mt-4 max-w-xl text-lg leading-relaxed text-white/75">
+              Join small business owners who are spending less time in software and more time
+              growing. We&apos;d love to have you.
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               <Button
                 size="lg"
-                className="bg-nula-signal text-nula-ink hover:bg-nula-signal/90"
+                className="rounded-full bg-nula-signal px-7 text-nula-ink shadow-lg shadow-nula-signal/25 hover:bg-nula-signal/90"
                 render={<Link href={APP_ROUTES.login} />}
               >
-                Get started
+                Get started free
                 <ArrowRight data-icon="inline-end" />
               </Button>
               <Button
                 size="lg"
                 variant="outline"
-                className="border-white/30 bg-transparent text-white hover:bg-white/10"
+                className="rounded-full border-white/25 bg-white/5 px-7 text-white hover:bg-white/15"
                 render={<a href="mailto:info@nulacrm.ai" />}
               >
-                Contact us
+                Say hello
               </Button>
             </div>
             <p className="mt-6 text-sm text-white/50">
-              Questions? Email{" "}
+              Questions? We&apos;re happy to chat —{" "}
               <a href="mailto:info@nulacrm.ai" className="text-nula-signal hover:underline">
                 info@nulacrm.ai
               </a>

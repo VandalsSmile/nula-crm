@@ -42,29 +42,34 @@ export function LoginPanel({ callbackURL = APP_ROUTES.dashboard }: { callbackURL
   return (
     <div className="flex min-h-svh flex-col bg-background lg:flex-row">
       {/* Brand panel */}
-      <div className="relative hidden flex-1 flex-col justify-between bg-primary p-12 text-primary-foreground lg:flex">
-        <div className="flex items-center gap-2.5">
+      <div className="relative hidden flex-1 flex-col justify-between overflow-hidden bg-gradient-to-br from-[#5c4de8] via-nula-violet to-[#2a1f6e] p-12 text-white lg:flex">
+        <div className="pointer-events-none absolute -right-20 top-20 size-72 rounded-full bg-nula-signal/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 -left-16 size-64 rounded-full bg-white/10 blur-3xl" />
+        <div className="relative flex items-center gap-2.5">
           <Logo className="size-9" />
           <span className="text-lg font-semibold tracking-tight">Nula CRM</span>
         </div>
-        <div className="flex flex-col gap-4">
+        <div className="relative flex flex-col gap-4">
           <h1 className="text-4xl font-semibold leading-tight tracking-tight text-balance">
-            Tell the CRM what you want done.
+            Good to see you again.
           </h1>
-          <p className="max-w-md text-lg text-primary-foreground/80">
-            It organizes your data, suggests the right next move, and helps you execute it safely.
+          <p className="max-w-md text-lg leading-relaxed text-white/85">
+            Your customers are waiting. Sign in and let Nula help you stay on top of follow-ups,
+            outreach, and growth.
           </p>
         </div>
-        <p className="text-sm text-primary-foreground/60">AI-first CRM for growing businesses</p>
+        <p className="relative text-sm text-white/60">
+          A better, easier way to manage customers for small business
+        </p>
       </div>
 
       {/* Auth form */}
-      <div className="flex flex-1 items-center justify-center bg-nula-paper p-6">
-        <Card className="w-full max-w-sm">
+      <div className="flex flex-1 items-center justify-center marketing-warm-bg p-6">
+        <Card className="w-full max-w-sm rounded-2xl border-border/60 shadow-lg shadow-nula-violet/8">
           <CardHeader className="text-center">
             <Logo className="mx-auto mb-2 size-11 lg:hidden" />
             <CardTitle className="text-xl">Welcome back</CardTitle>
-            <CardDescription>Sign in to your Nula CRM workspace</CardDescription>
+            <CardDescription>Sign in to your workspace — we&apos;ll take it from here.</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit}>
@@ -114,7 +119,7 @@ export function LoginPanel({ callbackURL = APP_ROUTES.dashboard }: { callbackURL
                   </p>
                 )}
 
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button type="submit" className="w-full rounded-full" disabled={loading}>
                   {loading ? "Please wait..." : "Sign in"}
                   {!loading && <ArrowRight data-icon="inline-end" />}
                 </Button>

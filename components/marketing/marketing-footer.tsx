@@ -5,38 +5,69 @@ import { APP_ROUTES } from "@/lib/routes"
 
 export function MarketingFooter() {
   return (
-    <footer className="border-t border-border bg-white">
-      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 md:grid-cols-4 md:px-6">
+    <footer className="border-t border-border/60 bg-gradient-to-b from-white to-nula-paper">
+      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 md:grid-cols-4 md:px-6">
         <div className="md:col-span-2">
           <div className="flex items-center gap-2.5">
             <Logo className="size-8" />
             <span className="font-semibold text-nula-ink">Nula CRM</span>
           </div>
-          <p className="mt-4 max-w-sm text-sm leading-relaxed text-nula-mist">
-            Customer management that works the way you do. AI-powered, simple, and built for small
-            businesses that want to sell more — not wrestle with software.
+          <p className="mt-4 max-w-sm text-sm leading-relaxed text-nula-ink/60">
+            A better, easier way to manage customers for small business. Simple tools, real help,
+            and AI that works with you — not against you.
+          </p>
+          <p className="mt-4 text-sm text-nula-ink/45">
+            Made with care for owners who&apos;d rather grow than configure.
           </p>
         </div>
         <div>
-          <h4 className="text-sm font-semibold text-nula-ink">Product</h4>
-          <ul className="mt-3 space-y-2 text-sm text-nula-mist">
-            <li><Link href="#what-is-nula" className="hover:text-nula-violet">What is Nula?</Link></li>
-            <li><Link href="#why-nula" className="hover:text-nula-violet">Why Nula?</Link></li>
-            <li><Link href="#how-we-help" className="hover:text-nula-violet">How we help</Link></li>
-            <li><Link href={APP_ROUTES.login} className="hover:text-nula-violet">Log in</Link></li>
+          <h4 className="text-sm font-semibold text-nula-ink">Explore</h4>
+          <ul className="mt-3 space-y-2.5 text-sm text-nula-ink/60">
+            <li>
+              <Link href="#what-is-nula" className="transition-colors hover:text-nula-violet">
+                What is Nula?
+              </Link>
+            </li>
+            <li>
+              <Link href="#why-nula" className="transition-colors hover:text-nula-violet">
+                Why Nula?
+              </Link>
+            </li>
+            <li>
+              <Link href="#how-we-help" className="transition-colors hover:text-nula-violet">
+                How we help
+              </Link>
+            </li>
+            <li>
+              <Link href={APP_ROUTES.login} className="transition-colors hover:text-nula-violet">
+                Login
+              </Link>
+            </li>
           </ul>
         </div>
         <div>
-          <h4 className="text-sm font-semibold text-nula-ink">Company</h4>
-          <ul className="mt-3 space-y-2 text-sm text-nula-mist">
-            <li><Link href="#about" className="hover:text-nula-violet">About</Link></li>
-            <li><Link href="#contact" className="hover:text-nula-violet">Contact</Link></li>
-            <li><a href="mailto:info@nulacrm.ai" className="hover:text-nula-violet">info@nulacrm.ai</a></li>
+          <h4 className="text-sm font-semibold text-nula-ink">Get in touch</h4>
+          <ul className="mt-3 space-y-2.5 text-sm text-nula-ink/60">
+            <li>
+              <Link href="#about" className="transition-colors hover:text-nula-violet">
+                About
+              </Link>
+            </li>
+            <li>
+              <Link href="#contact" className="transition-colors hover:text-nula-violet">
+                Contact
+              </Link>
+            </li>
+            <li>
+              <a href="mailto:info@nulacrm.ai" className="transition-colors hover:text-nula-violet">
+                info@nulacrm.ai
+              </a>
+            </li>
           </ul>
         </div>
       </div>
-      <div className="border-t border-border px-4 py-6 text-center text-xs text-nula-mist md:px-6">
-        © {new Date().getFullYear()} Nula CRM. All rights reserved.
+      <div className="border-t border-border/50 px-4 py-6 text-center text-xs text-nula-ink/45 md:px-6">
+        © {new Date().getFullYear()} Nula CRM. Here to help you grow.
       </div>
     </footer>
   )
