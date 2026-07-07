@@ -19,6 +19,7 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { ContactForm } from "@/components/marketing/contact-form"
 import {
   AboutIllustration,
   HeroIllustration,
@@ -415,45 +416,43 @@ export function MarketingHome() {
         </div>
       </section>
 
-      {/* Contact CTA */}
+      {/* Contact */}
       <section id="contact" className="border-t border-border/60 py-20 md:py-24">
         <div className="mx-auto max-w-6xl px-4 md:px-6">
-          <div className="overflow-hidden rounded-[2rem] bg-gradient-to-br from-nula-ink via-[#2a2248] to-[#3d3280] px-8 py-12 text-center md:px-16 md:py-16">
-            <div className="pointer-events-none absolute inset-0 opacity-30" />
-            <p className="text-sm font-medium uppercase tracking-wider text-nula-signal">
-              You&apos;re invited
-            </p>
-            <h2 className="mt-3 text-3xl font-semibold text-white md:text-4xl">
-              Ready for a CRM that actually helps?
-            </h2>
-            <p className="mx-auto mt-4 max-w-xl text-lg leading-relaxed text-white/75">
-              Join small business owners who are spending less time in software and more time
-              growing. We&apos;d love to have you.
-            </p>
-            <div className="mt-8 flex flex-wrap justify-center gap-3">
-              <Button
-                size="lg"
-                className="rounded-full bg-nula-signal px-7 text-nula-ink shadow-lg shadow-nula-signal/25 hover:bg-nula-signal/90"
-                render={<Link href={APP_ROUTES.login} />}
-              >
-                Get started free
-                <ArrowRight data-icon="inline-end" />
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="rounded-full border-white/25 bg-white/5 px-7 text-white hover:bg-white/15"
-                render={<a href="mailto:info@nulacrm.ai" />}
-              >
-                Say hello
-              </Button>
+          <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-nula-ink via-[#2a2248] to-[#3d3280] px-6 py-10 md:px-12 md:py-14">
+            <div className="pointer-events-none absolute -right-16 -top-16 size-64 rounded-full bg-nula-violet/20 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-20 -left-16 size-64 rounded-full bg-nula-signal/15 blur-3xl" />
+            <div className="relative grid gap-10 md:grid-cols-2 md:items-center">
+              <div className="text-center md:text-left">
+                <p className="text-sm font-medium uppercase tracking-wider text-nula-signal">
+                  You&apos;re invited
+                </p>
+                <h2 className="mt-3 text-3xl font-semibold text-white md:text-4xl">
+                  Ready for a CRM that actually helps?
+                </h2>
+                <p className="mx-auto mt-4 max-w-md text-lg leading-relaxed text-white/75 md:mx-0">
+                  Join small business owners who are spending less time in software and more time
+                  growing. Send us a note and we&apos;ll be in touch.
+                </p>
+                <div className="mt-8 flex flex-wrap justify-center gap-3 md:justify-start">
+                  <Button
+                    size="lg"
+                    className="rounded-full bg-nula-signal px-7 text-nula-ink shadow-lg shadow-nula-signal/25 hover:bg-nula-signal/90"
+                    render={<Link href={APP_ROUTES.login} />}
+                  >
+                    Get started free
+                    <ArrowRight data-icon="inline-end" />
+                  </Button>
+                </div>
+                <p className="mt-6 text-sm text-white/50">
+                  Prefer email? Reach us at{" "}
+                  <a href="mailto:info@nulacrm.ai" className="text-nula-signal hover:underline">
+                    info@nulacrm.ai
+                  </a>
+                </p>
+              </div>
+              <ContactForm />
             </div>
-            <p className="mt-6 text-sm text-white/50">
-              Questions? We&apos;re happy to chat —{" "}
-              <a href="mailto:info@nulacrm.ai" className="text-nula-signal hover:underline">
-                info@nulacrm.ai
-              </a>
-            </p>
           </div>
         </div>
       </section>
