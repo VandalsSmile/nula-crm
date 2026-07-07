@@ -1,6 +1,6 @@
 {
   "name": "Nula CRM",
   "repository": "https://github.com/VandalsSmile/nula-crm",
-  "install": "npm install && bash scripts/ensure-github-auth.sh",
+  "install": "bash scripts/verify-nula-workspace.sh && npm install && GITHUB_REPO=VandalsSmile/nula-crm bash scripts/ensure-github-auth.sh",
   "start": "npm run dev"
 }

@@ -12,7 +12,7 @@ This is a **standalone workspace** for `VandalsSmile/nula-crm` — separate from
 
 1. **Use the Nula environment only.** Create or select a Cursor Cloud environment bound to `VandalsSmile/nula-crm`. Do not run Nula agents from the `vandalssmile/vs-spackle` environment.
 2. **Onboarding:** [Open guided setup](https://cursor.com/onboard?repository=https%3A%2F%2Fgithub.com%2FVandalsSmile%2Fnula-crm)
-3. **Install hook:** `npm install && bash scripts/ensure-github-auth.sh` (from `.cursor/environment.json`)
+3. **Install hook:** `bash scripts/verify-nula-workspace.sh && npm install && bash scripts/ensure-github-auth.sh` (from `.cursor/environment.json`)
 4. **Dev server:** `npm run dev` (also started via `start` in `environment.json`)
 5. **Migrations:** `npm run db:migrate` (requires `DATABASE_URL` in Cursor Secrets)
 6. **GitHub pushes:** `GH_TOKEN` must have **Contents: Read and write** on `VandalsSmile/nula-crm` and **SSO authorized** for the VandalsSmile org. Git commits use **Jason Polancich <jason@vs.marketing>**. See `docs/cursor-cloud-workspace.md`.

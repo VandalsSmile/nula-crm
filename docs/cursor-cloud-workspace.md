@@ -15,6 +15,17 @@ If you previously ran Nula agents inside the VS Spackle workspace, start fresh:
 
 An agent run still tied to `vs-spackle` will clone the wrong repo context even if `/workspace` was manually swapped. Always launch Nula work from the Nula environment.
 
+### Wrong workspace indicators
+
+If you see any of these, you are **not** in the Nula workspace:
+
+- Agent metadata shows `vandalssmile/vs-spackle` as the source repo
+- `git remote -v` points at `vs-spackle` instead of `VandalsSmile/nula-crm`
+- `SPACKLE_SHARED_WORKSPACE_ID` appears in environment secrets
+- `bash scripts/verify-nula-workspace.sh` prints warnings
+
+Fix: create/select the [Nula CRM environment](https://cursor.com/onboard?repository=https%3A%2F%2Fgithub.com%2FVandalsSmile%2Fnula-crm) and start a **new** agent from it. Do not continue Nula work from a Spackle agent run.
+
 ## Secrets
 
 | Secret | Required | Purpose |
