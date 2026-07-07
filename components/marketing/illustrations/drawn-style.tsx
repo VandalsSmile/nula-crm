@@ -1,6 +1,4 @@
-"use client"
-
-import { useId, type ReactNode } from "react"
+import type { ReactNode } from "react"
 
 /** Warm hand-drawn palette inspired by small-business shop art */
 export const DRAWN = {
@@ -25,36 +23,23 @@ export const DRAWN = {
   signal: "#4ECDB0",
 } as const
 
-function DrawnDefs({ grainId }: { grainId: string }) {
-  return (
-    <defs>
-      <filter id={grainId} x="0%" y="0%" width="100%" height="100%">
-        <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="4" stitchTiles="stitch" result="noise" />
-        <feColorMatrix type="saturate" values="0" in="noise" result="gray" />
-        <feBlend in="SourceGraphic" in2="gray" mode="multiply" result="blend" />
-        <feComponentTransfer in="blend">
-          <feFuncA type="linear" slope="0.06" />
-        </feComponentTransfer>
-      </filter>
-    </defs>
-  )
+function viewBoxSize(viewBox: string) {
+  const parts = viewBox.trim().split(/\s+/).map(Number)
+  return { width: parts[2] ?? 400, height: parts[3] ?? 300 }
 }
 
 export function DrawnSvg({
   children,
   viewBox,
   className,
-  grain = true,
   bg = "cream",
 }: {
   children: ReactNode
   viewBox: string
   className?: string
-  grain?: boolean
   bg?: "cream" | "transparent"
 }) {
-  const uid = useId().replace(/:/g, "")
-  const grainId = `nula-grain-${uid}`
+  const { width, height } = viewBoxSize(viewBox)
 
   return (
     <svg
@@ -63,10 +48,9 @@ export function DrawnSvg({
       xmlns="http://www.w3.org/2000/svg"
       className={className}
       aria-hidden
-      style={grain ? { filter: `url(#${grainId})` } : undefined}
+      role="img"
     >
-      <DrawnDefs grainId={grainId} />
-      {bg === "cream" ? <rect width="100%" height="100%" fill={DRAWN.cream} /> : null}
+      {bg === "cream" ? <rect width={width} height={height} fill={DRAWN.cream} /> : null}
       {children}
     </svg>
   )
