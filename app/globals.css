@@ -58,7 +58,9 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-:root {
+:root,
+.light {
+    color-scheme: light;
     --nula-violet: #4f3df5;
     --nula-ink: #1b1533;
     --nula-signal: #33e5c4;
