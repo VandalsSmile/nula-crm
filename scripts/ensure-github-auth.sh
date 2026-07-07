@@ -25,9 +25,7 @@ for var in GH_TOKEN GITHUB_PAT GITHUB_TOKEN; do
   fi
 done
 
-if gh auth status -h github.com 2>/dev/null | rg -q 'account jrpolan'; then
-  gh auth switch -u jrpolan 2>/dev/null || true
-elif ! gh auth status -h github.com &>/dev/null; then
+if ! gh auth status -h github.com &>/dev/null; then
   echo "⚠ Not logged into GitHub. Run: gh auth login -h github.com -p https -s repo,read:org,gist"
   echo "  Or add GH_TOKEN (PAT) to your Cursor Cloud environment secrets."
   exit 0
@@ -40,4 +38,17 @@ if [[ -d .git ]]; then
   git remote set-url origin "https://github.com/${REPO_SLUG}.git" 2>/dev/null || true
 fi
 
-echo "✓ GitHub auth ready: $(gh api user --jq .login 2>/dev/null || echo unknown)"
+login="$(gh api user --jq .login 2>/dev/null || echo unknown)"
+echo "✓ GitHub auth ready: ${login}"
+
+# Org repos require SSO authorization on the PAT before git push works.
+if [[ -d .git ]] && ! GIT_TERMINAL_PROMPT=0 git push --dry-run origin HEAD &>/dev/null; then
+  push_err="$(GIT_TERMINAL_PROMPT=0 git push --dry-run origin HEAD 2>&1 || true)"
+  if echo "$push_err" | rg -qi '403|denied|sso'; then
+    echo ""
+    echo "⚠ Git push to ${REPO_SLUG} is blocked for account ${login}."
+    echo "  Authorize SSO on your PAT for the VandalsSmile org:"
+    echo "    https://github.com/settings/tokens → Configure SSO → Authorize VandalsSmile"
+    echo ""
+  fi
+fi

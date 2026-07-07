@@ -25,7 +25,8 @@ npm install
 Cursor Cloud injects `cursor[bot]` credentials that override your personal login. Each new agent run may require re-auth unless you add a **personal access token** to your Cursor Cloud environment:
 
 1. Create a fine-grained PAT at [github.com/settings/tokens](https://github.com/settings/tokens) for `VandalsSmile/nula-crm` with **Contents: Read and write**
-2. In Cursor → Cloud → Environment settings, add secret: `GH_TOKEN=<your-pat>`
+2. **Authorize SSO** for the VandalsSmile org on that token (Configure SSO → Authorize)
+3. In Cursor → Cloud → Environment settings for **Nula CRM**, add secret: `GH_TOKEN=<your-pat>`
 3. The install hook runs `scripts/ensure-github-auth.sh` to use that token automatically
 
 Without `GH_TOKEN`, run device login once per fresh VM:
