@@ -9,6 +9,7 @@ import {
 const VALID_INTENTS: AiIntent[] = [
   "search_contacts",
   "add_to_group",
+  "apply_tag",
   "normalize_tags",
   "find_duplicates",
   "create_reactivation_campaign",
@@ -61,8 +62,8 @@ export async function interpretCommandAsync(command: string): Promise<Interprete
         content: `You interpret natural-language CRM commands for a small business CRM.
 Return JSON only with this shape:
 {
-  "intent": "search_contacts" | "add_to_group" | "normalize_tags" | "find_duplicates" | "create_reactivation_campaign" | "summarize_conversion" | "draft_follow_up" | "unknown",
-  "params": { "groupName"?: string, "product"?: string, "days"?: string, "topic"?: string, "filter"?: string },
+  "intent": "search_contacts" | "add_to_group" | "apply_tag" | "normalize_tags" | "find_duplicates" | "create_reactivation_campaign" | "summarize_conversion" | "draft_follow_up" | "unknown",
+  "params": { "groupName"?: string, "tagName"?: string, "product"?: string, "days"?: string, "topic"?: string, "filter"?: string },
   "requiresApproval": boolean,
   "preview": {
     "title": string,

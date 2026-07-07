@@ -3,6 +3,7 @@ import type { AiActionPreview } from "@/lib/crm-types"
 export type AiIntent =
   | "search_contacts"
   | "add_to_group"
+  | "apply_tag"
   | "normalize_tags"
   | "find_duplicates"
   | "create_reactivation_campaign"
@@ -54,7 +55,7 @@ export function interpretCommand(command: string): InterpretedCommand {
       params: {},
       preview: {
         ...basePreview("Find duplicate contacts", "Search for contacts with matching email or phone.", false),
-        criteria: ["Match on email", "Match on phone", "Fuzzy name matching"],
+        criteria: ["Match on email", "Match on normalized phone"],
       },
     }
   }
@@ -130,12 +131,13 @@ export function interpretCommand(command: string): InterpretedCommand {
   if (/tag all.*bought|tag.*skinny drip|weight.?loss/.test(text)) {
     const tag = text.includes("skinny drip") ? "bought-skinny-drip" : "interest-weight-loss"
     return {
-      intent: "add_to_group",
+      intent: "apply_tag",
       requiresApproval: true,
-      params: { tag, product: "weight loss" },
+      params: { tag, tagName: tag, product: "weight loss" },
       preview: {
         ...basePreview(`Apply tag: ${tag}`, "Tag contacts matching purchase or interest criteria."),
         criteria: [`Apply tag \`${tag}\` to matching contacts`],
+        warnings: ["No contacts will be deleted"],
       },
     }
   }

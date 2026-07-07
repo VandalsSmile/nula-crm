@@ -89,7 +89,9 @@ export function AiCommandCenterView({
                   <Badge variant="outline">{action.status}</Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">&quot;{action.command}&quot;</p>
-                {action.summary ? <p className="text-sm">{action.summary}</p> : null}
+                {action.summary ? (
+                  <p className="text-sm whitespace-pre-line">{action.summary}</p>
+                ) : null}
                 <span className="text-xs text-muted-foreground">{formatDateTime(action.createdAt)}</span>
               </div>
             ))
