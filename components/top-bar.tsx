@@ -13,6 +13,7 @@ const titles: Record<string, string> = {
   [APP_ROUTES.dashboard]: "Dashboard",
   [APP_ROUTES.contacts]: "Contacts",
   [APP_ROUTES.groups]: "Groups",
+  [APP_ROUTES.tags]: "Tags",
   [APP_ROUTES.campaigns]: "Campaigns",
   [APP_ROUTES.inbox]: "Inbox",
   [APP_ROUTES.automations]: "Automations",
@@ -23,6 +24,7 @@ const titles: Record<string, string> = {
 
 function deriveTitle(pathname: string) {
   if (pathname.startsWith(`${APP_ROUTES.contacts}/`)) return "Contact Profile"
+  if (pathname.startsWith(`${APP_ROUTES.groups}/`)) return "Group"
   for (const [path, title] of Object.entries(titles)) {
     if (pathname === path || pathname.startsWith(`${path}/`)) return title
   }
@@ -38,7 +40,7 @@ export function TopBar() {
     <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur-sm">
       <SidebarTrigger className="-ml-1" />
       <Separator orientation="vertical" className="mr-1 h-6" />
-      <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
+      <h1 className="min-w-0 truncate text-base font-semibold tracking-tight sm:text-lg">{title}</h1>
       <div className="ml-auto">
         <Button
           variant="ghost"

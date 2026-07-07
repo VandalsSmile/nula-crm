@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowRight, Eye, EyeOff } from "lucide-react"
@@ -64,7 +65,12 @@ export function LoginPanel({ callbackURL = APP_ROUTES.dashboard }: { callbackURL
       </div>
 
       {/* Auth form */}
-      <div className="flex flex-1 items-center justify-center marketing-warm-bg p-6">
+      <div className="flex flex-1 flex-col items-center justify-center marketing-warm-bg p-4 sm:p-6">
+        <div className="mb-4 w-full max-w-sm lg:hidden">
+          <Link href="/" className="text-sm font-medium text-nula-ink/60 transition-colors hover:text-nula-violet">
+            ← Back to Nula CRM
+          </Link>
+        </div>
         <Card className="w-full max-w-sm rounded-2xl border-border/60 shadow-lg shadow-nula-violet/8">
           <CardHeader className="text-center">
             <Logo className="mx-auto mb-2 size-11 lg:hidden" />

@@ -53,7 +53,7 @@ export function ContactsView({ contacts }: { contacts: Contact[] }) {
         title="Contacts"
         description="Your people — leads, customers, and everyone in between."
         actions={
-          <div className="flex gap-2">
+          <div className="flex w-full flex-wrap gap-2 sm:w-auto">
             <Button variant="outline" onClick={() => setImportOpen(true)}>
               <Upload data-icon="inline-start" />
               Import CSV

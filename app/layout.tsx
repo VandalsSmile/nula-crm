@@ -5,6 +5,7 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo"
 import { cn } from "@/lib/utils"
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" })
@@ -15,11 +16,18 @@ const fontMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Nula CRM",
-  description:
-    "AI-first CRM for small businesses. Tell the CRM what you want done — it organizes data, suggests next moves, and helps you execute safely.",
-  applicationName: "Nula CRM",
-  robots: { index: false, follow: false },
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: SITE_NAME,
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
 }
 
 export const viewport: Viewport = {

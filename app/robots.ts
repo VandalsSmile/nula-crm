@@ -1,14 +1,16 @@
 import type { MetadataRoute } from "next"
 
-/**
- * SPACKLE is an internal VS Marketing tool — there is nothing here for search
- * engines to index, so we disallow all crawling across every user agent.
- */
+import { SITE_URL } from "@/lib/seo"
+
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: {
-      userAgent: "*",
-      disallow: "/",
-    },
+    rules: [
+      {
+        userAgent: "*",
+        allow: ["/", "/login"],
+        disallow: ["/app/", "/api/", "/accept-invite/"],
+      },
+    ],
+    sitemap: `${SITE_URL}/sitemap.xml`,
   }
 }

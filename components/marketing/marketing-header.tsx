@@ -218,7 +218,7 @@ export function MarketingHeader() {
           </Link>
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           <Button
             render={<Link href={APP_ROUTES.login} />}
             variant="ghost"
@@ -226,8 +226,18 @@ export function MarketingHeader() {
           >
             Login
           </Button>
-          <Button render={<Link href={APP_ROUTES.login} />} className="rounded-full px-5 shadow-md shadow-nula-violet/15">
+          <Button
+            render={<Link href={APP_ROUTES.login} />}
+            className="hidden rounded-full px-4 shadow-md shadow-nula-violet/15 min-[420px]:inline-flex"
+          >
             Get started
+          </Button>
+          <Button
+            render={<Link href={APP_ROUTES.login} />}
+            size="sm"
+            className="rounded-full px-3 shadow-md shadow-nula-violet/15 min-[420px]:hidden"
+          >
+            Start
           </Button>
           <button
             type="button"
@@ -241,7 +251,7 @@ export function MarketingHeader() {
       </div>
 
       {mobileOpen ? (
-        <div className="border-t border-border/40 bg-white/95 px-4 py-5 backdrop-blur-md lg:hidden">
+        <div className="max-h-[calc(100dvh-4.25rem)] overflow-y-auto border-t border-border/40 bg-white/95 px-4 py-5 backdrop-blur-md lg:hidden">
           <div className="flex flex-col gap-4">
             {NAV.map((group) => (
               <div key={group.title}>
@@ -256,7 +266,10 @@ export function MarketingHeader() {
                       className="rounded-xl px-3 py-2.5 text-sm text-nula-ink hover:bg-nula-paper"
                       onClick={() => setMobileOpen(false)}
                     >
-                      {item.label}
+                      <div className="font-medium">{item.label}</div>
+                      {item.description ? (
+                        <div className="mt-0.5 text-xs leading-relaxed text-nula-ink/55">{item.description}</div>
+                      ) : null}
                     </Link>
                   ))}
                 </div>

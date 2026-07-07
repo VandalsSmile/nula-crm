@@ -1,5 +1,13 @@
 import { PageHeader } from "@/components/page-header"
 import { Card, CardContent } from "@/components/ui/card"
+import { appPageMetadata } from "@/lib/seo"
+import { APP_ROUTES } from "@/lib/routes"
+
+export const metadata = appPageMetadata(
+  "Inbox",
+  "Unified customer conversations in Nula CRM — email and SMS replies in one inbox for your team.",
+  APP_ROUTES.inbox,
+)
 
 export default function InboxPage() {
   return (
