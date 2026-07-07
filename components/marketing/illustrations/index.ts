@@ -1,5 +1,5 @@
-export { IllustrationFrame } from "./shared"
-export { DRAWN } from "./drawn-style"
+export { IllustrationFrame, MARKETING_ILLUSTRATIONS, MarketingIllustration } from "./shared"
+export type { IllustrationProps } from "./shared"
 export { HeroIllustration } from "./hero-illustration"
 export { WhatIsNulaIllustration } from "./what-is-nula-illustration"
 export { WhoItsForIllustration } from "./who-its-for-illustration"
