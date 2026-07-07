@@ -18,15 +18,16 @@ export function IllustrationFrame({
 }) {
   const bg =
     variant === "dark"
-      ? "bg-white/10"
+      ? "bg-transparent"
       : variant === "transparent"
         ? "bg-transparent"
-        : "bg-gradient-to-br from-white to-nula-paper/80"
+        : "bg-[#FAF7F0]"
 
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-[1.75rem] border border-border/50 p-4 md:p-6",
+        "relative overflow-hidden rounded-[1.75rem] border p-2 md:p-4",
+        variant === "dark" ? "border-white/15" : "border-[#E8DFD0]/80",
         bg,
         className,
       )}

@@ -1,4 +1,5 @@
 export { IllustrationFrame } from "./shared"
+export { DRAWN } from "./drawn-style"
 export { HeroIllustration } from "./hero-illustration"
 export { WhatIsNulaIllustration } from "./what-is-nula-illustration"
 export { WhoItsForIllustration } from "./who-its-for-illustration"

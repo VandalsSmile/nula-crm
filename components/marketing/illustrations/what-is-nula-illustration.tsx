@@ -1,70 +1,51 @@
 import { cn } from "@/lib/utils"
 
 import type { IllustrationProps } from "./shared"
+import { ChalkSign, DRAWN, DrawnSvg, OwnerWoman, PottedPlant } from "./drawn-style"
 
-/** Conversation-first CRM — plain language in, organized contacts out */
+/** Owner chatting with Nula — plain language in, organized contacts out */
 export function WhatIsNulaIllustration({ className }: IllustrationProps) {
   return (
-    <svg
-      viewBox="0 0 400 320"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={cn("h-auto w-full", className)}
-      aria-hidden
-    >
-      <rect x="20" y="20" width="360" height="280" rx="24" fill="#F7F6FB" />
-      <circle cx="340" cy="60" r="40" fill="#D8FAF4" opacity="0.7" />
-      <circle cx="60" cy="260" r="32" fill="#EEECFE" />
+    <DrawnSvg viewBox="0 0 400 280" className={cn("h-auto w-full", className)}>
+      {/* Counter / desk line art */}
+      <path
+        d="M40 200 H360"
+        stroke={DRAWN.line}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        opacity="0.35"
+      />
+      <rect x="48" y="168" width="120" height="32" rx="4" stroke={DRAWN.line} strokeWidth="1.3" fill={DRAWN.cream} />
+      <line x1="56" y1="180" x2="108" y2="180" stroke={DRAWN.lineSoft} strokeWidth="1" opacity="0.5" />
+      <line x1="56" y1="188" x2="92" y2="188" stroke={DRAWN.lineSoft} strokeWidth="1" opacity="0.4" />
 
-      {/* Main app window */}
-      <rect x="48" y="48" width="220" height="200" rx="18" fill="white" stroke="#E3E1EB" strokeWidth="1.5" />
-      <rect x="48" y="48" width="220" height="36" rx="18" fill="#EEECFE" />
-      <rect x="48" y="66" width="220" height="18" fill="#EEECFE" />
-      <circle cx="68" cy="66" r="5" fill="#E5484D" opacity="0.5" />
-      <circle cx="84" cy="66" r="5" fill="#F5A524" opacity="0.5" />
-      <circle cx="100" cy="66" r="5" fill="#33E5C4" opacity="0.7" />
+      <OwnerWoman x={56} y={52} scale={0.95} wave="none" />
 
-      {/* User message */}
-      <rect x="64" y="96" width="140" height="40" rx="14" fill="#4F3DF5" />
-      <rect x="76" y="108" width="88" height="5" rx="2.5" fill="white" opacity="0.9" />
-      <rect x="76" y="118" width="108" height="5" rx="2.5" fill="white" opacity="0.55" />
-
-      {/* AI response */}
-      <rect x="64" y="148" width="168" height="52" rx="14" fill="#D8FAF4" />
-      <rect x="76" y="160" width="120" height="5" rx="2.5" fill="#1B1533" opacity="0.2" />
-      <rect x="76" y="172" width="100" height="5" rx="2.5" fill="#1B1533" opacity="0.15" />
-      <rect x="76" y="184" width="72" height="5" rx="2.5" fill="#33E5C4" opacity="0.5" />
-
-      {/* Contact list preview */}
-      <rect x="64" y="212" width="188" height="24" rx="8" fill="#F7F6FB" stroke="#E3E1EB" strokeWidth="1" />
-      <circle cx="78" cy="224" r="7" fill="#EEECFE" />
-      <rect x="92" y="220" width="48" height="4" rx="2" fill="#E3E1EB" />
-      <rect x="92" y="228" width="32" height="3" rx="1.5" fill="#D8FAF4" />
-      <circle cx="232" cy="224" r="8" fill="#33E5C4" />
-      <path d="M229 224l2 2 4-4" stroke="#1B1533" strokeWidth="1.2" strokeLinecap="round" />
-
-      {/* Person typing */}
-      <g transform="translate(268 140)">
-        <circle cx="48" cy="36" r="28" fill="#F5D0B5" />
-        <path d="M20 36c0-14 12-24 28-24s28 10 28 24" fill="#1B1533" opacity="0.75" />
-        <circle cx="38" cy="38" r="3.5" fill="#1B1533" />
-        <circle cx="58" cy="38" r="3.5" fill="#1B1533" />
-        <path d="M42 48c4 4 8 4 12 0" stroke="#1B1533" strokeWidth="1.8" strokeLinecap="round" />
-        <path d="M28 72h40v52H28z" fill="#33E5C4" opacity="0.85" />
-        <path d="M16 88h16l-6 36H16z" fill="#33E5C4" />
-        <path d="M64 88h16l6 36H64z" fill="#33E5C4" />
-        {/* Speech hint */}
-        <path
-          d="M8 20c0-8 16-14 32-14"
-          stroke="#4F3DF5"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeDasharray="4 4"
-          opacity="0.4"
-        />
+      {/* Friendly tablet / screen */}
+      <g transform="translate(220 72)">
+        <rect x="0" y="0" width="140" height="100" rx="8" fill="white" stroke={DRAWN.line} strokeWidth="1.5" />
+        <rect x="8" y="8" width="124" height="18" rx="4" fill={DRAWN.dustyBlue} opacity="0.35" />
+        <text x="70" y="20" textAnchor="middle" fill={DRAWN.line} fontSize="7" fontFamily="Georgia, serif">
+          What do you need?
+        </text>
+        <rect x="12" y="34" width="96" height="22" rx="6" fill={DRAWN.violet} opacity="0.85" />
+        <text x="20" y="44" fill="white" fontSize="6" fontFamily="Georgia, serif">
+          Find inactive
+        </text>
+        <text x="20" y="52" fill="white" fontSize="6" fontFamily="Georgia, serif" opacity="0.8">
+          customers...
+        </text>
+        <rect x="12" y="62" width="108" height="28" rx="6" fill={DRAWN.signal} opacity="0.25" stroke={DRAWN.line} strokeWidth="1" />
+        <text x="20" y="74" fill={DRAWN.line} fontSize="6" fontFamily="Georgia, serif">
+          ✓ 42 found
+        </text>
+        <text x="20" y="84" fill={DRAWN.lineSoft} fontSize="5.5" fontFamily="Georgia, serif">
+          Ready for you
+        </text>
       </g>
 
-      <path d="M300 100l2 6 6 2-6 2-2 6-2-6-6-2 6-2z" fill="#4F3DF5" opacity="0.6" />
-    </svg>
+      <ChalkSign x={248} y={178} w={100} h={68} text="Just ask" subtext="in plain English" />
+      <PottedPlant x={12} y={168} />
+    </DrawnSvg>
   )
 }

@@ -230,7 +230,7 @@ export function MarketingHome() {
                 </div>
               </div>
               <IllustrationFrame variant="dark" className="border-white/15">
-                <WhoItsForIllustration />
+                <WhoItsForIllustration variant="dark" />
               </IllustrationFrame>
             </div>
           </div>

@@ -1,91 +1,56 @@
 import { cn } from "@/lib/utils"
 
 import type { IllustrationProps } from "./shared"
+import { DRAWN, DrawnSvg, OwnerWoman } from "./drawn-style"
 
-/** Messy old CRM vs calm, organized Nula */
+/** Messy old CRM vs calm Nula way */
 export function WhyNulaIllustration({ className }: IllustrationProps) {
   return (
-    <svg
-      viewBox="0 0 480 200"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={cn("h-auto w-full max-w-xl mx-auto", className)}
-      aria-hidden
-    >
-      {/* Old way — tangled */}
-      <g transform="translate(0 20)">
-        <rect width="200" height="160" rx="20" fill="#F7F6FB" stroke="#E3E1EB" strokeWidth="1.5" />
-        <text x="100" y="28" textAnchor="middle" fill="#8B87A3" fontSize="11" fontWeight="600">
-          Before
+    <DrawnSvg viewBox="0 0 480 200" className={cn("h-auto w-full max-w-xl mx-auto", className)}>
+      {/* Before — tangled mess */}
+      <g transform="translate(16 20)">
+        <rect width="188" height="160" rx="12" stroke={DRAWN.line} strokeWidth="1.3" fill="white" opacity="0.7" />
+        <text x="94" y="22" textAnchor="middle" fill={DRAWN.lineSoft} fontSize="9" fontFamily="Georgia, serif">
+          Sound familiar?
         </text>
-        <path
-          d="M40 60c30 20 50-10 80 10s50 30 80 0"
-          stroke="#8B87A3"
-          strokeWidth="2"
-          strokeLinecap="round"
-          opacity="0.4"
-        />
-        <path
-          d="M50 90c20 30 60-20 90 10s40 20 60-10"
-          stroke="#E5484D"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          opacity="0.35"
-        />
-        <path
-          d="M60 120c40-20 50 30 80 10s30-40 50-10"
-          stroke="#8B87A3"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          opacity="0.35"
-        />
-        <rect x="36" y="48" width="48" height="32" rx="8" fill="white" stroke="#E3E1EB" transform="rotate(-8 60 64)" />
-        <rect x="100" y="72" width="48" height="32" rx="8" fill="white" stroke="#E3E1EB" transform="rotate(12 124 88)" />
-        <rect x="60" y="108" width="48" height="32" rx="8" fill="white" stroke="#E3E1EB" transform="rotate(-6 84 124)" />
-        <text x="100" y="152" textAnchor="middle" fill="#8B87A3" fontSize="10">
+        <path d="M24 50 C50 70 70 40 100 60 S140 80 164 50" stroke={DRAWN.lineSoft} strokeWidth="1.2" fill="none" opacity="0.5" />
+        <path d="M30 80 C60 100 80 60 110 78 S150 95 170 72" stroke={DRAWN.orange} strokeWidth="1" fill="none" opacity="0.4" />
+        <path d="M36 110 C70 90 90 120 120 100 S155 85 168 108" stroke={DRAWN.lineSoft} strokeWidth="1" fill="none" opacity="0.4" />
+        <rect x="28" y="44" width="48" height="30" rx="4" stroke={DRAWN.line} strokeWidth="1" fill={DRAWN.cream} transform="rotate(-6 52 59)" />
+        <rect x="96" y="68" width="48" height="30" rx="4" stroke={DRAWN.line} strokeWidth="1" fill={DRAWN.cream} transform="rotate(8 120 83)" />
+        <rect x="52" y="108" width="48" height="30" rx="4" stroke={DRAWN.line} strokeWidth="1" fill={DRAWN.cream} transform="rotate(-4 76 123)" />
+        <text x="94" y="148" textAnchor="middle" fill={DRAWN.lineSoft} fontSize="8" fontFamily="Georgia, serif">
           Overwhelming
         </text>
       </g>
 
       {/* Arrow */}
-      <g transform="translate(220 88)">
-        <circle cx="20" cy="12" r="20" fill="#EEECFE" />
-        <path
-          d="M12 12h16M20 6l8 6-8 6"
-          stroke="#4F3DF5"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
+      <g transform="translate(218 88)">
+        <circle cx="22" cy="12" r="18" fill={DRAWN.dustyBlue} opacity="0.25" />
+        <path d="M14 12 H30 M22 6 L30 12 L22 18" stroke={DRAWN.line} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
       </g>
 
-      {/* Nula way — clean */}
-      <g transform="translate(280 20)">
-        <rect width="200" height="160" rx="20" fill="white" stroke="#4F3DF5" strokeWidth="1.5" opacity="0.9" />
-        <text x="100" y="28" textAnchor="middle" fill="#4F3DF5" fontSize="11" fontWeight="600">
+      {/* After — calm with Nula */}
+      <g transform="translate(276 20)">
+        <rect width="188" height="160" rx="12" stroke={DRAWN.violet} strokeWidth="1.5" fill="white" opacity="0.85" />
+        <text x="94" y="22" textAnchor="middle" fill={DRAWN.violet} fontSize="9" fontFamily="Georgia, serif" fontWeight="600">
           With Nula
         </text>
-        <rect x="28" y="48" width="144" height="28" rx="10" fill="#EEECFE" />
-        <circle cx="44" cy="62" r="8" fill="#33E5C4" />
-        <rect x="58" y="56" width="80" height="5" rx="2.5" fill="#4F3DF5" opacity="0.25" />
-        <rect x="58" y="66" width="56" height="4" rx="2" fill="#E3E1EB" />
-
-        <rect x="28" y="84" width="144" height="28" rx="10" fill="#D8FAF4" />
-        <circle cx="44" cy="98" r="8" fill="#4F3DF5" opacity="0.3" />
-        <rect x="58" y="92" width="72" height="5" rx="2.5" fill="#1B1533" opacity="0.15" />
-        <rect x="58" y="102" width="48" height="4" rx="2" fill="#33E5C4" opacity="0.5" />
-
-        <rect x="28" y="120" width="144" height="28" rx="10" fill="#F7F6FB" stroke="#E3E1EB" strokeWidth="1" />
-        <circle cx="44" cy="134" r="8" fill="#EEECFE" />
-        <rect x="58" y="128" width="64" height="5" rx="2.5" fill="#E3E1EB" />
-        <rect x="58" y="138" width="40" height="4" rx="2" fill="#EEECFE" />
-        <circle cx="152" cy="134" r="8" fill="#33E5C4" />
-        <path d="M149 134l2 2 4-4" stroke="#1B1533" strokeWidth="1.2" strokeLinecap="round" />
-
-        <text x="100" y="168" textAnchor="middle" fill="#4F3DF5" fontSize="10" fontWeight="500">
-          Calm & clear
+        {[0, 1, 2].map((i) => (
+          <g key={i} transform={`translate(20 ${40 + i * 36})`}>
+            <rect width="148" height="26" rx="8" fill={DRAWN.cream} stroke={DRAWN.line} strokeWidth="1" opacity="0.8" />
+            <circle cx="14" cy="13" r="6" fill={i === 1 ? DRAWN.signal : DRAWN.dustyBlue} opacity={i === 1 ? 0.35 : 0.35} />
+            <line x1="28" y1="10" x2="100" y2="10" stroke={DRAWN.lineSoft} strokeWidth="1.5" strokeLinecap="round" opacity="0.35" />
+            <line x1="28" y1="18" x2="72" y2="18" stroke={DRAWN.lineSoft} strokeWidth="1" strokeLinecap="round" opacity="0.25" />
+            {i === 2 ? (
+              <path d="M128 10 L130 12 L134 8" stroke={DRAWN.line} strokeWidth="1.2" strokeLinecap="round" />
+            ) : null}
+          </g>
+        ))}
+        <text x="94" y="148" textAnchor="middle" fill={DRAWN.violet} fontSize="8" fontFamily="Georgia, serif">
+          Calm &amp; clear
         </text>
       </g>
-    </svg>
+    </DrawnSvg>
   )
 }
