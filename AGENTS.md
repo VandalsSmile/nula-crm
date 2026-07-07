@@ -38,6 +38,8 @@ AI-first small business CRM. Core objects: **Contacts**, **Tags**, **Groups**, *
 
 ## Integrations
 
-- **OpenAI** (`OPENAI_API_KEY`) — AI command interpreter + lead summaries; regex fallback without key
+- **AI** (`AI_PROVIDER=anthropic|openai`) — command interpreter + lead summaries; regex fallback without keys
+  - Anthropic: `ANTHROPIC_API_KEY`, optional `ANTHROPIC_MODEL` (default `claude-sonnet-4-20250514`)
+  - OpenAI: `OPENAI_API_KEY`, optional `OPENAI_MODEL` (default `gpt-4o-mini`)
 - **Resend** (`RESEND_API_KEY`, `RESEND_FROM_EMAIL`) — campaign email sends
 - **Lead webhook** — duplicate match, scoring, tags, groups, automations on intake
