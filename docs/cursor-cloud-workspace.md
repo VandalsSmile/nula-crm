@@ -19,7 +19,7 @@ An agent run still tied to `vs-spackle` will clone the wrong repo context even i
 
 | Secret | Required | Purpose |
 |--------|----------|---------|
-| `GH_TOKEN` | Yes | GitHub PAT with **Contents: Read and write** on `VandalsSmile/nula-crm`, SSO authorized |
+| `GH_TOKEN` | Yes | GitHub PAT with **Contents: Read and write** on `VandalsSmile/nula-crm`, SSO authorized. Commits use **jason@vs.marketing**. |
 | `DATABASE_URL` | Yes | Neon PostgreSQL connection string |
 | `BETTER_AUTH_SECRET` | Yes | Auth secret (`openssl rand -base64 32`) |
 | `BETTER_AUTH_URL` | Yes | `https://nula-crm.vercel.app` |
@@ -51,6 +51,7 @@ npm install && bash scripts/ensure-github-auth.sh
 
 - Clears Cursor's `cursor[bot]` git credential overrides
 - Logs in with `GH_TOKEN` (or `GITHUB_PAT` / `GITHUB_TOKEN`)
+- Sets git author to **Jason Polancich <jason@vs.marketing>**
 - Sets `origin` to `https://github.com/VandalsSmile/nula-crm.git`
 - Verifies git push access and prints SSO guidance if push fails
 

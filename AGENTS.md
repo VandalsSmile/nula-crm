@@ -15,7 +15,7 @@ This is a **standalone workspace** for `VandalsSmile/nula-crm` — separate from
 3. **Install hook:** `npm install && bash scripts/ensure-github-auth.sh` (from `.cursor/environment.json`)
 4. **Dev server:** `npm run dev` (also started via `start` in `environment.json`)
 5. **Migrations:** `npm run db:migrate` (requires `DATABASE_URL` in Cursor Secrets)
-6. **GitHub pushes:** `GH_TOKEN` must have **Contents: Read and write** on `VandalsSmile/nula-crm` and **SSO authorized** for the VandalsSmile org. See `docs/cursor-cloud-workspace.md`.
+6. **GitHub pushes:** `GH_TOKEN` must have **Contents: Read and write** on `VandalsSmile/nula-crm` and **SSO authorized** for the VandalsSmile org. Git commits use **Jason Polancich <jason@vs.marketing>**. See `docs/cursor-cloud-workspace.md`.
 
 Full environment setup, secrets, and migration notes: `docs/cursor-cloud-workspace.md`
 
