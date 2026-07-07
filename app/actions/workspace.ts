@@ -2,6 +2,7 @@
 
 import { and, eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
+import { after } from "next/server"
 
 import { db } from "@/lib/db"
 import { campaigns, contactGroups, groups, tags, workspaceSettings } from "@/lib/db/schema"
@@ -77,9 +78,14 @@ export async function seedWorkspaceDefaults(businessType: BusinessTypeId = "iv-t
 
   await seedDefaultAutomations(workspaceId)
 
-  revalidatePath(APP_ROUTES.groups)
-  revalidatePath(APP_ROUTES.tags)
-  revalidatePath(APP_ROUTES.dashboard)
+  // seedWorkspaceDefaults runs during the dashboard's server render on first
+  // load. revalidatePath is not allowed during render, so defer the cache
+  // invalidation to after the response is sent (supported via `after`).
+  after(() => {
+    revalidatePath(APP_ROUTES.groups)
+    revalidatePath(APP_ROUTES.tags)
+    revalidatePath(APP_ROUTES.dashboard)
+  })
   return { ok: true, seeded: true }
 }
 

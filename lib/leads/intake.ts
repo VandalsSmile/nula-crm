@@ -172,7 +172,7 @@ export async function processLeadIntake(raw: unknown): Promise<LeadIntakeResult>
   const duplicate = await findDuplicateContact(workspaceId, scopeIds, email, phone)
   let contactId: string
   let isNew = false
-  let isDuplicate = Boolean(duplicate)
+  const isDuplicate = Boolean(duplicate)
 
   if (duplicate) {
     contactId = duplicate.id
