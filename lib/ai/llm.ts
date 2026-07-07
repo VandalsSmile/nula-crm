@@ -92,7 +92,7 @@ async function anthropicChatCompletion(messages: ChatMessage[], options?: Comple
   if (!apiKey) return null
 
   const model =
-    options?.model ?? process.env.ANTHROPIC_MODEL?.trim() ?? "claude-sonnet-4-20250514"
+    options?.model ?? process.env.ANTHROPIC_MODEL?.trim() ?? "claude-sonnet-4-5-20250929"
 
   const system = systemPrompt(messages, options?.json)
   const conversation = conversationMessages(messages)
