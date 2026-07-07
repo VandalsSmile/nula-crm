@@ -38,23 +38,26 @@ export function LoginPanel({ callbackURL = "/dashboard" }: { callbackURL?: strin
   }
 
   return (
-    <div className="flex min-h-svh flex-col bg-muted/40 lg:flex-row">
+    <div className="flex min-h-svh flex-col bg-background lg:flex-row">
       {/* Brand panel */}
       <div className="relative hidden flex-1 flex-col justify-between bg-primary p-12 text-primary-foreground lg:flex">
         <div className="flex items-center gap-2.5">
           <Logo className="size-9" />
-          <span className="text-lg font-semibold tracking-tight">NULA CRM</span>
+          <span className="text-lg font-semibold tracking-tight">Nula CRM</span>
         </div>
         <div className="flex flex-col gap-4">
           <h1 className="text-4xl font-semibold leading-tight tracking-tight text-balance">
-            {"Spackle: AI the sh%$ out of it!"}
+            Tell the CRM what you want done.
           </h1>
+          <p className="max-w-md text-lg text-primary-foreground/80">
+            It organizes your data, suggests the right next move, and helps you execute it safely.
+          </p>
         </div>
-        <p className="text-sm text-primary-foreground/60">VS Marketing internal tool</p>
+        <p className="text-sm text-primary-foreground/60">AI-first CRM for growing businesses</p>
       </div>
 
       {/* Auth form */}
-      <div className="flex flex-1 items-center justify-center p-6">
+      <div className="flex flex-1 items-center justify-center bg-nula-paper p-6">
         <Card className="w-full max-w-sm">
           <CardHeader className="text-center">
             <Logo className="mx-auto mb-2 size-11 lg:hidden" />
@@ -71,7 +74,7 @@ export function LoginPanel({ callbackURL = "/dashboard" }: { callbackURL?: strin
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@vsmarketing.com"
+                    placeholder="you@company.com"
                     required
                     autoComplete="email"
                   />
@@ -100,7 +103,7 @@ export function LoginPanel({ callbackURL = "/dashboard" }: { callbackURL?: strin
                       {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                     </button>
                   </div>
-                  <FieldDescription>Access is restricted to VS Marketing staff.</FieldDescription>
+                  <FieldDescription>Invite-only access for your workspace team.</FieldDescription>
                 </Field>
 
                 {error && (

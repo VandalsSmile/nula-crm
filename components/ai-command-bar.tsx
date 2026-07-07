@@ -53,9 +53,9 @@ export function AiCommandBar({ className }: { className?: string }) {
   return (
     <>
       <div className={className}>
-        <div className="flex flex-col gap-2 rounded-xl border bg-card p-3 shadow-sm">
+        <div className="flex flex-col gap-2 rounded-xl border border-primary/15 bg-card p-3 shadow-sm">
           <div className="flex items-center gap-2">
-            <Sparkles className="size-4 shrink-0 text-primary" />
+            <Sparkles className="size-4 shrink-0 text-nula-signal" />
             <span className="text-sm font-medium">What do you want to do?</span>
           </div>
           <form

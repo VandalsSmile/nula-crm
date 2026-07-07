@@ -77,7 +77,7 @@ export function AppSidebar() {
           <Logo className="size-9 shrink-0" />
           <div className="flex min-w-0 flex-col leading-tight">
             <span className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-semibold tracking-tight">NULA CRM</span>
+              <span className="text-sm font-semibold tracking-tight text-nula-ink dark:text-nula-paper">Nula CRM</span>
               <VersionBadge />
             </span>
             <span className="text-xs text-muted-foreground">AI-first small business CRM</span>

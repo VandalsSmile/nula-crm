@@ -94,7 +94,7 @@ export const tags = pgTable("tags", {
   userId: text("userId").notNull(),
   name: text("name").notNull(),
   slug: text("slug").notNull(),
-  color: text("color").notNull().default("oklch(0.6 0.16 250)"),
+  color: text("color").notNull().default("#4F3DF5"),
   description: text("description").notNull().default(""),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })

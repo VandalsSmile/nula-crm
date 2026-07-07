@@ -26,7 +26,7 @@ export function LeadScoreBadge({ score, className }: { score: number; className?
   const label = leadScoreLabel(score)
   const tone =
     label === "Hot"
-      ? "bg-destructive/10 text-destructive border-destructive/30"
+      ? "bg-nula-signal/15 text-[#0d5c4e] border-nula-signal/40 dark:text-nula-signal"
       : label === "Warm"
         ? "bg-warning/15 text-warning-foreground border-warning/30"
         : "bg-muted text-muted-foreground border-transparent"
