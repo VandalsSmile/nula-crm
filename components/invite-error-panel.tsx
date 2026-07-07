@@ -3,6 +3,7 @@ import { AlertTriangle } from "lucide-react"
 
 import { Logo } from "@/components/logo"
 import { Button } from "@/components/ui/button"
+import { APP_ROUTES } from "@/lib/routes"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 const COPY: Record<string, { title: string; description: string }> = {
@@ -39,7 +40,7 @@ export function InviteErrorPanel({ reason }: { reason: string }) {
           <CardDescription>{copy.description}</CardDescription>
         </CardHeader>
         <CardContent>
-          <Button className="w-full" variant="outline" render={<Link href="/login" />}>
+          <Button className="w-full" variant="outline" render={<Link href={APP_ROUTES.login} />}>
             Go to sign in
           </Button>
         </CardContent>

@@ -3,7 +3,7 @@ import { headers } from "next/headers"
 
 import { auth } from "@/lib/auth"
 import { LoginPanel } from "@/components/login-panel"
-import { safeRedirectPath } from "@/lib/safe-redirect-path"
+import { safeRedirectPath } from "@/lib/routes"
 
 export default async function LoginPage({
   searchParams,

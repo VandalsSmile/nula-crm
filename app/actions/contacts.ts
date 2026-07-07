@@ -12,6 +12,7 @@ import type { Contact, LifecycleStage } from "@/lib/crm-types"
 import { calculateLeadScore, recommendedNextActionForLead } from "@/lib/leads/scoring"
 import { generateLeadSummary } from "@/lib/leads/summary"
 import { processLeadAutomations } from "@/lib/automations/engine"
+import { APP_ROUTES } from "@/lib/routes"
 
 export type ContactInput = {
   firstName: string
@@ -68,8 +69,8 @@ export async function createContact(input: ContactInput): Promise<Contact> {
     actorId: user.id,
   })
 
-  revalidatePath("/contacts")
-  revalidatePath("/dashboard")
+  revalidatePath(APP_ROUTES.contacts)
+  revalidatePath(APP_ROUTES.dashboard)
   return mapContact(row)
 }
 
@@ -94,8 +95,8 @@ export async function updateContact(id: string, input: Partial<ContactInput>): P
     .returning()
   if (!row) throw new Error("Contact not found")
 
-  revalidatePath("/contacts")
-  revalidatePath(`/contacts/${id}`)
+  revalidatePath(APP_ROUTES.contacts)
+  revalidatePath(`${APP_ROUTES.contacts}/${id}`)
   return mapContact(row)
 }
 
@@ -107,8 +108,8 @@ export async function deleteContact(id: string): Promise<void> {
   await db.delete(activities).where(and(eq(activities.contactId, id), workspaceUserIdMatches(activities.userId, scopeIds)))
   await db.delete(contacts).where(and(eq(contacts.id, id), workspaceUserIdMatches(contacts.userId, scopeIds)))
 
-  revalidatePath("/contacts")
-  revalidatePath("/dashboard")
+  revalidatePath(APP_ROUTES.contacts)
+  revalidatePath(APP_ROUTES.dashboard)
 }
 
 export async function addTagToContact(contactId: string, tagId: string) {
@@ -122,7 +123,7 @@ export async function addTagToContact(contactId: string, tagId: string) {
     contactId,
     actorId: user.id,
   })
-  revalidatePath(`/contacts/${contactId}`)
+  revalidatePath(`${APP_ROUTES.contacts}/${contactId}`)
 }
 
 export async function addContactToGroup(contactId: string, groupId: string) {
@@ -136,8 +137,8 @@ export async function addContactToGroup(contactId: string, groupId: string) {
     contactId,
     actorId: user.id,
   })
-  revalidatePath(`/contacts/${contactId}`)
-  revalidatePath("/groups")
+  revalidatePath(`${APP_ROUTES.contacts}/${contactId}`)
+  revalidatePath(APP_ROUTES.groups)
 }
 
 function parseCsvLine(line: string): string[] {
@@ -256,7 +257,7 @@ export async function importContactsFromCsv(csvText: string): Promise<CsvImportR
     }
   }
 
-  revalidatePath("/contacts")
-  revalidatePath("/dashboard")
+  revalidatePath(APP_ROUTES.contacts)
+  revalidatePath(APP_ROUTES.dashboard)
   return { created, skipped, errors }
 }

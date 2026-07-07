@@ -7,23 +7,26 @@ import { useTheme } from "next-themes"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
+import { APP_BASE, APP_ROUTES } from "@/lib/routes"
 
 const titles: Record<string, string> = {
-  "/dashboard": "Dashboard",
-  "/contacts": "Contacts",
-  "/groups": "Groups",
-  "/campaigns": "Campaigns",
-  "/inbox": "Inbox",
-  "/automations": "Automations",
-  "/ai": "AI Command Center",
-  "/reports": "Reports",
-  "/settings": "Settings",
+  [APP_ROUTES.dashboard]: "Dashboard",
+  [APP_ROUTES.contacts]: "Contacts",
+  [APP_ROUTES.groups]: "Groups",
+  [APP_ROUTES.campaigns]: "Campaigns",
+  [APP_ROUTES.inbox]: "Inbox",
+  [APP_ROUTES.automations]: "Automations",
+  [APP_ROUTES.ai]: "AI Command Center",
+  [APP_ROUTES.reports]: "Reports",
+  [APP_ROUTES.settings]: "Settings",
 }
 
 function deriveTitle(pathname: string) {
-  if (pathname.startsWith("/contacts/")) return "Contact Profile"
-  const base = "/" + pathname.split("/")[1]
-  return titles[base] ?? "Nula CRM"
+  if (pathname.startsWith(`${APP_ROUTES.contacts}/`)) return "Contact Profile"
+  for (const [path, title] of Object.entries(titles)) {
+    if (pathname === path || pathname.startsWith(`${path}/`)) return title
+  }
+  return "Nula CRM"
 }
 
 export function TopBar() {

@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Compass, Home } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { APP_ROUTES } from "@/lib/routes"
 
 /** Branded 404 shown for unknown routes. */
 export default function NotFound() {
@@ -17,10 +18,15 @@ export default function NotFound() {
             The page you&apos;re looking for doesn&apos;t exist or may have moved.
           </p>
         </div>
-        <Button render={<Link href="/dashboard" />} nativeButton={false}>
-          <Home data-icon="inline-start" />
-          Back to dashboard
-        </Button>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Button render={<Link href="/" />} variant="outline" nativeButton={false}>
+            <Home data-icon="inline-start" />
+            Home
+          </Button>
+          <Button render={<Link href={APP_ROUTES.dashboard} />} nativeButton={false}>
+            Open app
+          </Button>
+        </div>
       </div>
     </main>
   )

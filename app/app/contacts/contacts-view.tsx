@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { initials, type Contact } from "@/lib/crm-types"
+import { APP_ROUTES, contactPath } from "@/lib/routes"
 
 export function ContactsView({ contacts }: { contacts: Contact[] }) {
   const [addOpen, setAddOpen] = useState(false)
@@ -55,7 +56,7 @@ export function ContactsView({ contacts }: { contacts: Contact[] }) {
               <CardHeader className="flex-row items-start justify-between gap-2 pb-2">
                 <div>
                   <CardTitle className="text-base">
-                    <Link href={`/contacts/${contact.id}`} className="hover:underline">
+                    <Link href={contactPath(contact.id)} className="hover:underline">
                       {contact.fullName}
                     </Link>
                   </CardTitle>
@@ -73,7 +74,7 @@ export function ContactsView({ contacts }: { contacts: Contact[] }) {
                     }
                   />
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem render={<Link href={`/contacts/${contact.id}`} />}>
+                    <DropdownMenuItem render={<Link href={contactPath(contact.id)} />}>
                       <Pencil />
                       View profile
                     </DropdownMenuItem>

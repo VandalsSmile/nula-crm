@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/breadcrumb"
 import { formatDateTime } from "@/lib/format"
 import { formatRevenue, type Activity, type Contact } from "@/lib/crm-types"
+import { APP_ROUTES } from "@/lib/routes"
 
 export function ContactProfile({
   contact,
@@ -32,7 +33,7 @@ export function ContactProfile({
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink render={<Link href="/contacts" />}>Contacts</BreadcrumbLink>
+            <BreadcrumbLink render={<Link href={APP_ROUTES.contacts} />}>Contacts</BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
@@ -50,7 +51,7 @@ export function ContactProfile({
             {contact.source ? <Badge variant="secondary">Source: {contact.source}</Badge> : null}
           </div>
         </div>
-        <Button variant="outline" render={<Link href="/contacts" />}>
+        <Button variant="outline" render={<Link href={APP_ROUTES.contacts} />}>
           <ArrowLeft data-icon="inline-start" />
           Back
         </Button>

@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
 import { activities, campaigns, contactGroups, contacts } from "@/lib/db/schema"
 import { getActingUser, workspaceUserIdMatches } from "@/lib/auth-helpers"
+import { APP_ROUTES } from "@/lib/routes"
 import { randomId } from "@/lib/library-helpers"
 import { CAMPAIGN_TEMPLATES } from "@/lib/crm-defaults"
 import { createCampaignDraftForWorkspace } from "@/lib/campaigns/drafts"
@@ -23,7 +24,7 @@ export async function createCampaignFromTemplate(templateId: string) {
     audience: template.description,
   })
 
-  revalidatePath("/campaigns")
+  revalidatePath(APP_ROUTES.campaigns)
   return { id: row.id, name: row.name }
 }
 
@@ -35,7 +36,7 @@ export async function approveCampaign(campaignId: string) {
     .where(and(eq(campaigns.id, campaignId), workspaceUserIdMatches(campaigns.userId, scopeIds)))
     .returning()
   if (!row) throw new Error("Campaign not found")
-  revalidatePath("/campaigns")
+  revalidatePath(APP_ROUTES.campaigns)
   return { ok: true, status: row.status }
 }
 
@@ -84,7 +85,7 @@ export async function launchCampaign(campaignId: string) {
     })
   }
 
-  revalidatePath("/campaigns")
+  revalidatePath(APP_ROUTES.campaigns)
   return {
     ok: true,
     sent: sendResult.sent,

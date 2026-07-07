@@ -14,6 +14,7 @@ import {
   tags,
 } from "@/lib/db/schema"
 import { getActingUser, workspaceUserIdMatches } from "@/lib/auth-helpers"
+import { APP_ROUTES } from "@/lib/routes"
 import { interpretCommandAsync } from "@/lib/ai/interpret-with-llm"
 import { productKeywordsForIntent, type AiIntent } from "@/lib/ai/interpreter"
 import { createCampaignDraftForWorkspace } from "@/lib/campaigns/drafts"
@@ -227,10 +228,10 @@ async function executeAiActionInternal(
     })
     .where(eq(aiActions.id, actionId))
 
-  revalidatePath("/dashboard")
-  revalidatePath("/contacts")
-  revalidatePath("/groups")
-  revalidatePath("/ai")
+  revalidatePath(APP_ROUTES.dashboard)
+  revalidatePath(APP_ROUTES.contacts)
+  revalidatePath(APP_ROUTES.groups)
+  revalidatePath(APP_ROUTES.ai)
 
   return { summary, impactCount }
 }
@@ -260,10 +261,10 @@ export async function undoLastAiAction() {
     .set({ status: "undone", undoneAt: new Date(), summary: "Last AI action was undone." })
     .where(eq(aiActions.id, action.id))
 
-  revalidatePath("/dashboard")
-  revalidatePath("/contacts")
-  revalidatePath("/groups")
-  revalidatePath("/ai")
+  revalidatePath(APP_ROUTES.dashboard)
+  revalidatePath(APP_ROUTES.contacts)
+  revalidatePath(APP_ROUTES.groups)
+  revalidatePath(APP_ROUTES.ai)
 
   return { ok: true, summary: "Undid the last AI action." }
 }
@@ -293,5 +294,5 @@ export async function listAiActions(limit = 20) {
 export async function cancelAiAction(actionId: string) {
   await getActingUser()
   await db.update(aiActions).set({ status: "cancelled" }).where(eq(aiActions.id, actionId))
-  revalidatePath("/ai")
+  revalidatePath(APP_ROUTES.ai)
 }

@@ -7,7 +7,7 @@ import { AiCommandBar } from "@/components/ai-command-bar"
 import { LastRouteTracker } from "@/components/last-route-tracker"
 import { TopBar } from "@/components/top-bar"
 import { SessionUserProvider } from "@/lib/session-context"
-import { safeRedirectPath } from "@/lib/safe-redirect-path"
+import { DEFAULT_APP_PATH, safeRedirectPath } from "@/lib/routes"
 import { auth } from "@/lib/auth"
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {

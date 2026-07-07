@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Field, FieldGroup, FieldLabel, FieldDescription } from "@/components/ui/field"
 import { authClient } from "@/lib/auth-client"
 import { acceptTeamInvite } from "@/app/actions/team"
+import { APP_ROUTES } from "@/lib/routes"
 
 export function AcceptInvitePanel({
   token,
@@ -54,7 +55,7 @@ export function AcceptInvitePanel({
       return
     }
 
-    router.push("/dashboard")
+    router.push(APP_ROUTES.dashboard)
     router.refresh()
   }
 

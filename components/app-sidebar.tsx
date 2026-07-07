@@ -44,16 +44,17 @@ import { initials } from "@/lib/crm-types"
 import { useSessionUser } from "@/lib/session-context"
 import { authClient } from "@/lib/auth-client"
 
+import { APP_ROUTES } from "@/lib/routes"
 const mainNav = [
-  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { title: "Contacts", href: "/contacts", icon: Users },
-  { title: "Groups", href: "/groups", icon: Layers },
-  { title: "Campaigns", href: "/campaigns", icon: Megaphone },
-  { title: "Inbox", href: "/inbox", icon: Inbox },
-  { title: "Automations", href: "/automations", icon: Zap },
-  { title: "AI Command Center", href: "/ai", icon: Sparkles },
-  { title: "Reports", href: "/reports", icon: BarChart3 },
-  { title: "Settings", href: "/settings", icon: Settings },
+  { title: "Dashboard", href: APP_ROUTES.dashboard, icon: LayoutDashboard },
+  { title: "Contacts", href: APP_ROUTES.contacts, icon: Users },
+  { title: "Groups", href: APP_ROUTES.groups, icon: Layers },
+  { title: "Campaigns", href: APP_ROUTES.campaigns, icon: Megaphone },
+  { title: "Inbox", href: APP_ROUTES.inbox, icon: Inbox },
+  { title: "Automations", href: APP_ROUTES.automations, icon: Zap },
+  { title: "AI Command Center", href: APP_ROUTES.ai, icon: Sparkles },
+  { title: "Reports", href: APP_ROUTES.reports, icon: BarChart3 },
+  { title: "Settings", href: APP_ROUTES.settings, icon: Settings },
 ]
 
 export function AppSidebar() {
@@ -66,14 +67,14 @@ export function AppSidebar() {
 
   async function handleLogout() {
     await authClient.signOut()
-    router.push("/login")
+    router.push(APP_ROUTES.login)
     router.refresh()
   }
 
   return (
     <Sidebar>
       <SidebarHeader>
-        <Link href="/dashboard" className="flex items-center gap-2.5 px-2 py-1.5">
+        <Link href={APP_ROUTES.dashboard} className="flex items-center gap-2.5 px-2 py-1.5">
           <Logo className="size-9 shrink-0" />
           <div className="flex min-w-0 flex-col leading-tight">
             <span className="flex flex-wrap items-center gap-2">
@@ -129,7 +130,7 @@ export function AppSidebar() {
               <DropdownMenuContent side="top" align="end" className="w-56">
                 <DropdownMenuGroup>
                   <DropdownMenuLabel>Account</DropdownMenuLabel>
-                  <DropdownMenuItem render={<Link href="/settings">Settings</Link>} />
+                  <DropdownMenuItem render={<Link href={APP_ROUTES.settings}>Settings</Link>} />
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>

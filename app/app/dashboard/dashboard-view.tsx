@@ -9,6 +9,7 @@ import { ActivityFeed } from "@/components/activity-feed"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { Activity, Contact, DashboardStats } from "@/lib/crm-types"
+import { APP_ROUTES, contactPath } from "@/lib/routes"
 
 export function DashboardView({
   contacts,
@@ -27,7 +28,7 @@ export function DashboardView({
         title="Dashboard"
         description="What matters this week — leads, follow-ups, and recommended AI actions."
         actions={
-          <Button render={<Link href="/contacts" />}>
+          <Button render={<Link href={APP_ROUTES.contacts} />}>
             <UserPlus data-icon="inline-start" />
             Add contact
           </Button>
@@ -55,7 +56,7 @@ export function DashboardView({
                 </p>
               </div>
             </div>
-            <Button variant="outline" render={<Link href="/ai" />}>
+            <Button variant="outline" render={<Link href={APP_ROUTES.ai} />}>
               Open AI Command Center
             </Button>
           </CardContent>
@@ -74,7 +75,7 @@ export function DashboardView({
               contacts.slice(0, 6).map((c) => (
                 <Link
                   key={c.id}
-                  href={`/contacts/${c.id}`}
+                  href={contactPath(c.id)}
                   className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm hover:bg-muted/50"
                 >
                   <span className="font-medium">{c.fullName}</span>

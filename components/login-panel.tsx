@@ -11,7 +11,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Field, FieldGroup, FieldLabel, FieldDescription } from "@/components/ui/field"
 import { authClient } from "@/lib/auth-client"
 
-export function LoginPanel({ callbackURL = "/dashboard" }: { callbackURL?: string }) {
+import { APP_ROUTES } from "@/lib/routes"
+
+export function LoginPanel({ callbackURL = APP_ROUTES.dashboard }: { callbackURL?: string }) {
   const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")

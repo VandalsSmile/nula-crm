@@ -4,6 +4,7 @@ import { useEffect } from "react"
 import Link from "next/link"
 import { AlertTriangle, RotateCw, Home } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { APP_ROUTES } from "@/lib/routes"
 
 /**
  * Route-level error boundary. Catches unhandled runtime errors anywhere in the
@@ -41,7 +42,7 @@ export default function Error({
             <RotateCw data-icon="inline-start" />
             Try again
           </Button>
-          <Button variant="outline" render={<Link href="/dashboard" />} nativeButton={false}>
+          <Button variant="outline" render={<Link href={APP_ROUTES.dashboard} />} nativeButton={false}>
             <Home data-icon="inline-start" />
             Back to dashboard
           </Button>

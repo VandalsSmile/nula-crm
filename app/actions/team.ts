@@ -8,6 +8,7 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { teamInvites, user as userTable } from "@/lib/db/schema"
 import { getActingUser } from "@/lib/auth-helpers"
+import { APP_ROUTES } from "@/lib/routes"
 
 const INVITE_TTL_DAYS = 14
 
@@ -128,7 +129,7 @@ export async function createTeamInvite(emailInput: string): Promise<TeamInvite> 
     })
     .returning()
 
-  revalidatePath("/settings")
+  revalidatePath(APP_ROUTES.settings)
   return mapInvite(row, origin)
 }
 
@@ -175,7 +176,7 @@ export async function revokeTeamInvite(token: string): Promise<void> {
     .update(teamInvites)
     .set({ status: "Revoked" })
     .where(and(eq(teamInvites.id, token), eq(teamInvites.workspaceId, workspaceId)))
-  revalidatePath("/settings")
+  revalidatePath(APP_ROUTES.settings)
 }
 
 export type InviteLookup =
