@@ -16,10 +16,14 @@ git config --global user.name "${GIT_AUTHOR_NAME:-Jason Polancich}"
 git config --global user.email "${GIT_AUTHOR_EMAIL:-jason@vs.marketing}"
 
 # Prefer a long-lived PAT from Cursor Cloud secrets (recommended).
-if [[ -n "${GH_TOKEN:-}" ]]; then
-  printf '%s' "$GH_TOKEN" | gh auth login --with-token 2>/dev/null || true
-  gh auth switch -u "$(gh api user --jq .login 2>/dev/null)" 2>/dev/null || true
-fi
+# Also accept GITHUB_PAT / GITHUB_TOKEN if GH_TOKEN conflicts with Cursor's integration token.
+for var in GH_TOKEN GITHUB_PAT GITHUB_TOKEN; do
+  if [[ -n "${!var:-}" ]]; then
+    printf '%s' "${!var}" | gh auth login --with-token 2>/dev/null || true
+    gh auth switch -u "$(gh api user --jq .login 2>/dev/null)" 2>/dev/null || true
+    break
+  fi
+done
 
 if gh auth status -h github.com 2>/dev/null | rg -q 'account jrpolan'; then
   gh auth switch -u jrpolan 2>/dev/null || true
