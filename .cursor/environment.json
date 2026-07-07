@@ -1,4 +1,6 @@
 {
+  "name": "Nula CRM",
+  "repository": "https://github.com/jrpolan/nula-crm",
   "install": "npm install && bash scripts/ensure-github-auth.sh",
   "start": "npm run dev"
 }

@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# DEPRECATED — Nula CRM is now developed directly in jrpolan/nula-crm.
+# This one-time script mirrored an early scaffold from vs-spackle.
+
 # Mirrors the scaffold branch from VandalsSmile/vs-spackle into jrpolan/nula-crm.
 # Run this locally with credentials that can push to jrpolan/nula-crm.
 

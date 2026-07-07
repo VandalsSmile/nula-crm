@@ -1,25 +1,15 @@
 # Nula CRM setup
 
-## 1. Publish the scaffold to `jrpolan/nula-crm`
+Standalone repo: **https://github.com/jrpolan/nula-crm**
 
-The cloud agent pushed the full scaffold to:
+For Cursor Cloud agents, use a dedicated environment (not VS Spackle). See **`docs/cursor-cloud-workspace.md`**.
 
-`https://github.com/VandalsSmile/vs-spackle/tree/cursor/nula-crm-scaffold-054a`
-
-Mirror it into your repo (requires your GitHub credentials):
+## 1. Clone the repo
 
 ```bash
-chmod +x scripts/publish-to-jrpolan.sh
-./scripts/publish-to-jrpolan.sh
-```
-
-Or manually:
-
-```bash
-git clone --branch cursor/nula-crm-scaffold-054a https://github.com/VandalsSmile/vs-spackle.git nula-crm
+git clone https://github.com/jrpolan/nula-crm.git
 cd nula-crm
-git remote add origin https://github.com/jrpolan/nula-crm.git
-git push -u origin HEAD:main
+npm install
 ```
 
 ## 2. Create a Neon database
@@ -85,8 +75,10 @@ After the first deploy, update `BETTER_AUTH_URL` and `NEXT_PUBLIC_APP_URL` to yo
 
 ## 7. Cursor Cloud environment
 
-After the repo is on GitHub:
+Create a **dedicated** Cursor Cloud environment for this repo:
 
 [Open guided environment setup](https://cursor.com/onboard?repository=https%3A%2F%2Fgithub.com%2Fjrpolan%2Fnula-crm)
 
-Add `DATABASE_URL`, `BETTER_AUTH_SECRET`, and `BETTER_AUTH_URL` as Cursor secrets for the environment.
+See **`docs/cursor-cloud-workspace.md`** for secrets and migration notes from VS Spackle.
+
+Add `GH_TOKEN`, `DATABASE_URL`, `BETTER_AUTH_SECRET`, and `BETTER_AUTH_URL` as Cursor secrets.
