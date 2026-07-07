@@ -1,0 +1,128 @@
+"use client"
+
+import Link from "next/link"
+import { usePathname, useRouter } from "next/navigation"
+import { LayoutDashboard, Users, Settings, ChevronsUpDown, LogOut } from "lucide-react"
+
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from "@/components/ui/sidebar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Logo } from "@/components/logo"
+import { VersionBadge } from "@/components/version-badge"
+import { initials } from "@/lib/mock-data"
+import { useSessionUser } from "@/lib/session-context"
+import { authClient } from "@/lib/auth-client"
+
+const mainNav = [
+  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { title: "Clients", href: "/clients", icon: Users },
+  { title: "Settings", href: "/settings", icon: Settings },
+]
+
+export function AppSidebar() {
+  const pathname = usePathname()
+  const router = useRouter()
+  const user = useSessionUser()
+
+  const isActive = (href: string) =>
+    pathname === href || pathname.startsWith(href + "/")
+
+  async function handleLogout() {
+    await authClient.signOut()
+    router.push("/login")
+    router.refresh()
+  }
+
+  return (
+    <Sidebar>
+      <SidebarHeader>
+        <Link href="/dashboard" className="flex items-center gap-2.5 px-2 py-1.5">
+          <Logo className="size-9 shrink-0" />
+          <div className="flex min-w-0 flex-col leading-tight">
+            <span className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-semibold tracking-tight">NULA CRM</span>
+              <VersionBadge />
+            </span>
+            <span className="text-xs text-muted-foreground">Client workspace</span>
+          </div>
+        </Link>
+      </SidebarHeader>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {mainNav.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton
+                    render={
+                      <Link href={item.href}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </Link>
+                    }
+                    isActive={isActive(item.href)}
+                    tooltip={item.title}
+                  />
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent">
+                    <Avatar className="size-8 rounded-lg">
+                      {user.image ? <AvatarImage src={user.image} alt={user.name} /> : null}
+                      <AvatarFallback className="rounded-lg">{initials(user.name)}</AvatarFallback>
+                    </Avatar>
+                    <div className="grid flex-1 text-left text-sm leading-tight">
+                      <span className="truncate font-medium">{user.name}</span>
+                      <span className="truncate text-xs text-muted-foreground">{user.email}</span>
+                    </div>
+                    <ChevronsUpDown className="ml-auto size-4" />
+                  </SidebarMenuButton>
+                }
+              />
+              <DropdownMenuContent side="top" align="end" className="w-56">
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>Account</DropdownMenuLabel>
+                  <DropdownMenuItem render={<Link href="/settings">Settings</Link>} />
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout}>
+                  <LogOut />
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+    </Sidebar>
+  )
+}
