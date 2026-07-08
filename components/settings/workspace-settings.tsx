@@ -58,7 +58,9 @@ export function WorkspaceSettings() {
             disabled={!isAdmin || isLoading}
           >
             <SelectTrigger id="business-type">
-              <SelectValue />
+              <SelectValue>
+                {(value) => BUSINESS_TYPES.find((b) => b.id === value)?.label ?? "Select industry"}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {BUSINESS_TYPES.map((b) => (
