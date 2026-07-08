@@ -151,6 +151,7 @@ export async function createLeadSource(
     successMessage?: string
     redirectUrl?: string
     fieldMapping?: Record<string, string>
+    secret?: string
   },
 ): Promise<LeadSourceRow> {
   const base = slugKey(input.name)
@@ -173,6 +174,7 @@ export async function createLeadSource(
       name: input.name.trim(),
       channel: input.channel,
       publicKey: randomId("lf") + randomId("k"),
+      secret: input.secret ?? "",
       successMessage: input.successMessage ?? "",
       redirectUrl: input.redirectUrl ?? "",
       fieldMapping: input.fieldMapping ?? {},

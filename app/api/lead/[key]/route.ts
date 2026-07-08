@@ -1,3 +1,5 @@
+import { createHmac, timingSafeEqual } from "node:crypto"
+
 import { NextRequest, NextResponse } from "next/server"
 
 import { processLeadIntake } from "@/lib/leads/intake"
@@ -8,6 +10,25 @@ export const runtime = "nodejs"
 
 // Hidden field bots tend to fill in. Real users leave it blank.
 const HONEYPOT_FIELD = "company_website"
+
+/** Read a nested value by dot path (e.g. "payload.email"). */
+function getPath(obj: unknown, path: string): unknown {
+  return path.split(".").reduce<unknown>((acc, key) => {
+    if (acc == null) return undefined
+    return (acc as Record<string, unknown>)[key]
+  }, obj)
+}
+
+/** Constant-time compare of the provided HMAC signature against the expected one. */
+function verifySignature(secret: string, rawBody: string, signature: string): boolean {
+  const provided = signature.replace(/^sha256=/, "").trim()
+  if (!provided) return false
+  const expected = createHmac("sha256", secret).update(rawBody).digest("hex")
+  const a = Buffer.from(provided, "hex")
+  const b = Buffer.from(expected, "hex")
+  if (a.length !== b.length) return false
+  return timingSafeEqual(a, b)
+}
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -51,18 +72,34 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   const contentType = request.headers.get("content-type") ?? ""
+  const rawBody = await request.text()
+
+  // Signed webhooks: if the source has a secret, require a valid HMAC signature.
+  if (source.secret) {
+    const signature =
+      request.headers.get("x-nula-signature") ?? request.headers.get("x-signature") ?? ""
+    if (!verifySignature(source.secret, rawBody, signature)) {
+      return NextResponse.json(
+        { ok: false, error: "Invalid signature" },
+        { status: 401, headers: CORS_HEADERS },
+      )
+    }
+  }
+
   const data: Record<string, unknown> = {}
   let isFormPost = false
 
   if (contentType.includes("application/json")) {
-    const body = await request.json().catch(() => ({}))
-    if (body && typeof body === "object") Object.assign(data, body)
+    try {
+      const body = JSON.parse(rawBody || "{}")
+      if (body && typeof body === "object") Object.assign(data, body)
+    } catch {
+      // leave data empty
+    }
   } else {
     isFormPost = true
-    const form = await request.formData().catch(() => null)
-    if (form) {
-      for (const [k, v] of form.entries()) data[k] = typeof v === "string" ? v : ""
-    }
+    const params = new URLSearchParams(rawBody)
+    for (const [k, v] of params.entries()) data[k] = v
   }
 
   // Honeypot: silently accept so bots don't learn they were caught.
@@ -82,10 +119,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
   }
 
-  // Field mapping: translate provider field names → canonical names.
+  // Field mapping: translate provider field names (dot paths ok) → canonical.
   const mapped: Record<string, unknown> = { ...data }
   for (const [incoming, canonical] of Object.entries(source.fieldMapping ?? {})) {
-    if (data[incoming] !== undefined) mapped[canonical] = data[incoming]
+    const value = incoming.includes(".") ? getPath(data, incoming) : data[incoming]
+    if (value !== undefined && value !== null) mapped[canonical] = value
   }
 
   // UTM attribution from body and/or query string.
