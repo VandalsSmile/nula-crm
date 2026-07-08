@@ -182,6 +182,16 @@ export type DashboardStats = {
   groupCount: number
 }
 
+export type ReportData = {
+  totalContacts: number
+  customers: number
+  conversionRate: number
+  totalCampaigns: number
+  leadsBySource: { source: string; count: number }[]
+  lifecycleFunnel: { stage: LifecycleStage; count: number }[]
+  campaignsByStatus: { status: CampaignStatus | string; count: number }[]
+}
+
 export type SessionUser = {
   id: string
   name: string
