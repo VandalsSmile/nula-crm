@@ -10,7 +10,7 @@ import { APP_ROUTES } from "@/lib/routes"
 import { randomId } from "@/lib/library-helpers"
 import { CAMPAIGN_TEMPLATES } from "@/lib/crm-defaults"
 import { createCampaignDraftForWorkspace } from "@/lib/campaigns/drafts"
-import { sendCampaignMessages } from "@/lib/campaigns/send"
+import { enrollCampaign, processDueCampaignSends } from "@/lib/campaigns/schedule"
 
 export async function createCampaignFromTemplate(templateId: string) {
   const { workspaceId } = await getActingUser()
@@ -110,29 +110,43 @@ export async function launchCampaign(campaignId: string) {
     audienceContacts = rows.map((r) => r.contact).filter((c) => c.optInStatus !== "opted_out")
   }
 
-  const sendResult = await sendCampaignMessages(campaign, audienceContacts)
+  const eligible = audienceContacts.filter((c) => c.optInStatus !== "opted_out")
 
+  // Schedule every step of the sequence for each recipient, then send the steps
+  // that are due immediately (delayDays: 0). Later steps are delivered by the
+  // campaigns cron.
+  const enrollment = await enrollCampaign(campaign, eligible)
+  const processed = await processDueCampaignSends(workspaceId, { campaignId })
+
+  const launched = enrollment.recipients > 0
   await db
     .update(campaigns)
-    .set({ status: sendResult.sent ? "active" : "scheduled", updatedAt: new Date() })
+    .set({ status: launched ? "active" : "scheduled", updatedAt: new Date() })
     .where(eq(campaigns.id, campaignId))
 
-  for (const contactId of sendResult.contactIds.slice(0, 50)) {
+  for (const contact of eligible.slice(0, 50)) {
     await db.insert(activities).values({
       id: randomId("a"),
       userId: workspaceId,
       type: "campaign_entered",
       message: `Entered campaign "${campaign.name}"`,
-      contactId,
+      contactId: contact.id,
       actorId: user.id,
     })
   }
 
+  const remaining = Math.max(0, enrollment.scheduled - processed.sent)
+  const message = launched
+    ? `Enrolled ${enrollment.recipients} recipient(s). Sent ${processed.sent} now; ${remaining} step(s) scheduled for later.${
+        processed.pending > 0 ? " Add RESEND_API_KEY to deliver email steps." : ""
+      }`
+    : "No eligible recipients in the selected audience. Add contacts to the group and launch again."
+
   revalidatePath(APP_ROUTES.campaigns)
   return {
     ok: true,
-    sent: sendResult.sent,
-    recipientCount: sendResult.contactIds.length,
-    message: sendResult.message,
+    sent: processed.sent > 0,
+    recipientCount: enrollment.recipients,
+    message,
   }
 }
