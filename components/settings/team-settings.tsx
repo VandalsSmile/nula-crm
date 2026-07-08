@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import useSWR from "swr"
-import { Copy, Check, PlusIcon, AlertCircle, MoreHorizontal } from "lucide-react"
+import { Copy, Check, PlusIcon, AlertCircle, MoreHorizontal, UserMinus } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -40,18 +40,26 @@ import {
 import { useSessionUser } from "@/lib/session-context"
 import { initials } from "@/lib/mock-data"
 import {
+  ASSIGNABLE_ROLES,
+  canManageMember,
+  canManageTeam,
+  type WorkspaceRole,
+} from "@/lib/roles"
+import {
   createTeamInvite,
   listTeamInvites,
   listTeamMembers,
+  removeMember,
   revokeTeamInvite,
+  updateMemberRole,
   type TeamInvite,
   type TeamMember,
 } from "@/app/actions/team"
 
 type TeamData = { members: TeamMember[]; invites: TeamInvite[] }
 
-const ROLE_OPTIONS = ["Admin", "Manager", "Staff", "Viewer"] as const
-type RoleOption = (typeof ROLE_OPTIONS)[number]
+const ROLE_OPTIONS = ASSIGNABLE_ROLES
+type RoleOption = WorkspaceRole
 
 async function fetchTeam(): Promise<TeamData> {
   const [members, invites] = await Promise.all([listTeamMembers(), listTeamInvites()])
@@ -60,10 +68,10 @@ async function fetchTeam(): Promise<TeamData> {
 
 export function TeamSettings() {
   const me = useSessionUser()
-  const isAdmin = me.role === "Admin"
+  const canManage = canManageTeam(me.role)
   const { data, isLoading, mutate } = useSWR<TeamData>("team", fetchTeam)
   const [email, setEmail] = useState("")
-  const [role, setRole] = useState<RoleOption>("Staff")
+  const [role, setRole] = useState<RoleOption>("Member")
   const [inviting, setInviting] = useState(false)
   const [lastInvite, setLastInvite] = useState<TeamInvite | null>(null)
   const [copied, setCopied] = useState(false)
@@ -118,10 +126,30 @@ export function TeamSettings() {
     }
   }
 
+  async function handleRoleChange(userId: string, newRole: WorkspaceRole) {
+    try {
+      await updateMemberRole(userId, newRole)
+      toast.success("Role updated")
+      mutate()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not update role")
+    }
+  }
+
+  async function handleRemove(userId: string, name: string) {
+    try {
+      await removeMember(userId)
+      toast.success(`${name} removed from the team`)
+      mutate()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not remove member")
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6">
-      {/* Invite by email (admins only) */}
-      {isAdmin && (
+      {/* Invite by email (owners & admins only) */}
+      {canManage && (
       <Card>
         <CardHeader>
           <CardTitle>Invite a teammate</CardTitle>
@@ -217,34 +245,81 @@ export function TeamSettings() {
                 )}
 
                 {!isLoading &&
-                  members.map((m) => (
-                    <TableRow key={m.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar className="size-9">
-                            {m.image && <AvatarImage src={m.image} alt="" />}
-                            <AvatarFallback>{initials(m.name)}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="text-sm font-medium">
-                              {m.name}
-                              {m.isYou && <span className="text-muted-foreground"> (you)</span>}
-                            </p>
-                            <p className="text-xs text-muted-foreground">{m.email}</p>
+                  members.map((m) => {
+                    const manageable = canManageMember({
+                      actorRole: me.role,
+                      targetRole: m.role,
+                      isSelf: m.isYou,
+                      targetIsOwner: m.isOwner,
+                    })
+                    return (
+                      <TableRow key={m.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="size-9">
+                              {m.image && <AvatarImage src={m.image} alt="" />}
+                              <AvatarFallback>{initials(m.name)}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="text-sm font-medium">
+                                {m.name}
+                                {m.isYou && <span className="text-muted-foreground"> (you)</span>}
+                              </p>
+                              <p className="text-xs text-muted-foreground">{m.email}</p>
+                            </div>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{m.role}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={m.isOwner ? "default" : "secondary"}>
-                          {m.isOwner ? "Owner" : "Active"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell />
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                        <TableCell>
+                          {manageable ? (
+                            <Select
+                              value={m.role}
+                              onValueChange={(v) => v && handleRoleChange(m.id, v as WorkspaceRole)}
+                            >
+                              <SelectTrigger className="w-32" aria-label="Change role">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {ROLE_OPTIONS.map((r) => (
+                                  <SelectItem key={r} value={r}>
+                                    {r}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Badge variant="secondary">{m.role}</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={m.isOwner ? "default" : "secondary"}>
+                            {m.isOwner ? "Owner" : "Active"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {manageable && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger
+                                render={
+                                  <Button variant="ghost" size="icon" aria-label="Member actions">
+                                    <MoreHorizontal />
+                                  </Button>
+                                }
+                              />
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  variant="destructive"
+                                  onClick={() => handleRemove(m.id, m.name)}
+                                >
+                                  <UserMinus data-icon="inline-start" />
+                                  Remove from team
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
 
                 {!isLoading &&
                   pendingInvites.map((inv) => (
@@ -267,7 +342,7 @@ export function TeamSettings() {
                         <Badge variant="outline">Pending</Badge>
                       </TableCell>
                       <TableCell>
-                        {isAdmin && (
+                        {canManage && (
                         <DropdownMenu>
                           <DropdownMenuTrigger
                             render={

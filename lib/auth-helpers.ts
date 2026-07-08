@@ -1,4 +1,3 @@
-import { cache } from "react"
 import { eq } from "drizzle-orm"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
@@ -8,6 +7,7 @@ import {
   getWorkspaceScopeIds,
   resolveActingWorkspaceId,
 } from "@/lib/workspace-scope"
+import { normalizeRole, type WorkspaceRole } from "@/lib/roles"
 
 export {
   getWorkspaceScopeIds,
@@ -52,22 +52,16 @@ export async function getWorkspaceScope() {
   return { workspaceId, scopeIds }
 }
 
-export type WorkspaceRole = "Admin" | "Manager" | "Staff" | "Viewer"
-const VALID_ROLES: WorkspaceRole[] = ["Admin", "Manager", "Staff", "Viewer"]
-
-export function normalizeRole(role: string | null | undefined): WorkspaceRole {
-  if (!role) return "Staff"
-  const match = VALID_ROLES.find((r) => r.toLowerCase() === role.trim().toLowerCase())
-  return match ?? "Staff"
-}
+export { normalizeRole } from "@/lib/roles"
+export type { WorkspaceRole } from "@/lib/roles"
 
 /**
  * Resolve a user's role. The workspace owner (whose id equals the workspace id)
- * is always Admin; everyone else uses their stored role.
+ * is always Owner; everyone else uses their stored role.
  */
 export async function getUserRole(userId: string, workspaceId?: string): Promise<WorkspaceRole> {
   const ws = workspaceId ?? (await resolveActingWorkspaceId(userId))
-  if (userId === ws) return "Admin"
+  if (userId === ws) return "Owner"
   const [row] = await db.select({ role: userTable.role }).from(userTable).where(eq(userTable.id, userId)).limit(1)
   return normalizeRole(row?.role)
 }
@@ -84,7 +78,7 @@ export async function getUserProfile(
     .where(eq(userTable.id, userId))
     .limit(1)
   return {
-    role: userId === ws ? "Admin" : normalizeRole(row?.role),
+    role: userId === ws ? "Owner" : normalizeRole(row?.role),
     phone: row?.phone ?? "",
     jobTitle: row?.jobTitle ?? "",
   }
@@ -103,11 +97,23 @@ export async function getActingUser() {
   return { user, workspaceId, scopeIds, role }
 }
 
-/** Throws unless the current user has one of the allowed roles. */
+/**
+ * Throws unless the current user has one of the allowed roles. The workspace
+ * Owner always passes (they can do anything an Admin/Member can).
+ */
 export async function requireRole(...roles: WorkspaceRole[]) {
   const acting = await getActingUser()
-  if (!roles.includes(acting.role)) {
+  if (acting.role !== "Owner" && !roles.includes(acting.role)) {
     throw new Error("You don't have permission to do this.")
+  }
+  return acting
+}
+
+/** Throws unless the current user is the workspace Owner (billing/ownership). */
+export async function requireOwner() {
+  const acting = await getActingUser()
+  if (acting.role !== "Owner") {
+    throw new Error("Only the account owner can do this.")
   }
   return acting
 }
