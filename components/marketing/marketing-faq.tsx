@@ -112,6 +112,23 @@ export function MarketingFaq() {
               See how we help
             </Button>
           </div>
+
+          {/* The AI command bar — the heart of how Nula fixes CRM headaches */}
+          <div className="mx-auto mt-12 max-w-3xl">
+            <div className="rounded-2xl border border-nula-violet/10 bg-white p-3 shadow-xl shadow-nula-ink/10">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/screenshots/ai-command-bar.webp"
+                alt="Nula's AI command bar — type a request in plain English and Nula previews the action before running it"
+                loading="lazy"
+                className="block w-full rounded-lg"
+              />
+            </div>
+            <p className="mt-3 text-sm text-nula-ink/55">
+              The AI command bar sits on every page — just say what you need, review the preview, and
+              approve.
+            </p>
+          </div>
         </div>
       </section>
 
