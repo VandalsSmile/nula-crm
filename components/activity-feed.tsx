@@ -1,34 +1,52 @@
 import {
-  FilePlus2,
-  Pencil,
   CalendarClock,
   CheckCircle2,
-  XCircle,
+  FilePlus2,
   Link2,
-  Eye,
-  ThumbsUp,
-  FileText,
-  Unplug,
+  Mail,
+  Megaphone,
+  MessageSquare,
+  MousePointerClick,
+  Pencil,
+  Phone,
+  ShoppingBag,
+  StickyNote,
+  Tag,
+  UserPlus,
+  Users,
 } from "lucide-react"
 
-import { type Activity } from "@/lib/mock-data"
+import { type Activity } from "@/lib/crm-types"
 import { relativeTime } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
-const config: Record<Activity["type"], { icon: typeof FilePlus2; className: string }> = {
-  created: { icon: FilePlus2, className: "bg-muted text-muted-foreground" },
-  edited: { icon: Pencil, className: "bg-muted text-muted-foreground" },
-  scheduled: { icon: CalendarClock, className: "bg-primary/10 text-primary" },
-  published: { icon: CheckCircle2, className: "bg-success/15 text-success" },
-  failed: { icon: XCircle, className: "bg-destructive/10 text-destructive" },
-  connected: { icon: Link2, className: "bg-info/15 text-info" },
-  disconnected: { icon: Unplug, className: "bg-muted text-muted-foreground" },
-  review: { icon: Eye, className: "bg-warning/15 text-warning-foreground" },
-  approved: { icon: ThumbsUp, className: "bg-info/15 text-info" },
-  status_report: { icon: FileText, className: "bg-primary/10 text-primary" },
+type IconConfig = { icon: typeof FilePlus2; className: string }
+
+const NEUTRAL = "bg-muted text-muted-foreground"
+const PRIMARY = "bg-primary/10 text-primary"
+const SUCCESS = "bg-success/15 text-success"
+const INFO = "bg-info/15 text-info"
+
+const config: Record<string, IconConfig> = {
+  // CRM activity types (lib/crm-types ACTIVITY_TYPES)
+  form_submitted: { icon: UserPlus, className: PRIMARY },
+  email_opened: { icon: Mail, className: INFO },
+  link_clicked: { icon: MousePointerClick, className: INFO },
+  sms_sent: { icon: MessageSquare, className: PRIMARY },
+  call_made: { icon: Phone, className: PRIMARY },
+  appointment_booked: { icon: CalendarClock, className: SUCCESS },
+  purchase_made: { icon: ShoppingBag, className: SUCCESS },
+  note_added: { icon: StickyNote, className: NEUTRAL },
+  campaign_entered: { icon: Megaphone, className: PRIMARY },
+  campaign_completed: { icon: CheckCircle2, className: SUCCESS },
+  tag_added: { icon: Tag, className: INFO },
+  group_changed: { icon: Users, className: INFO },
+  created: { icon: FilePlus2, className: NEUTRAL },
+  edited: { icon: Pencil, className: NEUTRAL },
+  connected: { icon: Link2, className: INFO },
 }
 
-const defaultConfig = config.created
+const defaultConfig: IconConfig = config.created
 
 export function ActivityFeed({ items = [] }: { items?: Activity[] }) {
   if (items.length === 0) {

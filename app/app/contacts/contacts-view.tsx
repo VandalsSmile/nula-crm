@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useEffect, useState, useTransition } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { MoreHorizontal, Pencil, Plus, Trash2, Upload } from "lucide-react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { MoreHorizontal, Pencil, Plus, Search, Trash2, Upload } from "lucide-react"
 import { toast } from "sonner"
 
 import { PageHeader } from "@/components/page-header"
+import { Input } from "@/components/ui/input"
 import { LifecycleBadge, LeadScoreBadge } from "@/components/lifecycle-badge"
 import { AddContactDialog } from "@/components/add-contact-dialog"
 import { EditContactDialog } from "@/components/edit-contact-dialog"
@@ -24,15 +25,29 @@ import {
 import { deleteContact } from "@/app/actions/contacts"
 import { Mail, Phone } from "lucide-react"
 import { type Contact } from "@/lib/crm-types"
-import { contactPath } from "@/lib/routes"
+import { APP_ROUTES, contactPath } from "@/lib/routes"
 
 export function ContactsView({ contacts }: { contacts: Contact[] }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const currentQuery = searchParams.get("q") ?? ""
+  const [search, setSearch] = useState(currentQuery)
   const [addOpen, setAddOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [editContact, setEditContact] = useState<Contact | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Contact | null>(null)
   const [, startTransition] = useTransition()
+
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      if (search.trim() === currentQuery) return
+      const params = new URLSearchParams()
+      if (search.trim()) params.set("q", search.trim())
+      const qs = params.toString()
+      router.push(qs ? `${APP_ROUTES.contacts}?${qs}` : APP_ROUTES.contacts)
+    }, 300)
+    return () => clearTimeout(handle)
+  }, [search, currentQuery, router])
 
   function handleDelete(contact: Contact) {
     startTransition(async () => {
@@ -66,10 +81,23 @@ export function ContactsView({ contacts }: { contacts: Contact[] }) {
         }
       />
 
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by name, email, or phone…"
+          className="h-10 pl-9"
+          aria-label="Search contacts"
+        />
+      </div>
+
       {contacts.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-sm text-muted-foreground">
-            No contacts yet. Add your first contact or import a CSV.
+            {currentQuery
+              ? `No contacts match "${currentQuery}".`
+              : "No contacts yet. Add your first contact or import a CSV."}
           </CardContent>
         </Card>
       ) : (
