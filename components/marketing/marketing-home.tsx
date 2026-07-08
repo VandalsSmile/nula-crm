@@ -30,6 +30,35 @@ import {
   WhyNulaIllustration,
 } from "@/components/marketing/illustrations"
 import { APP_ROUTES } from "@/lib/routes"
+import { cn } from "@/lib/utils"
+
+/** A product screenshot framed as a browser window. */
+function AppShot({
+  src,
+  alt,
+  className,
+}: {
+  src: string
+  alt: string
+  className?: string
+}) {
+  return (
+    <div
+      className={cn(
+        "overflow-hidden rounded-xl border border-nula-violet/10 bg-white shadow-xl shadow-nula-ink/10",
+        className,
+      )}
+    >
+      <div className="flex items-center gap-1.5 border-b border-nula-violet/10 bg-nula-paper/70 px-3 py-2">
+        <span className="size-2.5 rounded-full bg-nula-ink/15" />
+        <span className="size-2.5 rounded-full bg-nula-ink/15" />
+        <span className="size-2.5 rounded-full bg-nula-ink/15" />
+      </div>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={src} alt={alt} loading="lazy" className="block w-full" />
+    </div>
+  )
+}
 
 function SectionEyebrow({
   children,
@@ -138,6 +167,85 @@ export function MarketingHome() {
             <IllustrationFrame className="marketing-card-soft mt-6 border-white/90 py-2 md:hidden">
               <HeroIllustration />
             </IllustrationFrame>
+          </div>
+        </div>
+      </section>
+
+      {/* Product showcase */}
+      <section id="product" className="border-t border-border/60 bg-white py-20 md:py-24">
+        <div className="mx-auto max-w-6xl px-4 md:px-6">
+          <div className="mx-auto max-w-2xl text-center">
+            <SectionEyebrow>
+              <Sparkles className="size-3.5" />
+              See it in action
+            </SectionEyebrow>
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-nula-ink md:text-4xl">
+              Everything in one calm workspace
+            </h2>
+            <p className="mt-4 text-lg leading-relaxed text-nula-ink/65">
+              From first inquiry to repeat customer — contacts, deals, campaigns, reports, and an AI
+              command bar that handles the busywork.
+            </p>
+          </div>
+
+          <div className="mt-12">
+            <AppShot
+              src="/screenshots/dashboard.webp"
+              alt="Nula CRM dashboard showing lead stats, recent contacts, and recommended AI actions"
+            />
+          </div>
+
+          <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <figure className="flex flex-col gap-3">
+              <AppShot
+                src="/screenshots/contacts.webp"
+                alt="Nula CRM contacts list with lifecycle stages and lead scores"
+              />
+              <figcaption className="text-sm text-nula-ink/70">
+                <span className="font-medium text-nula-ink">Contacts</span> — every lead and customer,
+                tagged and scored.
+              </figcaption>
+            </figure>
+            <figure className="flex flex-col gap-3">
+              <AppShot
+                src="/screenshots/deals.webp"
+                alt="Nula CRM deals pipeline organized by stage"
+              />
+              <figcaption className="text-sm text-nula-ink/70">
+                <span className="font-medium text-nula-ink">Deals</span> — a simple pipeline you can
+                actually keep up with.
+              </figcaption>
+            </figure>
+            <figure className="flex flex-col gap-3">
+              <AppShot
+                src="/screenshots/ai-command-center.webp"
+                alt="Nula CRM AI Command Center with action history and undo"
+              />
+              <figcaption className="text-sm text-nula-ink/70">
+                <span className="font-medium text-nula-ink">AI Command Center</span> — describe it,
+                preview it, approve it, undo it.
+              </figcaption>
+            </figure>
+            <figure className="flex flex-col gap-3">
+              <AppShot
+                src="/screenshots/reports.webp"
+                alt="Nula CRM reports with leads by source and a lifecycle funnel"
+              />
+              <figcaption className="text-sm text-nula-ink/70">
+                <span className="font-medium text-nula-ink">Reports</span> — leads by source,
+                conversion, and campaign performance.
+              </figcaption>
+            </figure>
+            <figure className="flex flex-col gap-3">
+              <AppShot
+                src="/screenshots/inbox.webp"
+                alt="Nula CRM unified inbox of email and SMS conversations"
+              />
+              <figcaption className="text-sm text-nula-ink/70">
+                <span className="font-medium text-nula-ink">Inbox</span> — email and SMS
+                conversations in one place.
+              </figcaption>
+            </figure>
           </div>
         </div>
       </section>
