@@ -227,13 +227,13 @@ export function MarketingHeader() {
             Login
           </Button>
           <Button
-            render={<Link href={APP_ROUTES.login} />}
+            render={<Link href={APP_ROUTES.signup} />}
             className="hidden rounded-full px-4 shadow-md shadow-nula-violet/15 min-[420px]:inline-flex"
           >
             Get started
           </Button>
           <Button
-            render={<Link href={APP_ROUTES.login} />}
+            render={<Link href={APP_ROUTES.signup} />}
             size="sm"
             className="rounded-full px-3 shadow-md shadow-nula-violet/15 min-[420px]:hidden"
           >

@@ -1,39 +1,12 @@
 import { betterAuth } from "better-auth"
-import { APIError, createAuthMiddleware } from "better-auth/api"
-import { and, eq, gt } from "drizzle-orm"
-import { pool, db } from "@/lib/db"
-import { teamInvites } from "@/lib/db/schema"
+import { pool } from "@/lib/db"
 
 export const auth = betterAuth({
   database: pool,
-  // Registration is invite-only. Public sign-up stays open at the Better Auth
-  // level, but the `before` hook below rejects any sign-up whose email does not
-  // have a pending, unexpired team invite — so only invited teammates can join.
-  hooks: {
-    before: createAuthMiddleware(async (ctx) => {
-      if (ctx.path !== "/sign-up/email") return
-      const email = String(ctx.body?.email ?? "").trim().toLowerCase()
-      if (!email) {
-        throw new APIError("BAD_REQUEST", { message: "An email is required." })
-      }
-      const [invite] = await db
-        .select({ id: teamInvites.id })
-        .from(teamInvites)
-        .where(
-          and(
-            eq(teamInvites.email, email),
-            eq(teamInvites.status, "Pending"),
-            gt(teamInvites.expiresAt, new Date()),
-          ),
-        )
-        .limit(1)
-      if (!invite) {
-        throw new APIError("FORBIDDEN", {
-          message: "Sign-up is invite-only. Ask an admin for an invite link.",
-        })
-      }
-    }),
-  },
+  // Sign-up is self-serve: a new account becomes its own workspace owner
+  // (see resolveActingWorkspaceId). Teammates still join an existing workspace
+  // via invite links, which bind them to the inviting workspace on accept
+  // (see acceptTeamInvite).
   baseURL:
     process.env.BETTER_AUTH_URL ??
     (process.env.VERCEL_PROJECT_PRODUCTION_URL
