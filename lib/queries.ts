@@ -394,7 +394,7 @@ export async function getWorkspaceBusinessType(workspaceId: string) {
     .from(workspaceSettings)
     .where(eq(workspaceSettings.workspaceId, workspaceId))
     .limit(1)
-  return row?.businessType ?? "iv-therapy"
+  return row?.businessType ?? "general"
 }
 
 export async function searchContactsByProductKeyword(keyword: string, scopeIds: string[]) {

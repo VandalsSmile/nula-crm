@@ -1,6 +1,7 @@
 import type { CampaignType } from "@/lib/crm-types"
 
 export const BUSINESS_TYPES = [
+  { id: "general", label: "General / other" },
   { id: "iv-therapy", label: "IV therapy / wellness spa" },
   { id: "med-spa", label: "Med spa" },
   { id: "fitness", label: "Fitness studio" },
@@ -13,7 +14,11 @@ export const BUSINESS_TYPES = [
 
 export type BusinessTypeId = (typeof BUSINESS_TYPES)[number]["id"]
 
+/** Industry-neutral fallback used when no business type is chosen. */
+export const DEFAULT_BUSINESS_TYPE: BusinessTypeId = "general"
+
 export const DEFAULT_GROUPS: Record<BusinessTypeId, string[]> = {
+  general: ["New Leads", "Active Customers", "Past Customers", "Reactivation List", "Do Not Market"],
   "iv-therapy": [
     "New Leads",
     "Active Customers",
@@ -40,6 +45,14 @@ export const DEFAULT_GROUPS: Record<BusinessTypeId, string[]> = {
 }
 
 export const DEFAULT_TAGS: Record<BusinessTypeId, string[]> = {
+  general: [
+    "source-website",
+    "source-referral",
+    "source-google-ads",
+    "needs-follow-up",
+    "high-value",
+    "inactive-90",
+  ],
   "iv-therapy": [
     "source-google-ads",
     "source-facebook",

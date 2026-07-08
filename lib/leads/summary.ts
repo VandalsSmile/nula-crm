@@ -16,7 +16,7 @@ function templateLeadSummary(input: LeadSummaryInput): string {
 
   return `${name} came from ${source} regarding ${intent}. This is a ${label.toLowerCase()}-intent lead (score ${input.leadScore}). Recommended next step: ${
     input.leadScore >= 80
-      ? "call within 15 minutes and send the Weight Loss Intro Offer follow-up."
+      ? "call within 15 minutes and send your intro offer follow-up."
       : input.leadScore >= 50
         ? "send a personalized follow-up and book a call within 24 hours."
         : "enroll in the new lead nurture sequence."

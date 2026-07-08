@@ -72,6 +72,24 @@ export async function getUserRole(userId: string, workspaceId?: string): Promise
   return normalizeRole(row?.role)
 }
 
+/** Role + profile fields (phone, job title) for a user, in one query. */
+export async function getUserProfile(
+  userId: string,
+  workspaceId?: string,
+): Promise<{ role: WorkspaceRole; phone: string; jobTitle: string }> {
+  const ws = workspaceId ?? (await resolveActingWorkspaceId(userId))
+  const [row] = await db
+    .select({ role: userTable.role, phone: userTable.phone, jobTitle: userTable.jobTitle })
+    .from(userTable)
+    .where(eq(userTable.id, userId))
+    .limit(1)
+  return {
+    role: userId === ws ? "Admin" : normalizeRole(row?.role),
+    phone: row?.phone ?? "",
+    jobTitle: row?.jobTitle ?? "",
+  }
+}
+
 /**
  * The signed-in user plus their workspace id. Use `user.id`/`user.name` for
  * attribution (who did something) and `workspaceId` for data scoping.

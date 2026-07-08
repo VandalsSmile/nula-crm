@@ -18,9 +18,6 @@ export type InterpretedCommand = {
   requiresApproval: boolean
 }
 
-const NAD_KEYWORDS = ["nad", "nad+", "niagen"]
-const WEIGHT_LOSS_KEYWORDS = ["weight loss", "skinny drip", "skinny", "glp1", "semaglutide"]
-
 function basePreview(title: string, description: string, requiresApproval = true): AiActionPreview {
   return {
     title,
@@ -128,15 +125,18 @@ export function interpretCommand(command: string): InterpretedCommand {
     }
   }
 
-  if (/tag all.*bought|tag.*skinny drip|weight.?loss/.test(text)) {
-    const tag = text.includes("skinny drip") ? "bought-skinny-drip" : "interest-weight-loss"
+  const tagMatch = text.match(/^tag\b.*?\b(bought|purchased|interested in)\s+(.+)$/)
+  if (tagMatch) {
+    const product = tagMatch[2].replace(/[.!?]+$/, "").trim()
+    const prefix = tagMatch[1] === "interested in" ? "interested in" : "bought"
+    const tagName = `${prefix} ${product}`
     return {
       intent: "apply_tag",
       requiresApproval: true,
-      params: { tag, tagName: tag, product: "weight loss" },
+      params: { tag: tagName, tagName, product },
       preview: {
-        ...basePreview(`Apply tag: ${tag}`, "Tag contacts matching purchase or interest criteria."),
-        criteria: [`Apply tag \`${tag}\` to matching contacts`],
+        ...basePreview(`Apply tag: ${tagName}`, `Tag contacts who ${prefix} ${product}.`),
+        criteria: [`Apply tag to contacts whose history mentions "${product}"`],
         warnings: ["No contacts will be deleted"],
       },
     }
@@ -154,11 +154,8 @@ export function interpretCommand(command: string): InterpretedCommand {
 }
 
 function extractProductKeyword(text: string): string | null {
-  for (const kw of [...NAD_KEYWORDS, ...WEIGHT_LOSS_KEYWORDS]) {
-    if (text.includes(kw)) return kw
-  }
-  const bought = text.match(/bought\s+([a-z0-9+\s-]+)/)
-  return bought?.[1]?.trim() ?? null
+  const bought = text.match(/\b(?:bought|purchased|buy|buys)\s+([a-z0-9+\s'&-]+)/)
+  return bought?.[1]?.replace(/[.!?]+$/, "").trim() || null
 }
 
 function extractTopic(text: string): string {
@@ -167,8 +164,5 @@ function extractTopic(text: string): string {
 }
 
 export function productKeywordsForIntent(product: string): string[] {
-  const p = product.toLowerCase()
-  if (NAD_KEYWORDS.some((k) => p.includes(k))) return NAD_KEYWORDS
-  if (WEIGHT_LOSS_KEYWORDS.some((k) => p.includes(k))) return WEIGHT_LOSS_KEYWORDS
-  return [product]
+  return [product.trim().toLowerCase()].filter(Boolean)
 }

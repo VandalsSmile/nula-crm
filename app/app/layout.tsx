@@ -10,7 +10,7 @@ import { SessionUserProvider } from "@/lib/session-context"
 import { DEFAULT_APP_PATH, safeRedirectPath } from "@/lib/routes"
 import { appPrivateMetadata } from "@/lib/seo"
 import { auth } from "@/lib/auth"
-import { getUserRole } from "@/lib/auth-helpers"
+import { getUserProfile } from "@/lib/auth-helpers"
 
 export const metadata = appPrivateMetadata
 
@@ -22,12 +22,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     redirect(`/login?callbackURL=${encodeURIComponent(callbackURL)}`)
   }
 
-  const role = await getUserRole(session.user.id)
+  const profile = await getUserProfile(session.user.id)
   const user = {
     id: session.user.id,
     name: session.user.name,
     email: session.user.email,
-    role,
+    role: profile.role,
+    phone: profile.phone,
+    jobTitle: profile.jobTitle,
     image: session.user.image ?? null,
   }
 

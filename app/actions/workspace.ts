@@ -8,23 +8,34 @@ import { db } from "@/lib/db"
 import { campaigns, contactGroups, groups, tags, workspaceSettings } from "@/lib/db/schema"
 import { getActingUser, requireRole, workspaceUserIdMatches } from "@/lib/auth-helpers"
 import { APP_ROUTES } from "@/lib/routes"
-import { DEFAULT_GROUPS, DEFAULT_TAGS, slugifyTag, type BusinessTypeId } from "@/lib/crm-defaults"
+import {
+  DEFAULT_BUSINESS_TYPE,
+  DEFAULT_GROUPS,
+  DEFAULT_TAGS,
+  slugifyTag,
+  type BusinessTypeId,
+} from "@/lib/crm-defaults"
 import { seedDefaultAutomations } from "@/lib/automations/engine"
 import { randomId } from "@/lib/library-helpers"
 
-export async function seedWorkspaceDefaults(businessType: BusinessTypeId = "iv-therapy") {
-  const { workspaceId, scopeIds } = await getActingUser()
+export type CompanyProfile = {
+  businessType: BusinessTypeId
+  companyName: string
+  website: string
+  phone: string
+  supportEmail: string
+  address: string
+  timezone: string
+}
 
-  const [existing] = await db
-    .select()
-    .from(workspaceSettings)
-    .where(eq(workspaceSettings.workspaceId, workspaceId))
-    .limit(1)
-
-  if (existing?.onboardingComplete) return { ok: true, seeded: false }
-
-  const groupNames = DEFAULT_GROUPS[businessType] ?? DEFAULT_GROUPS["iv-therapy"]
-  const tagNames = DEFAULT_TAGS[businessType] ?? DEFAULT_TAGS["iv-therapy"]
+/** Idempotently seeds the default groups + tags for a business type. */
+async function seedGroupsAndTags(
+  workspaceId: string,
+  scopeIds: string[],
+  businessType: BusinessTypeId,
+) {
+  const groupNames = DEFAULT_GROUPS[businessType] ?? DEFAULT_GROUPS[DEFAULT_BUSINESS_TYPE]
+  const tagNames = DEFAULT_TAGS[businessType] ?? DEFAULT_TAGS[DEFAULT_BUSINESS_TYPE]
 
   for (const name of groupNames) {
     const slug = slugifyTag(name)
@@ -39,7 +50,7 @@ export async function seedWorkspaceDefaults(businessType: BusinessTypeId = "iv-t
         userId: workspaceId,
         name,
         slug,
-        description: `Default ${businessType} group`,
+        description: "Default group",
         type: "audience",
         isSystem: true,
       })
@@ -59,21 +70,40 @@ export async function seedWorkspaceDefaults(businessType: BusinessTypeId = "iv-t
         userId: workspaceId,
         name,
         slug,
-        description: `Default ${businessType} tag`,
+        description: "Default tag",
       })
     }
   }
+}
+
+export async function seedWorkspaceDefaults(businessType?: BusinessTypeId) {
+  const { workspaceId, scopeIds } = await getActingUser()
+
+  const [existing] = await db
+    .select()
+    .from(workspaceSettings)
+    .where(eq(workspaceSettings.workspaceId, workspaceId))
+    .limit(1)
+
+  if (existing?.onboardingComplete) return { ok: true, seeded: false }
+
+  // Use the explicitly requested type, then any already-saved choice, then the
+  // industry-neutral default — never a hardcoded wellness type.
+  const resolved =
+    businessType ?? (existing?.businessType as BusinessTypeId) ?? DEFAULT_BUSINESS_TYPE
+
+  await seedGroupsAndTags(workspaceId, scopeIds, resolved)
 
   await db
     .insert(workspaceSettings)
     .values({
       workspaceId,
-      businessType,
+      businessType: resolved,
       onboardingComplete: true,
     })
     .onConflictDoUpdate({
       target: workspaceSettings.workspaceId,
-      set: { businessType, onboardingComplete: true, updatedAt: new Date() },
+      set: { businessType: resolved, onboardingComplete: true, updatedAt: new Date() },
     })
 
   await seedDefaultAutomations(workspaceId)
@@ -89,34 +119,64 @@ export async function seedWorkspaceDefaults(businessType: BusinessTypeId = "iv-t
   return { ok: true, seeded: true }
 }
 
-export async function getWorkspaceSettingsInfo(): Promise<{ businessType: BusinessTypeId }> {
+export async function getCompanyProfile(): Promise<CompanyProfile> {
   const { workspaceId } = await getActingUser()
   const [row] = await db
     .select()
     .from(workspaceSettings)
     .where(eq(workspaceSettings.workspaceId, workspaceId))
     .limit(1)
-  return { businessType: (row?.businessType ?? "iv-therapy") as BusinessTypeId }
+  return {
+    businessType: (row?.businessType ?? DEFAULT_BUSINESS_TYPE) as BusinessTypeId,
+    companyName: row?.companyName ?? "",
+    website: row?.website ?? "",
+    phone: row?.phone ?? "",
+    supportEmail: row?.supportEmail ?? "",
+    address: row?.address ?? "",
+    timezone: row?.timezone ?? "America/New_York",
+  }
 }
 
-export async function updateWorkspaceSettings(input: { businessType?: BusinessTypeId }) {
-  const { workspaceId } = await requireRole("Admin")
+/** @deprecated use getCompanyProfile — kept for existing callers. */
+export async function getWorkspaceSettingsInfo(): Promise<{ businessType: BusinessTypeId }> {
+  const { businessType } = await getCompanyProfile()
+  return { businessType }
+}
+
+export async function updateWorkspaceSettings(input: Partial<CompanyProfile>) {
+  const { workspaceId, scopeIds } = await requireRole("Admin")
+
+  const set: Record<string, string | Date> = { updatedAt: new Date() }
+  if (input.businessType !== undefined) set.businessType = input.businessType
+  if (input.companyName !== undefined) set.companyName = input.companyName.trim()
+  if (input.website !== undefined) set.website = input.website.trim()
+  if (input.phone !== undefined) set.phone = input.phone.trim()
+  if (input.supportEmail !== undefined) set.supportEmail = input.supportEmail.trim()
+  if (input.address !== undefined) set.address = input.address.trim()
+  if (input.timezone !== undefined) set.timezone = input.timezone.trim()
 
   const [row] = await db
     .insert(workspaceSettings)
     .values({
       workspaceId,
-      businessType: input.businessType ?? "iv-therapy",
+      businessType: input.businessType ?? DEFAULT_BUSINESS_TYPE,
+      companyName: input.companyName?.trim() ?? "",
+      website: input.website?.trim() ?? "",
+      phone: input.phone?.trim() ?? "",
+      supportEmail: input.supportEmail?.trim() ?? "",
+      address: input.address?.trim() ?? "",
+      timezone: input.timezone?.trim() || "America/New_York",
       onboardingComplete: true,
     })
-    .onConflictDoUpdate({
-      target: workspaceSettings.workspaceId,
-      set: {
-        businessType: input.businessType ?? "iv-therapy",
-        updatedAt: new Date(),
-      },
-    })
+    .onConflictDoUpdate({ target: workspaceSettings.workspaceId, set })
     .returning()
+
+  // Selecting an industry seeds its default groups/tags (idempotent).
+  if (input.businessType !== undefined) {
+    await seedGroupsAndTags(workspaceId, scopeIds, input.businessType)
+    revalidatePath(APP_ROUTES.groups)
+    revalidatePath(APP_ROUTES.tags)
+  }
 
   revalidatePath(APP_ROUTES.settings)
   return row

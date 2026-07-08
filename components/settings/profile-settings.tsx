@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Field, FieldGroup, FieldLabel, FieldDescription } from "@/components/ui/field"
 import { Loader2, Upload, Trash2 } from "lucide-react"
 import { authClient } from "@/lib/auth-client"
+import { updateUserProfile } from "@/app/actions/account"
 import { initials } from "@/lib/mock-data"
 import { useSessionUser } from "@/lib/session-context"
 
@@ -20,23 +21,34 @@ export function ProfileSettings() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [name, setName] = useState(currentUser.name)
+  const [phone, setPhone] = useState(currentUser.phone)
+  const [jobTitle, setJobTitle] = useState(currentUser.jobTitle)
   const [image, setImage] = useState<string | null>(currentUser.image)
   const [savingName, setSavingName] = useState(false)
   const [uploading, setUploading] = useState(false)
 
   const nameDirty = name.trim() !== currentUser.name && name.trim().length > 0
+  const profileDirty =
+    nameDirty ||
+    phone.trim() !== currentUser.phone ||
+    jobTitle.trim() !== currentUser.jobTitle
 
   async function handleSaveName() {
-    if (!nameDirty) return
+    if (!profileDirty) return
     setSavingName(true)
-    const { error } = await authClient.updateUser({ name: name.trim() })
-    setSavingName(false)
-    if (error) {
-      toast.error(error.message ?? "Could not save your name")
-      return
+    try {
+      if (nameDirty) {
+        const { error } = await authClient.updateUser({ name: name.trim() })
+        if (error) throw new Error(error.message ?? "Could not save your name")
+      }
+      await updateUserProfile({ phone: phone.trim(), jobTitle: jobTitle.trim() })
+      toast.success("Profile updated")
+      router.refresh()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not save your profile")
+    } finally {
+      setSavingName(false)
     }
-    toast.success("Profile updated")
-    router.refresh()
   }
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -125,15 +137,37 @@ export function ProfileSettings() {
               <FieldDescription>Contact an admin to change your sign-in email.</FieldDescription>
             </Field>
           </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field>
+              <FieldLabel htmlFor="phone">Phone</FieldLabel>
+              <Input
+                id="phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="(555) 123-4567"
+                autoComplete="tel"
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="jobTitle">Job title</FieldLabel>
+              <Input
+                id="jobTitle"
+                value={jobTitle}
+                onChange={(e) => setJobTitle(e.target.value)}
+                placeholder="Owner"
+              />
+            </Field>
+          </div>
           <Field>
             <FieldLabel htmlFor="role">Role</FieldLabel>
             <Input id="role" value={currentUser.role} disabled />
-            <FieldDescription>Your role is managed by an agency admin.</FieldDescription>
+            <FieldDescription>Your role is managed by a workspace admin.</FieldDescription>
           </Field>
         </FieldGroup>
 
         <div className="flex justify-end">
-          <Button onClick={handleSaveName} disabled={!nameDirty || savingName}>
+          <Button onClick={handleSaveName} disabled={!profileDirty || savingName}>
             {savingName ? <Loader2 className="animate-spin" data-icon="inline-start" /> : null}
             Save changes
           </Button>

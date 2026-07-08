@@ -23,7 +23,7 @@ export function SettingsView() {
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
           <TabsTrigger value="team">Team</TabsTrigger>
-          <TabsTrigger value="workspace">Workspace</TabsTrigger>
+          <TabsTrigger value="workspace">Company</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="mt-6">

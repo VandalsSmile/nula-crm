@@ -9,6 +9,8 @@ export const user = pgTable("user", {
   image: text("image"),
   workspaceId: text("workspaceId"),
   role: text("role").notNull().default("Admin"),
+  phone: text("phone").notNull().default(""),
+  jobTitle: text("jobTitle").notNull().default(""),
   notificationsReadAt: timestamp("notificationsReadAt"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
@@ -210,7 +212,13 @@ export const aiActions = pgTable("ai_actions", {
 
 export const workspaceSettings = pgTable("workspace_settings", {
   workspaceId: text("workspaceId").primaryKey(),
-  businessType: text("businessType").notNull().default("iv-therapy"),
+  businessType: text("businessType").notNull().default("general"),
+  companyName: text("companyName").notNull().default(""),
+  website: text("website").notNull().default(""),
+  phone: text("phone").notNull().default(""),
+  supportEmail: text("supportEmail").notNull().default(""),
+  address: text("address").notNull().default(""),
+  timezone: text("timezone").notNull().default("America/New_York"),
   onboardingComplete: boolean("onboardingComplete").notNull().default(false),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),

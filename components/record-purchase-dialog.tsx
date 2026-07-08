@@ -67,7 +67,7 @@ export function RecordPurchaseDialog({
             <Input
               value={product}
               onChange={(e) => setProduct(e.target.value)}
-              placeholder="NAD+ IV drip"
+              placeholder="e.g. Premium package"
             />
           </Field>
           <Field>

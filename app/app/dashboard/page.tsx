@@ -13,7 +13,9 @@ export const metadata = appPageMetadata(
 export const dynamic = "force-dynamic"
 
 export default async function DashboardPage() {
-  await seedWorkspaceDefaults("iv-therapy")
+  // Seeds using the workspace's chosen business type, or the industry-neutral
+  // default on first load — never a hardcoded wellness type.
+  await seedWorkspaceDefaults()
 
   const [contacts, activities, stats] = await Promise.all([
     getContacts(),

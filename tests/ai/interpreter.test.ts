@@ -4,10 +4,11 @@ import { interpretCommand, productKeywordsForIntent } from "@/lib/ai/interpreter
 
 describe("interpretCommand (regex fallback)", () => {
   it("maps tag commands to apply_tag (not add_to_group)", () => {
-    const result = interpretCommand("tag all who bought skinny drip")
+    const result = interpretCommand("tag all who bought the gold plan")
     expect(result.intent).toBe("apply_tag")
     expect(result.requiresApproval).toBe(true)
     expect(result.params.tagName).toBeTruthy()
+    expect(result.params.product).toContain("gold plan")
   })
 
   it("detects reactivation campaigns and requires approval", () => {
@@ -42,11 +43,11 @@ describe("interpretCommand (regex fallback)", () => {
 })
 
 describe("productKeywordsForIntent", () => {
-  it("expands weight-loss synonyms", () => {
-    expect(productKeywordsForIntent("skinny drip")).toContain("skinny drip")
+  it("normalizes the product term without hardcoded (wellness) synonyms", () => {
+    expect(productKeywordsForIntent("Gold Plan")).toEqual(["gold plan"])
   })
 
-  it("expands NAD synonyms", () => {
-    expect(productKeywordsForIntent("nad")).toContain("nad+")
+  it("drops empty input", () => {
+    expect(productKeywordsForIntent("   ")).toEqual([])
   })
 })
