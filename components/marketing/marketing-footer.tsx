@@ -24,18 +24,18 @@ export function MarketingFooter() {
           <h4 className="text-sm font-semibold text-nula-ink">Explore</h4>
           <ul className="mt-3 space-y-2.5 text-sm text-nula-ink/60">
             <li>
-              <Link href="#what-is-nula" className="transition-colors hover:text-nula-violet">
+              <Link href="/#what-is-nula" className="transition-colors hover:text-nula-violet">
                 What is Nula?
               </Link>
             </li>
             <li>
-              <Link href="#why-nula" className="transition-colors hover:text-nula-violet">
-                Why Nula?
+              <Link href={APP_ROUTES.pricing} className="transition-colors hover:text-nula-violet">
+                Pricing
               </Link>
             </li>
             <li>
-              <Link href="#how-we-help" className="transition-colors hover:text-nula-violet">
-                How we help
+              <Link href={APP_ROUTES.faq} className="transition-colors hover:text-nula-violet">
+                FAQ
               </Link>
             </li>
             <li>
@@ -66,8 +66,16 @@ export function MarketingFooter() {
           </ul>
         </div>
       </div>
-      <div className="border-t border-border/50 px-4 py-6 text-center text-xs text-nula-ink/45 md:px-6">
-        © {new Date().getFullYear()} Nula CRM. Here to help you grow.
+      <div className="flex flex-col items-center justify-between gap-3 border-t border-border/50 px-4 py-6 text-xs text-nula-ink/45 sm:flex-row md:px-6">
+        <span>© {new Date().getFullYear()} Nula CRM. Here to help you grow.</span>
+        <div className="flex items-center gap-4">
+          <Link href={APP_ROUTES.privacy} className="transition-colors hover:text-nula-violet">
+            Privacy
+          </Link>
+          <Link href={APP_ROUTES.terms} className="transition-colors hover:text-nula-violet">
+            Terms
+          </Link>
+        </div>
       </div>
     </footer>
   )

@@ -18,6 +18,9 @@ export const APP_ROUTES = {
   signup: "/signup",
   onboarding: "/onboarding",
   faq: "/faq",
+  pricing: "/pricing",
+  terms: "/terms",
+  privacy: "/privacy",
 } as const
 
 export const DEFAULT_APP_PATH = APP_ROUTES.dashboard

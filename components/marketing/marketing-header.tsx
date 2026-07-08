@@ -210,6 +210,9 @@ export function MarketingHeader() {
           {NAV.map((group) => (
             <NavDropdown key={group.title} group={group} />
           ))}
+          <Link href={APP_ROUTES.pricing} className={navLinkClass}>
+            Pricing
+          </Link>
           <Link href={APP_ROUTES.faq} className={navLinkClass}>
             FAQ
           </Link>
@@ -278,6 +281,13 @@ export function MarketingHeader() {
                 </div>
               </div>
             ))}
+            <Link
+              href={APP_ROUTES.pricing}
+              className="rounded-xl px-3 py-2.5 text-sm font-medium text-nula-ink hover:bg-nula-paper"
+              onClick={() => setMobileOpen(false)}
+            >
+              Pricing
+            </Link>
             <Link
               href={APP_ROUTES.faq}
               className="rounded-xl px-3 py-2.5 text-sm font-medium text-nula-ink hover:bg-nula-paper"
