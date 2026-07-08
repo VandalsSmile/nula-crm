@@ -1,6 +1,6 @@
 import "server-only"
 
-import { and, desc, eq } from "drizzle-orm"
+import { and, desc, eq, sql } from "drizzle-orm"
 
 import { db } from "@/lib/db"
 import { leadEvents, leadSources } from "@/lib/db/schema"
@@ -199,4 +199,60 @@ export async function getRecentLeadEvents(workspaceId: string, limit = 25) {
     .where(eq(leadEvents.userId, workspaceId))
     .orderBy(desc(leadEvents.createdAt))
     .limit(limit)
+}
+
+export type SourceMetric = {
+  received: number
+  processed: number
+  failed: number
+  duplicate: number
+  total: number
+}
+
+/** Aggregate lead-event counts per source for the observability dashboard. */
+export async function getSourceMetrics(workspaceId: string): Promise<Record<string, SourceMetric>> {
+  const rows = await db
+    .select({
+      sourceId: leadEvents.sourceId,
+      status: leadEvents.status,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(leadEvents)
+    .where(eq(leadEvents.userId, workspaceId))
+    .groupBy(leadEvents.sourceId, leadEvents.status)
+
+  const map: Record<string, SourceMetric> = {}
+  for (const r of rows) {
+    const m = (map[r.sourceId] ??= { received: 0, processed: 0, failed: 0, duplicate: 0, total: 0 })
+    if (r.status === "processed") m.processed += r.count
+    else if (r.status === "failed") m.failed += r.count
+    else if (r.status === "duplicate") m.duplicate += r.count
+    else m.received += r.count
+    m.total += r.count
+  }
+  return map
+}
+
+export async function getLeadEventById(
+  workspaceId: string,
+  eventId: string,
+): Promise<typeof leadEvents.$inferSelect | null> {
+  const [row] = await db
+    .select()
+    .from(leadEvents)
+    .where(and(eq(leadEvents.id, eventId), eq(leadEvents.userId, workspaceId)))
+    .limit(1)
+  return row ?? null
+}
+
+export async function getLeadSourceById(
+  workspaceId: string,
+  sourceId: string,
+): Promise<LeadSourceRow | null> {
+  const [row] = await db
+    .select()
+    .from(leadSources)
+    .where(and(eq(leadSources.id, sourceId), eq(leadSources.userId, workspaceId)))
+    .limit(1)
+  return row ?? null
 }

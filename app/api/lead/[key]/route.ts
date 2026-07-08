@@ -3,6 +3,7 @@ import { createHmac, timingSafeEqual } from "node:crypto"
 import { NextRequest, NextResponse } from "next/server"
 
 import { processLeadIntake } from "@/lib/leads/intake"
+import { rateLimit } from "@/lib/rate-limit"
 import { resolveSourceByPublicKey, type LeadChannel, type LeadSourceRow } from "@/lib/leads/sources"
 import { verifyTurnstile } from "@/lib/turnstile"
 
@@ -68,6 +69,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json(
       { ok: false, error: "Unknown lead source" },
       { status: 404, headers: CORS_HEADERS },
+    )
+  }
+
+  // Best-effort rate limit per source + client IP.
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown"
+  if (!rateLimit(`lead:${source.id}:${ip}`, 30, 60_000)) {
+    return NextResponse.json(
+      { ok: false, error: "Too many requests" },
+      { status: 429, headers: CORS_HEADERS },
     )
   }
 

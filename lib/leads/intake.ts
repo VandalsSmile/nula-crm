@@ -157,7 +157,7 @@ function sourceTagSlug(source?: string) {
 
 export async function processLeadIntake(
   raw: unknown,
-  options?: { source?: SourceContext; workspaceId?: string },
+  options?: { source?: SourceContext; workspaceId?: string; skipEvent?: boolean },
 ): Promise<LeadIntakeResult> {
   const payload = leadIntakeSchema.parse(raw)
   const workspaceId = options?.workspaceId ?? resolveWebhookWorkspaceId(payload.workspaceId)
@@ -167,9 +167,11 @@ export async function processLeadIntake(
   const phone = normalizePhone(payload.phone)
 
   // Lead Integration module: resolve the source and record a raw audit event.
+  // skipEvent is used when replaying an existing event (avoids double-logging).
   const leadSource = options?.source ? await ensureLeadSource(workspaceId, options.source) : null
-  const eventId = leadSource
-    ? await recordLeadEvent({
+  const eventId =
+    leadSource && !options?.skipEvent
+      ? await recordLeadEvent({
         workspaceId,
         sourceId: leadSource.id,
         channel: leadSource.channel,

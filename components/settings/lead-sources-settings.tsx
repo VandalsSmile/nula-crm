@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useState } from "react"
 import useSWR from "swr"
-import { Check, Copy, Loader2, Plus } from "lucide-react"
+import { Check, Copy, Loader2, Plus, RefreshCw } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -33,10 +33,13 @@ import {
   createWebFormSource,
   createWebhookSource,
   getLeadEvents,
+  getLeadSourceMetrics,
   getLeadSources,
+  retryLeadEvent,
   type LeadEventInfo,
   type LeadSourceInfo,
 } from "@/app/actions/lead-sources"
+import type { SourceMetric } from "@/lib/leads/sources"
 import { PROVIDER_PRESETS, providerPreset } from "@/lib/leads/providers"
 import { relativeTime } from "@/lib/format"
 import { contactPath } from "@/lib/routes"
@@ -78,11 +81,19 @@ function CopyButton({ text, label }: { text: string; label: string }) {
   )
 }
 
-type Data = { sources: LeadSourceInfo[]; events: LeadEventInfo[] }
+type Data = {
+  sources: LeadSourceInfo[]
+  events: LeadEventInfo[]
+  metrics: Record<string, SourceMetric>
+}
 
 async function fetchData(): Promise<Data> {
-  const [sources, events] = await Promise.all([getLeadSources(), getLeadEvents()])
-  return { sources, events }
+  const [sources, events, metrics] = await Promise.all([
+    getLeadSources(),
+    getLeadEvents(),
+    getLeadSourceMetrics(),
+  ])
+  return { sources, events, metrics }
 }
 
 const CHANNEL_LABELS: Record<string, string> = {
@@ -107,6 +118,7 @@ export function LeadSourcesSettings() {
   const { data, isLoading, mutate } = useSWR<Data>("lead-sources", fetchData)
   const sources = data?.sources ?? []
   const events = data?.events ?? []
+  const metrics = data?.metrics ?? {}
   const webForms = sources.filter((s) => s.channel === "web_form" && s.publicKey)
   const emailSources = sources.filter((s) => s.channel === "email" && s.publicKey)
   const callSources = sources.filter((s) => s.channel === "call" && s.publicKey)
@@ -210,15 +222,28 @@ export function LeadSourcesSettings() {
     }
   }
 
+  const [retrying, setRetrying] = useState<string | null>(null)
+  async function handleRetry(eventId: string) {
+    setRetrying(eventId)
+    try {
+      await retryLeadEvent(eventId)
+      toast.success("Lead event reprocessed")
+      mutate()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Retry failed")
+    } finally {
+      setRetrying(null)
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <Card>
         <CardHeader>
           <CardTitle>Lead sources</CardTitle>
           <CardDescription>
-            Every channel leads flow in through. Sources are created automatically the first time a
-            channel receives a lead. (Configurable embeds, webhooks, and routing rules are coming
-            next.)
+            Every channel leads flow in through, with processed/failed volume per source. Sources are
+            created automatically the first time a channel receives a lead.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -230,18 +255,20 @@ export function LeadSourcesSettings() {
                   <TableHead>Channel</TableHead>
                   <TableHead>Key</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Processed</TableHead>
+                  <TableHead className="text-right">Failed</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
                       Loading…
                     </TableCell>
                   </TableRow>
                 ) : sources.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
                       No lead sources yet. They appear here after your first lead comes in.
                     </TableCell>
                   </TableRow>
@@ -255,6 +282,16 @@ export function LeadSourcesSettings() {
                         <Badge variant={s.enabled ? "default" : "secondary"}>
                           {s.enabled ? "Active" : "Disabled"}
                         </Badge>
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {metrics[s.id]?.processed ?? 0}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {metrics[s.id]?.failed ? (
+                          <span className="text-destructive">{metrics[s.id].failed}</span>
+                        ) : (
+                          0
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
@@ -618,18 +655,19 @@ export function LeadSourcesSettings() {
                   <TableHead>Status</TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>When</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
                       Loading…
                     </TableCell>
                   </TableRow>
                 ) : events.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
                       No lead events yet.
                     </TableCell>
                   </TableRow>
@@ -654,6 +692,25 @@ export function LeadSourcesSettings() {
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {relativeTime(e.createdAt)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {isAdmin && e.status === "failed" ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRetry(e.id)}
+                            disabled={retrying === e.id}
+                          >
+                            {retrying === e.id ? (
+                              <Loader2 className="size-4 animate-spin" />
+                            ) : (
+                              <RefreshCw className="size-4" />
+                            )}
+                            Retry
+                          </Button>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">—</span>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
