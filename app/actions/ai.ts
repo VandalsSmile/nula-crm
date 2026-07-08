@@ -1,6 +1,6 @@
 "use server"
 
-import { and, desc, eq } from "drizzle-orm"
+import { and, desc, eq, isNotNull } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
 import { db } from "@/lib/db"
@@ -390,14 +390,23 @@ async function executeAiActionInternal(
 
 export async function undoLastAiAction() {
   const { workspaceId } = await getActingUser()
+  // Find the most recent executed action that is actually reversible, skipping
+  // read-only actions (e.g. drafts, summaries) that have no undo payload.
   const [action] = await db
     .select()
     .from(aiActions)
-    .where(and(eq(aiActions.userId, workspaceId), eq(aiActions.status, "executed")))
+    .where(
+      and(
+        eq(aiActions.userId, workspaceId),
+        eq(aiActions.status, "executed"),
+        eq(aiActions.reversible, true),
+        isNotNull(aiActions.undoPayload),
+      ),
+    )
     .orderBy(desc(aiActions.executedAt))
     .limit(1)
 
-  if (!action?.undoPayload || !action.reversible) throw new Error("No reversible AI action found")
+  if (!action?.undoPayload) throw new Error("No reversible AI action found")
 
   type UndoPayload = {
     kind?: "group_add" | "tag_apply" | "tag_merge"
