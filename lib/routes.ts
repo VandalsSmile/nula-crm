@@ -12,6 +12,7 @@ export const APP_ROUTES = {
   automations: `${APP_BASE}/automations`,
   ai: `${APP_BASE}/ai`,
   reports: `${APP_BASE}/reports`,
+  help: `${APP_BASE}/help`,
   settings: `${APP_BASE}/settings`,
   login: "/login",
   signup: "/signup",

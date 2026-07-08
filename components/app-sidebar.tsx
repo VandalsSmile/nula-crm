@@ -13,6 +13,7 @@ import {
   Zap,
   Sparkles,
   BarChart3,
+  BookOpen,
   Settings,
   ChevronsUpDown,
   LogOut,
@@ -58,6 +59,7 @@ const mainNav = [
   { title: "Automations", href: APP_ROUTES.automations, icon: Zap },
   { title: "AI Command Center", href: APP_ROUTES.ai, icon: Sparkles },
   { title: "Reports", href: APP_ROUTES.reports, icon: BarChart3 },
+  { title: "Help & docs", href: APP_ROUTES.help, icon: BookOpen },
   { title: "Settings", href: APP_ROUTES.settings, icon: Settings },
 ]
 
@@ -134,6 +136,7 @@ export function AppSidebar() {
               <DropdownMenuContent side="top" align="end" className="w-56">
                 <DropdownMenuGroup>
                   <DropdownMenuLabel>Account</DropdownMenuLabel>
+                  <DropdownMenuItem render={<Link href={APP_ROUTES.help}>Help &amp; docs</Link>} />
                   <DropdownMenuItem render={<Link href={APP_ROUTES.settings}>Settings</Link>} />
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
