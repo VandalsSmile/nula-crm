@@ -26,17 +26,17 @@ const NAV: NavGroup[] = [
     items: [
       {
         label: "AI-first CRM",
-        href: "#what-is-nula",
+        href: "/#what-is-nula",
         description: "A CRM built around conversation, not configuration.",
       },
       {
         label: "How it works",
-        href: "#how-it-works",
+        href: "/#how-it-works",
         description: "Tell Nula what you need — it organizes, suggests, and executes.",
       },
       {
         label: "Who it's for",
-        href: "#who-its-for",
+        href: "/#who-its-for",
         description: "Small businesses that want to sell more without CRM overhead.",
       },
     ],
@@ -46,17 +46,17 @@ const NAV: NavGroup[] = [
     items: [
       {
         label: "Old CRM is broken",
-        href: "#why-nula",
+        href: "/#why-nula",
         description: "Bloated tools that decay, confuse, and slow you down.",
       },
       {
         label: "AI changes everything",
-        href: "#ai-advantage",
+        href: "/#ai-advantage",
         description: "Your CRM should respond to you — not the other way around.",
       },
       {
         label: "Less maintenance",
-        href: "#less-overhead",
+        href: "/#less-overhead",
         description: "No more impossible tag systems and forgotten follow-ups.",
       },
     ],
@@ -66,17 +66,17 @@ const NAV: NavGroup[] = [
     items: [
       {
         label: "Lead follow-up",
-        href: "#how-we-help",
+        href: "/#how-we-help",
         description: "Never let a hot lead go cold again.",
       },
       {
         label: "Smart segmentation",
-        href: "#segmentation",
+        href: "/#segmentation",
         description: "Find the right people without building complex filters.",
       },
       {
         label: "Campaigns that convert",
-        href: "#campaigns",
+        href: "/#campaigns",
         description: "Reactivation, nurture, and outreach — drafted for you.",
       },
     ],
@@ -210,10 +210,13 @@ export function MarketingHeader() {
           {NAV.map((group) => (
             <NavDropdown key={group.title} group={group} />
           ))}
-          <Link href="#about" className={navLinkClass}>
+          <Link href={APP_ROUTES.faq} className={navLinkClass}>
+            FAQ
+          </Link>
+          <Link href="/#about" className={navLinkClass}>
             About
           </Link>
-          <Link href="#contact" className={navLinkClass}>
+          <Link href="/#contact" className={navLinkClass}>
             Contact
           </Link>
         </nav>
@@ -276,14 +279,21 @@ export function MarketingHeader() {
               </div>
             ))}
             <Link
-              href="#about"
+              href={APP_ROUTES.faq}
+              className="rounded-xl px-3 py-2.5 text-sm font-medium text-nula-ink hover:bg-nula-paper"
+              onClick={() => setMobileOpen(false)}
+            >
+              FAQ
+            </Link>
+            <Link
+              href="/#about"
               className="rounded-xl px-3 py-2.5 text-sm font-medium text-nula-ink hover:bg-nula-paper"
               onClick={() => setMobileOpen(false)}
             >
               About
             </Link>
             <Link
-              href="#contact"
+              href="/#contact"
               className="rounded-xl px-3 py-2.5 text-sm font-medium text-nula-ink hover:bg-nula-paper"
               onClick={() => setMobileOpen(false)}
             >
