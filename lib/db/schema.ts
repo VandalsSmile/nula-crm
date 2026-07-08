@@ -275,6 +275,11 @@ export const workspaceSettings = pgTable("workspace_settings", {
   onboardingComplete: boolean("onboardingComplete").notNull().default(false),
   plan: text("plan").notNull().default("trial"),
   trialEndsAt: timestamp("trialEndsAt"),
+  stripeCustomerId: text("stripeCustomerId").notNull().default(""),
+  stripeSubscriptionId: text("stripeSubscriptionId").notNull().default(""),
+  subscriptionStatus: text("subscriptionStatus").notNull().default(""),
+  priceId: text("priceId").notNull().default(""),
+  currentPeriodEnd: timestamp("currentPeriodEnd"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 })
