@@ -128,6 +128,14 @@ export type Deal = {
   closeDate: string | null
 }
 
+export type CampaignStep = {
+  step: number
+  channel: "email" | "sms" | string
+  subject?: string
+  body?: string
+  delayDays?: number
+}
+
 export type Campaign = {
   id: string
   name: string
@@ -136,6 +144,7 @@ export type Campaign = {
   goal: string
   audience: string
   groupId: string | null
+  sequence: CampaignStep[]
   createdAt: string
 }
 

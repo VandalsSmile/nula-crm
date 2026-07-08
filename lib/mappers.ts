@@ -138,6 +138,7 @@ export function mapCampaign(row: CampaignRow): Campaign {
     goal: row.goal,
     audience: row.audience,
     groupId: row.groupId,
+    sequence: (row.sequence ?? []) as Campaign["sequence"],
     createdAt: iso(row.createdAt) ?? "",
   }
 }

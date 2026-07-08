@@ -11,6 +11,7 @@ import { randomId } from "@/lib/library-helpers"
 import { CAMPAIGN_TEMPLATES } from "@/lib/crm-defaults"
 import { createCampaignDraftForWorkspace } from "@/lib/campaigns/drafts"
 import { enrollCampaign, processDueCampaignSends } from "@/lib/campaigns/schedule"
+import type { CampaignStep } from "@/lib/crm-types"
 
 export async function createCampaignFromTemplate(templateId: string) {
   const { workspaceId } = await getActingUser()
@@ -34,16 +35,30 @@ export type CampaignUpdateInput = {
   audience?: string
   groupId?: string | null
   status?: string
+  sequence?: CampaignStep[]
+}
+
+function normalizeSequence(steps: CampaignStep[]): CampaignStep[] {
+  return steps
+    .filter((s) => (s.channel === "email" ? Boolean(s.subject?.trim() || s.body?.trim()) : Boolean(s.body?.trim())))
+    .map((s, index) => ({
+      step: index + 1,
+      channel: s.channel === "sms" ? "sms" : "email",
+      subject: s.channel === "sms" ? "" : (s.subject ?? "").trim(),
+      body: (s.body ?? "").trim(),
+      delayDays: Math.max(0, Math.round(Number(s.delayDays ?? 0))),
+    }))
 }
 
 export async function updateCampaign(campaignId: string, input: CampaignUpdateInput) {
   const { scopeIds } = await getActingUser()
-  const patch: Record<string, string | null | Date> = { updatedAt: new Date() }
+  const patch: Record<string, string | null | Date | CampaignStep[]> = { updatedAt: new Date() }
   if (input.name !== undefined) patch.name = input.name.trim()
   if (input.goal !== undefined) patch.goal = input.goal.trim()
   if (input.audience !== undefined) patch.audience = input.audience.trim()
   if (input.groupId !== undefined) patch.groupId = input.groupId
   if (input.status !== undefined) patch.status = input.status
+  if (input.sequence !== undefined) patch.sequence = normalizeSequence(input.sequence)
 
   const [row] = await db
     .update(campaigns)
