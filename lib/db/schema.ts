@@ -201,6 +201,10 @@ export const leadSources = pgTable("lead_sources", {
   channel: text("channel").notNull().default("webhook"),
   key: text("key").notNull(),
   enabled: boolean("enabled").notNull().default(true),
+  publicKey: text("publicKey").notNull().default(""),
+  fieldMapping: jsonb("fieldMapping").$type<Record<string, string>>().notNull().default({}),
+  successMessage: text("successMessage").notNull().default(""),
+  redirectUrl: text("redirectUrl").notNull().default(""),
   defaults: jsonb("defaults")
     .$type<{ tagSlug?: string; groupName?: string }>()
     .notNull()

@@ -44,6 +44,17 @@ export const leadIntakeSchema = z.object({
   city: z.string().optional(),
   state: z.string().optional(),
   zip: z.string().optional(),
+  utm: z
+    .object({
+      source: z.string().optional(),
+      medium: z.string().optional(),
+      campaign: z.string().optional(),
+      term: z.string().optional(),
+      content: z.string().optional(),
+    })
+    .optional(),
+  referrer: z.string().optional(),
+  landingPage: z.string().optional(),
   workspaceId: z.string().optional(),
 })
 
@@ -146,10 +157,10 @@ function sourceTagSlug(source?: string) {
 
 export async function processLeadIntake(
   raw: unknown,
-  options?: { source?: SourceContext },
+  options?: { source?: SourceContext; workspaceId?: string },
 ): Promise<LeadIntakeResult> {
   const payload = leadIntakeSchema.parse(raw)
-  const workspaceId = resolveWebhookWorkspaceId(payload.workspaceId)
+  const workspaceId = options?.workspaceId ?? resolveWebhookWorkspaceId(payload.workspaceId)
   const scopeIds = await getWorkspaceScopeIds(workspaceId)
 
   const email = normalizeEmail(payload.email)
@@ -259,6 +270,16 @@ export async function processLeadIntake(
     await db
       .insert(contactTags)
       .values({ contactId, tagId: interestTag.id, addedBy: "lead-intake" })
+      .onConflictDoNothing()
+  }
+
+  // Marketing attribution: tag the campaign from UTM data.
+  if (payload.utm?.campaign) {
+    const campaignSlug = slugifyTag(`campaign-${payload.utm.campaign}`)
+    const campaignTag = await ensureTag(workspaceId, scopeIds, campaignSlug, campaignSlug)
+    await db
+      .insert(contactTags)
+      .values({ contactId, tagId: campaignTag.id, addedBy: "lead-intake" })
       .onConflictDoNothing()
   }
 

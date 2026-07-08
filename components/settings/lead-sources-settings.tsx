@@ -1,10 +1,16 @@
 "use client"
 
 import Link from "next/link"
+import { useState } from "react"
 import useSWR from "swr"
+import { Check, Copy, Loader2, Plus } from "lucide-react"
+import { toast } from "sonner"
 
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   Table,
   TableBody,
@@ -14,6 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import {
+  createWebFormSource,
   getLeadEvents,
   getLeadSources,
   type LeadEventInfo,
@@ -21,6 +28,43 @@ import {
 } from "@/app/actions/lead-sources"
 import { relativeTime } from "@/lib/format"
 import { contactPath } from "@/lib/routes"
+import { useSessionUser } from "@/lib/session-context"
+
+function embedSnippet(url: string): string {
+  return `<form action="${url}" method="POST">
+  <input name="name" placeholder="Your name" required />
+  <input name="email" type="email" placeholder="Email" required />
+  <input name="phone" placeholder="Phone" />
+  <textarea name="message" placeholder="How can we help?"></textarea>
+  <!-- spam honeypot: keep hidden, do not remove -->
+  <input name="company_website" tabindex="-1" autocomplete="off" aria-hidden="true"
+    style="position:absolute;left:-9999px" />
+  <button type="submit">Send</button>
+</form>`
+}
+
+function CopyButton({ text, label }: { text: string; label: string }) {
+  const [copied, setCopied] = useState(false)
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(text)
+          setCopied(true)
+          setTimeout(() => setCopied(false), 1500)
+        } catch {
+          toast.error("Could not copy")
+        }
+      }}
+    >
+      {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+      {copied ? "Copied" : label}
+    </Button>
+  )
+}
 
 type Data = { sources: LeadSourceInfo[]; events: LeadEventInfo[] }
 
@@ -46,9 +90,37 @@ function statusVariant(status: string): "default" | "secondary" | "outline" | "d
 }
 
 export function LeadSourcesSettings() {
-  const { data, isLoading } = useSWR<Data>("lead-sources", fetchData)
+  const me = useSessionUser()
+  const isAdmin = me.role === "Admin"
+  const { data, isLoading, mutate } = useSWR<Data>("lead-sources", fetchData)
   const sources = data?.sources ?? []
   const events = data?.events ?? []
+  const webForms = sources.filter((s) => s.channel === "web_form" && s.publicKey)
+
+  const [showForm, setShowForm] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [name, setName] = useState("")
+  const [successMessage, setSuccessMessage] = useState("")
+
+  async function handleCreate() {
+    if (!name.trim()) {
+      toast.error("Give the form a name")
+      return
+    }
+    setSaving(true)
+    try {
+      await createWebFormSource({ name, successMessage })
+      toast.success("Web form source created")
+      setName("")
+      setSuccessMessage("")
+      setShowForm(false)
+      mutate()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not create form")
+    } finally {
+      setSaving(false)
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -102,6 +174,92 @@ export function LeadSourcesSettings() {
               </TableBody>
             </Table>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-start justify-between gap-4">
+          <div>
+            <CardTitle>Embeddable web forms</CardTitle>
+            <CardDescription>
+              Create a form source, then drop its HTML snippet on any website. Submissions flow
+              straight into the CRM — deduped, scored, and routed. Includes a spam honeypot.
+            </CardDescription>
+          </div>
+          {isAdmin ? (
+            <Button size="sm" onClick={() => setShowForm((s) => !s)} disabled={saving}>
+              <Plus className="size-4" />
+              New web form
+            </Button>
+          ) : null}
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          {showForm && isAdmin ? (
+            <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-4">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="wf-name">Form name</Label>
+                <Input
+                  id="wf-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Contact page form"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="wf-success">Success message (optional)</Label>
+                <Input
+                  id="wf-success"
+                  value={successMessage}
+                  onChange={(e) => setSuccessMessage(e.target.value)}
+                  placeholder="Thanks! We'll be in touch soon."
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" onClick={() => setShowForm(false)} disabled={saving}>
+                  Cancel
+                </Button>
+                <Button onClick={handleCreate} disabled={saving}>
+                  {saving ? <Loader2 className="size-4 animate-spin" /> : null}
+                  Create form
+                </Button>
+              </div>
+            </div>
+          ) : null}
+
+          {webForms.length === 0 ? (
+            <p className="rounded-lg border p-4 text-center text-sm text-muted-foreground">
+              No embeddable forms yet. Create one to get a copy-paste snippet.
+            </p>
+          ) : (
+            webForms.map((s) => (
+              <div key={s.id} className="flex flex-col gap-3 rounded-lg border p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium">{s.name}</span>
+                  <Badge variant={s.enabled ? "default" : "secondary"}>
+                    {s.enabled ? "Active" : "Disabled"}
+                  </Badge>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-xs text-muted-foreground">Endpoint URL</Label>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 truncate rounded bg-muted px-2 py-1.5 font-mono text-xs">
+                      {s.endpointUrl}
+                    </code>
+                    <CopyButton text={s.endpointUrl} label="Copy URL" />
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs text-muted-foreground">Embed snippet</Label>
+                    <CopyButton text={embedSnippet(s.endpointUrl)} label="Copy code" />
+                  </div>
+                  <pre className="max-h-48 overflow-auto rounded-md bg-muted p-3 font-mono text-xs">
+                    {embedSnippet(s.endpointUrl)}
+                  </pre>
+                </div>
+              </div>
+            ))
+          )}
         </CardContent>
       </Card>
 

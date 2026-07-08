@@ -121,6 +121,67 @@ export async function markLeadEvent(
     .where(eq(leadEvents.id, eventId))
 }
 
+/** Resolve a source (and thus its workspace) from a global public key. */
+export async function resolveSourceByPublicKey(publicKey: string): Promise<LeadSourceRow | null> {
+  if (!publicKey.trim()) return null
+  const [row] = await db
+    .select()
+    .from(leadSources)
+    .where(eq(leadSources.publicKey, publicKey.trim()))
+    .limit(1)
+  return row ?? null
+}
+
+function slugKey(name: string): string {
+  return (
+    name
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "source"
+  )
+}
+
+/** Create a configurable source (e.g. a web-form embed) with a public key. */
+export async function createLeadSource(
+  workspaceId: string,
+  input: {
+    name: string
+    channel: LeadChannel
+    successMessage?: string
+    redirectUrl?: string
+    fieldMapping?: Record<string, string>
+  },
+): Promise<LeadSourceRow> {
+  const base = slugKey(input.name)
+  // Ensure the per-workspace key is unique.
+  const existing = await db
+    .select({ key: leadSources.key })
+    .from(leadSources)
+    .where(eq(leadSources.userId, workspaceId))
+  const taken = new Set(existing.map((e) => e.key))
+  let key = base
+  let n = 2
+  while (taken.has(key)) key = `${base}-${n++}`
+
+  const [row] = await db
+    .insert(leadSources)
+    .values({
+      id: randomId("src"),
+      userId: workspaceId,
+      key,
+      name: input.name.trim(),
+      channel: input.channel,
+      publicKey: randomId("lf") + randomId("k"),
+      successMessage: input.successMessage ?? "",
+      redirectUrl: input.redirectUrl ?? "",
+      fieldMapping: input.fieldMapping ?? {},
+      defaults: { tagSlug: `source-${key}`, groupName: "New Leads" },
+    })
+    .returning()
+  return row
+}
+
 export async function getLeadSourcesForWorkspace(workspaceId: string) {
   return db
     .select()
