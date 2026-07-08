@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 
 import { contactFormSchema, sendLeadContactEmails } from "@/lib/leads/contact-email"
+import { processLeadIntake } from "@/lib/leads/intake"
 
 export async function POST(request: Request) {
   let body: unknown
@@ -19,6 +20,26 @@ export async function POST(request: Request) {
   // Honeypot tripped — silently accept and drop so bots get no signal.
   if (parsed.data.company && parsed.data.company.trim().length > 0) {
     return NextResponse.json({ ok: true })
+  }
+
+  // Best-effort: capture the submission as a CRM lead (scoring, dedupe, tags,
+  // groups, automations) when a target workspace is configured via
+  // NULA_SHARED_WORKSPACE_ID. Never block the email path on this.
+  try {
+    const [firstName, ...rest] = parsed.data.name.trim().split(/\s+/)
+    await processLeadIntake({
+      firstName: firstName || parsed.data.name.trim() || "Website lead",
+      lastName: rest.join(" "),
+      email: parsed.data.email,
+      phone: parsed.data.phone,
+      source: "website-form",
+      message: parsed.data.message,
+    })
+  } catch (error) {
+    console.warn(
+      "[contact] CRM lead intake skipped:",
+      error instanceof Error ? error.message : error,
+    )
   }
 
   try {
