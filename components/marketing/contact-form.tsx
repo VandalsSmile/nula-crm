@@ -7,13 +7,17 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Turnstile } from "@/components/turnstile"
 
 type Status = "idle" | "submitting" | "success" | "error"
+
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
 
 export function ContactForm() {
   const [status, setStatus] = useState<Status>("idle")
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState({ name: "", email: "", phone: "", message: "", company: "" })
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
 
   function update(field: keyof typeof form) {
     return (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -23,6 +27,13 @@ export function ContactForm() {
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
+
+    if (TURNSTILE_SITE_KEY && !captchaToken) {
+      setError("Please complete the CAPTCHA below.")
+      setStatus("error")
+      return
+    }
+
     setStatus("submitting")
     setError(null)
 
@@ -30,7 +41,7 @@ export function ContactForm() {
       const response = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, turnstileToken: captchaToken }),
       })
       const data = await response.json().catch(() => ({}))
 
@@ -150,6 +161,17 @@ export function ContactForm() {
           onChange={update("company")}
         />
       </div>
+
+      {TURNSTILE_SITE_KEY ? (
+        <Turnstile
+          siteKey={TURNSTILE_SITE_KEY}
+          onVerify={(token) => {
+            setCaptchaToken(token)
+            setError(null)
+          }}
+          onExpire={() => setCaptchaToken(null)}
+        />
+      ) : null}
 
       {error && (
         <p className="text-sm text-destructive" role="alert">

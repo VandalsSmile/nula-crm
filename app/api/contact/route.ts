@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 
 import { contactFormSchema, sendLeadContactEmails } from "@/lib/leads/contact-email"
 import { processLeadIntake } from "@/lib/leads/intake"
+import { verifyTurnstile } from "@/lib/turnstile"
 
 export async function POST(request: Request) {
   let body: unknown
@@ -20,6 +21,23 @@ export async function POST(request: Request) {
   // Honeypot tripped — silently accept and drop so bots get no signal.
   if (parsed.data.company && parsed.data.company.trim().length > 0) {
     return NextResponse.json({ ok: true })
+  }
+
+  // CAPTCHA: verify the Cloudflare Turnstile token (skipped when not configured).
+  const turnstileToken =
+    typeof (body as { turnstileToken?: unknown }).turnstileToken === "string"
+      ? (body as { turnstileToken: string }).turnstileToken
+      : undefined
+  const remoteIp =
+    request.headers.get("cf-connecting-ip") ??
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    undefined
+  const captcha = await verifyTurnstile(turnstileToken, remoteIp)
+  if (!captcha.ok) {
+    return NextResponse.json(
+      { error: "CAPTCHA verification failed. Please try again." },
+      { status: 400 },
+    )
   }
 
   // Best-effort: capture the submission as a CRM lead (scoring, dedupe, tags,
