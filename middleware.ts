@@ -7,6 +7,7 @@ import { APP_BASE } from "@/lib/routes"
 const PROTECTED_PREFIXES = [
   `${APP_BASE}/dashboard`,
   `${APP_BASE}/contacts`,
+  `${APP_BASE}/deals`,
   `${APP_BASE}/groups`,
   `${APP_BASE}/tags`,
   `${APP_BASE}/campaigns`,
@@ -14,6 +15,7 @@ const PROTECTED_PREFIXES = [
   `${APP_BASE}/automations`,
   `${APP_BASE}/ai`,
   `${APP_BASE}/reports`,
+  `${APP_BASE}/help`,
   `${APP_BASE}/settings`,
 ]
 
