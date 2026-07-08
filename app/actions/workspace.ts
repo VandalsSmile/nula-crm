@@ -6,7 +6,7 @@ import { after } from "next/server"
 
 import { db } from "@/lib/db"
 import { campaigns, contactGroups, groups, tags, workspaceSettings } from "@/lib/db/schema"
-import { getActingUser, requireRole, workspaceUserIdMatches } from "@/lib/auth-helpers"
+import { getActingUser, requireOwner, requireRole, workspaceUserIdMatches } from "@/lib/auth-helpers"
 import { APP_ROUTES } from "@/lib/routes"
 import {
   DEFAULT_BUSINESS_TYPE,
@@ -162,7 +162,7 @@ export async function getTrialStatus(): Promise<TrialStatus> {
  * flow when payments are wired up.
  */
 export async function activatePlan(): Promise<TrialStatus> {
-  const { workspaceId } = await requireRole("Admin")
+  const { workspaceId } = await requireOwner()
   await db
     .insert(workspaceSettings)
     .values({ workspaceId, plan: "active", onboardingComplete: true })

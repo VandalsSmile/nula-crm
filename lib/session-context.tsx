@@ -2,11 +2,13 @@
 
 import { createContext, useContext } from "react"
 
+import type { WorkspaceRole } from "@/lib/roles"
+
 export type SessionUser = {
   id: string
   name: string
   email: string
-  role: string
+  role: WorkspaceRole
   phone: string
   jobTitle: string
   image: string | null

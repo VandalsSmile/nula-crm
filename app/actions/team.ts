@@ -8,7 +8,13 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { teamInvites, user as userTable } from "@/lib/db/schema"
 import { getActingUser, normalizeRole, requireRole, type WorkspaceRole } from "@/lib/auth-helpers"
+import { ASSIGNABLE_ROLES, canManageMember } from "@/lib/roles"
 import { APP_ROUTES } from "@/lib/routes"
+
+function toAssignableRole(role: WorkspaceRole): WorkspaceRole {
+  const normalized = normalizeRole(role)
+  return ASSIGNABLE_ROLES.includes(normalized) ? normalized : "Member"
+}
 
 const INVITE_TTL_DAYS = 14
 
@@ -72,10 +78,10 @@ function mapInvite(
  */
 export async function createTeamInvite(
   emailInput: string,
-  roleInput: WorkspaceRole = "Staff",
+  roleInput: WorkspaceRole = "Member",
 ): Promise<TeamInvite> {
   const { user, workspaceId } = await requireRole("Admin")
-  const role = normalizeRole(roleInput)
+  const role = toAssignableRole(roleInput)
 
   const email = emailInput.trim().toLowerCase()
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -169,7 +175,7 @@ export async function listTeamMembers(): Promise<TeamMember[]> {
       name: r.name,
       email: r.email,
       image: r.image,
-      role: r.id === workspaceId ? ("Admin" as WorkspaceRole) : normalizeRole(r.role),
+      role: r.id === workspaceId ? ("Owner" as WorkspaceRole) : normalizeRole(r.role),
       isOwner: r.id === workspaceId,
       isYou: r.id === user.id,
     }))
@@ -183,6 +189,57 @@ export async function revokeTeamInvite(token: string): Promise<void> {
     .update(teamInvites)
     .set({ status: "Revoked" })
     .where(and(eq(teamInvites.id, token), eq(teamInvites.workspaceId, workspaceId)))
+  revalidatePath(APP_ROUTES.settings)
+}
+
+async function loadTeammate(userId: string, workspaceId: string) {
+  const [row] = await db
+    .select({ id: userTable.id, workspaceId: userTable.workspaceId, role: userTable.role })
+    .from(userTable)
+    .where(eq(userTable.id, userId))
+    .limit(1)
+  if (!row || row.workspaceId !== workspaceId || row.id === workspaceId) {
+    // Not a manageable teammate (missing, other workspace, or the owner).
+    if (row?.id === workspaceId) throw new Error("The owner can't be changed here.")
+    throw new Error("That person isn't on your team.")
+  }
+  return row
+}
+
+/** Change a teammate's role (Owner/Admin only; Owner required to manage Admins). */
+export async function updateMemberRole(userId: string, roleInput: WorkspaceRole): Promise<void> {
+  const acting = await requireRole("Admin")
+  const { user, workspaceId } = acting
+  if (userId === user.id) throw new Error("You can't change your own role.")
+  const target = await loadTeammate(userId, workspaceId)
+  const allowed = canManageMember({
+    actorRole: acting.role,
+    targetRole: normalizeRole(target.role),
+    isSelf: false,
+    targetIsOwner: false,
+  })
+  if (!allowed) throw new Error("You don't have permission to change this member's role.")
+
+  await db.update(userTable).set({ role: toAssignableRole(roleInput) }).where(eq(userTable.id, userId))
+  revalidatePath(APP_ROUTES.settings)
+}
+
+/** Remove a teammate from the workspace (they revert to their own account). */
+export async function removeMember(userId: string): Promise<void> {
+  const acting = await requireRole("Admin")
+  const { user, workspaceId } = acting
+  if (userId === user.id) throw new Error("You can't remove yourself.")
+  const target = await loadTeammate(userId, workspaceId)
+  const allowed = canManageMember({
+    actorRole: acting.role,
+    targetRole: normalizeRole(target.role),
+    isSelf: false,
+    targetIsOwner: false,
+  })
+  if (!allowed) throw new Error("You don't have permission to remove this member.")
+
+  // Detach: the user leaves this shared workspace and owns their own again.
+  await db.update(userTable).set({ workspaceId: userId, role: "Admin" }).where(eq(userTable.id, userId))
   revalidatePath(APP_ROUTES.settings)
 }
 

@@ -23,10 +23,11 @@ import {
 } from "@/app/actions/workspace"
 import { BUSINESS_TYPES, DEFAULT_BUSINESS_TYPE, type BusinessTypeId } from "@/lib/crm-defaults"
 import { useSessionUser } from "@/lib/session-context"
+import { canManageSettings } from "@/lib/roles"
 
 export function WorkspaceSettings() {
   const me = useSessionUser()
-  const isAdmin = me.role === "Admin"
+  const isAdmin = canManageSettings(me.role)
   const { data, isLoading, mutate } = useSWR("company-profile", () => getCompanyProfile())
   const [edits, setEdits] = useState<Partial<CompanyProfile>>({})
   const [saving, setSaving] = useState(false)

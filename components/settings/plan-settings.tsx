@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { activatePlan, getTrialStatus } from "@/app/actions/workspace"
 import { TRIAL_DAYS, type TrialStatus } from "@/lib/trial"
+import { isBillingManager } from "@/lib/roles"
 import { useSessionUser } from "@/lib/session-context"
 
 const FEATURES = [
@@ -30,7 +31,7 @@ function formatDate(iso: string | null): string {
 
 export function PlanSettings() {
   const me = useSessionUser()
-  const isAdmin = me.role === "Admin"
+  const canManageBilling = isBillingManager(me.role)
   const { data, isLoading, mutate } = useSWR<TrialStatus>("trial-status", () => getTrialStatus())
   const [saving, setSaving] = useState(false)
 
@@ -110,7 +111,7 @@ export function PlanSettings() {
                   </li>
                 ))}
               </ul>
-              {isAdmin ? (
+              {canManageBilling ? (
                 <div className="mt-4 flex flex-col gap-1.5">
                   <Button onClick={handleUpgrade} disabled={saving} className="w-fit">
                     {saving ? <Loader2 className="size-4 animate-spin" /> : null}
@@ -122,7 +123,7 @@ export function PlanSettings() {
                 </div>
               ) : (
                 <p className="mt-4 text-sm text-muted-foreground">
-                  Ask a workspace admin to upgrade.
+                  Ask the account owner to upgrade.
                 </p>
               )}
             </div>

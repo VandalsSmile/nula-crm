@@ -12,7 +12,7 @@ import { APP_ROUTES } from "@/lib/routes"
 import type { Message } from "@/lib/crm-types"
 
 export async function loadConversation(contactId: string): Promise<Message[]> {
-  await requireRole("Admin", "Manager", "Staff", "Viewer")
+  await requireRole("Admin", "Member")
   return getMessagesForContact(contactId)
 }
 
@@ -22,7 +22,7 @@ export async function sendMessage(input: {
   subject?: string
   body: string
 }): Promise<{ ok: boolean; status: string }> {
-  const { user, workspaceId, scopeIds } = await requireRole("Admin", "Manager", "Staff")
+  const { user, workspaceId, scopeIds } = await requireRole("Admin", "Member")
   const body = input.body?.trim()
   if (!body) throw new Error("Message body is required")
 

@@ -27,6 +27,7 @@ import {
 } from "@/app/actions/routing-rules"
 import { LEAD_STATUSES, LIFECYCLE_STAGES, type RoutingOutcome, type RoutingRule } from "@/lib/crm-types"
 import { useSessionUser } from "@/lib/session-context"
+import { canManageSettings } from "@/lib/roles"
 
 const CHANNELS = [
   { v: "any", l: "Any channel" },
@@ -87,7 +88,7 @@ function ActionSummary({ rule }: { rule: RoutingRule }) {
 
 export function RoutingRulesSettings() {
   const me = useSessionUser()
-  const isAdmin = me.role === "Admin"
+  const isAdmin = canManageSettings(me.role)
   const { data: rules = [], isLoading, mutate } = useSWR<RoutingRule[]>("routing-rules", () =>
     listRoutingRules(),
   )

@@ -261,7 +261,7 @@ export type SessionUser = {
   id: string
   name: string
   email: string
-  role: "Admin" | "Manager" | "Staff" | "Viewer"
+  role: import("@/lib/roles").WorkspaceRole
   image: string | null
 }
 

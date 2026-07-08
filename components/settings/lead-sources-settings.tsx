@@ -44,6 +44,7 @@ import { PROVIDER_PRESETS, providerPreset } from "@/lib/leads/providers"
 import { relativeTime } from "@/lib/format"
 import { contactPath } from "@/lib/routes"
 import { useSessionUser } from "@/lib/session-context"
+import { canManageSettings } from "@/lib/roles"
 
 function embedSnippet(url: string): string {
   return `<form action="${url}" method="POST">
@@ -114,7 +115,7 @@ function statusVariant(status: string): "default" | "secondary" | "outline" | "d
 
 export function LeadSourcesSettings() {
   const me = useSessionUser()
-  const isAdmin = me.role === "Admin"
+  const isAdmin = canManageSettings(me.role)
   const { data, isLoading, mutate } = useSWR<Data>("lead-sources", fetchData)
   const sources = data?.sources ?? []
   const events = data?.events ?? []
