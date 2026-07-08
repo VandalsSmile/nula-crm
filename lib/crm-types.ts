@@ -182,6 +182,29 @@ export type DashboardStats = {
   groupCount: number
 }
 
+export type Message = {
+  id: string
+  contactId: string
+  direction: "inbound" | "outbound" | string
+  channel: string
+  subject: string
+  body: string
+  status: string
+  createdAt: string
+}
+
+export type InboxConversation = {
+  contactId: string
+  contactName: string
+  contactEmail: string
+  lastMessage: string
+  lastDirection: string
+  lastChannel: string
+  lastAt: string
+  messageCount: number
+  unread: boolean
+}
+
 export type SessionUser = {
   id: string
   name: string

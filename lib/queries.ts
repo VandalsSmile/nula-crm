@@ -7,6 +7,7 @@ import {
   contactTags,
   deals,
   groups,
+  messages,
   tags,
   workspaceSettings,
 } from "@/lib/db/schema"
@@ -20,7 +21,7 @@ import {
   mapGroup,
   mapTag,
 } from "@/lib/mappers"
-import type { Contact, DashboardStats } from "@/lib/crm-types"
+import type { Contact, DashboardStats, InboxConversation, Message } from "@/lib/crm-types"
 import { getWorkspaceUserLabels } from "@/lib/workspace-users"
 
 async function contactLabels() {
@@ -265,6 +266,57 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     tagCount: tagCount[0]?.count ?? 0,
     groupCount: groupCount[0]?.count ?? 0,
   }
+}
+
+export async function getInboxConversations(): Promise<InboxConversation[]> {
+  const { scopeIds } = await getWorkspaceScope()
+  const rows = await db
+    .select({ msg: messages, contact: contacts })
+    .from(messages)
+    .innerJoin(contacts, eq(contacts.id, messages.contactId))
+    .where(workspaceUserIdMatches(messages.userId, scopeIds))
+    .orderBy(desc(messages.createdAt))
+
+  const byContact = new Map<string, InboxConversation>()
+  for (const { msg, contact } of rows) {
+    const existing = byContact.get(contact.id)
+    if (existing) {
+      existing.messageCount++
+      continue
+    }
+    byContact.set(contact.id, {
+      contactId: contact.id,
+      contactName:
+        contact.name || [contact.firstName, contact.lastName].filter(Boolean).join(" ") || "Unnamed contact",
+      contactEmail: contact.email,
+      lastMessage: msg.body,
+      lastDirection: msg.direction,
+      lastChannel: msg.channel,
+      lastAt: msg.createdAt.toISOString(),
+      messageCount: 1,
+      unread: msg.direction === "inbound" && msg.status === "received",
+    })
+  }
+  return [...byContact.values()]
+}
+
+export async function getMessagesForContact(contactId: string): Promise<Message[]> {
+  const { scopeIds } = await getWorkspaceScope()
+  const rows = await db
+    .select()
+    .from(messages)
+    .where(and(workspaceUserIdMatches(messages.userId, scopeIds), eq(messages.contactId, contactId)))
+    .orderBy(messages.createdAt)
+  return rows.map((m) => ({
+    id: m.id,
+    contactId: m.contactId,
+    direction: m.direction,
+    channel: m.channel,
+    subject: m.subject,
+    body: m.body,
+    status: m.status,
+    createdAt: m.createdAt.toISOString(),
+  }))
 }
 
 export async function getWorkspaceBusinessType(workspaceId: string) {

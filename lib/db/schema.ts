@@ -165,6 +165,18 @@ export const activities = pgTable("activities", {
   at: timestamp("at").notNull().defaultNow(),
 })
 
+export const messages = pgTable("messages", {
+  id: text("id").primaryKey(),
+  userId: text("userId").notNull(),
+  contactId: text("contactId").notNull(),
+  direction: text("direction").notNull().default("inbound"),
+  channel: text("channel").notNull().default("email"),
+  subject: text("subject").notNull().default(""),
+  body: text("body").notNull().default(""),
+  status: text("status").notNull().default("received"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
 export const aiActions = pgTable("ai_actions", {
   id: text("id").primaryKey(),
   userId: text("userId").notNull(),
