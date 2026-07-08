@@ -1,5 +1,7 @@
 "use server"
 
+import { randomBytes } from "node:crypto"
+
 import { revalidatePath } from "next/cache"
 
 import { getActingUser, requireRole } from "@/lib/auth-helpers"
@@ -8,6 +10,7 @@ import {
   getLeadSourcesForWorkspace,
   getRecentLeadEvents,
 } from "@/lib/leads/sources"
+import { providerPreset } from "@/lib/leads/providers"
 
 function appBaseUrl(): string {
   return (
@@ -41,6 +44,7 @@ export type LeadSourceInfo = {
   endpointUrl: string
   inboundAddress: string
   callWebhookUrl: string
+  secret: string
   successMessage: string
   createdAt: string
 }
@@ -64,6 +68,7 @@ function toInfo(r: Awaited<ReturnType<typeof getLeadSourcesForWorkspace>>[number
     endpointUrl: endpointFor(r.publicKey),
     inboundAddress: inboundAddressFor(r.publicKey),
     callWebhookUrl: callWebhookFor(r.publicKey),
+    secret: r.secret,
     successMessage: r.successMessage,
     createdAt: r.createdAt.toISOString(),
   }
@@ -107,6 +112,26 @@ export async function createCallSource(input: { name: string }): Promise<LeadSou
   const name = input.name.trim()
   if (!name) throw new Error("Source name is required")
   const row = await createLeadSource(workspaceId, { name, channel: "call" })
+  revalidatePath("/app/settings")
+  return toInfo(row)
+}
+
+export async function createWebhookSource(input: {
+  name: string
+  provider?: string
+  signed?: boolean
+}): Promise<LeadSourceInfo> {
+  const { workspaceId } = await requireRole("Admin")
+  const name = input.name.trim()
+  if (!name) throw new Error("Source name is required")
+  const preset = providerPreset(input.provider ?? "generic")
+  const secret = input.signed ? `whsec_${randomBytes(24).toString("hex")}` : ""
+  const row = await createLeadSource(workspaceId, {
+    name,
+    channel: "webhook",
+    fieldMapping: preset?.fieldMapping ?? {},
+    secret,
+  })
   revalidatePath("/app/settings")
   return toInfo(row)
 }

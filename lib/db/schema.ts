@@ -202,6 +202,7 @@ export const leadSources = pgTable("lead_sources", {
   key: text("key").notNull(),
   enabled: boolean("enabled").notNull().default(true),
   publicKey: text("publicKey").notNull().default(""),
+  secret: text("secret").notNull().default(""),
   fieldMapping: jsonb("fieldMapping").$type<Record<string, string>>().notNull().default({}),
   successMessage: text("successMessage").notNull().default(""),
   redirectUrl: text("redirectUrl").notNull().default(""),

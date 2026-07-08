@@ -11,6 +11,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   Table,
   TableBody,
@@ -23,11 +31,13 @@ import {
   createCallSource,
   createEmailSource,
   createWebFormSource,
+  createWebhookSource,
   getLeadEvents,
   getLeadSources,
   type LeadEventInfo,
   type LeadSourceInfo,
 } from "@/app/actions/lead-sources"
+import { PROVIDER_PRESETS, providerPreset } from "@/lib/leads/providers"
 import { relativeTime } from "@/lib/format"
 import { contactPath } from "@/lib/routes"
 import { useSessionUser } from "@/lib/session-context"
@@ -100,6 +110,7 @@ export function LeadSourcesSettings() {
   const webForms = sources.filter((s) => s.channel === "web_form" && s.publicKey)
   const emailSources = sources.filter((s) => s.channel === "email" && s.publicKey)
   const callSources = sources.filter((s) => s.channel === "call" && s.publicKey)
+  const webhookSources = sources.filter((s) => s.channel === "webhook" && s.publicKey)
 
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -113,6 +124,33 @@ export function LeadSourcesSettings() {
   const [showCallForm, setShowCallForm] = useState(false)
   const [savingCall, setSavingCall] = useState(false)
   const [callName, setCallName] = useState("")
+
+  const [showHookForm, setShowHookForm] = useState(false)
+  const [savingHook, setSavingHook] = useState(false)
+  const [hookName, setHookName] = useState("")
+  const [hookProvider, setHookProvider] = useState("generic")
+  const [hookSigned, setHookSigned] = useState(true)
+
+  async function handleCreateHook() {
+    if (!hookName.trim()) {
+      toast.error("Give the webhook a name")
+      return
+    }
+    setSavingHook(true)
+    try {
+      await createWebhookSource({ name: hookName, provider: hookProvider, signed: hookSigned })
+      toast.success("Webhook source created")
+      setHookName("")
+      setHookProvider("generic")
+      setHookSigned(true)
+      setShowHookForm(false)
+      mutate()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not create webhook")
+    } finally {
+      setSavingHook(false)
+    }
+  }
 
   async function handleCreateEmail() {
     if (!emailName.trim()) {
@@ -448,6 +486,118 @@ export function LeadSourcesSettings() {
                     <CopyButton text={s.callWebhookUrl} label="Copy" />
                   </div>
                 </div>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-start justify-between gap-4">
+          <div>
+            <CardTitle>Webhooks &amp; integrations</CardTitle>
+            <CardDescription>
+              Connect Zapier, Make, Typeform, Calendly, Facebook Lead Ads and more. Pick a provider
+              preset for its field mapping, and optionally require a signed (HMAC) payload.
+            </CardDescription>
+          </div>
+          {isAdmin ? (
+            <Button size="sm" onClick={() => setShowHookForm((s) => !s)} disabled={savingHook}>
+              <Plus className="size-4" />
+              New webhook
+            </Button>
+          ) : null}
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          {showHookForm && isAdmin ? (
+            <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-4">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="hook-name">Name</Label>
+                <Input
+                  id="hook-name"
+                  value={hookName}
+                  onChange={(e) => setHookName(e.target.value)}
+                  placeholder="Typeform contact form"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>Provider preset</Label>
+                <Select value={hookProvider} onValueChange={(v) => v && setHookProvider(v)}>
+                  <SelectTrigger>
+                    <SelectValue>
+                      {(v) =>
+                        PROVIDER_PRESETS.find((p) => p.id === (v as string))?.label ?? "Generic"
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PROVIDER_PRESETS.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">{providerPreset(hookProvider)?.hint}</p>
+              </div>
+              <div className="flex items-center justify-between rounded-md border p-3">
+                <div>
+                  <p className="text-sm font-medium">Require signed payloads</p>
+                  <p className="text-xs text-muted-foreground">
+                    Verify an HMAC <code className="font-mono">X-Nula-Signature</code> header.
+                  </p>
+                </div>
+                <Switch checked={hookSigned} onCheckedChange={setHookSigned} />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" onClick={() => setShowHookForm(false)} disabled={savingHook}>
+                  Cancel
+                </Button>
+                <Button onClick={handleCreateHook} disabled={savingHook}>
+                  {savingHook ? <Loader2 className="size-4 animate-spin" /> : null}
+                  Create webhook
+                </Button>
+              </div>
+            </div>
+          ) : null}
+
+          {webhookSources.length === 0 ? (
+            <p className="rounded-lg border p-4 text-center text-sm text-muted-foreground">
+              No webhook integrations yet. Create one to connect Zapier or a provider.
+            </p>
+          ) : (
+            webhookSources.map((s) => (
+              <div key={s.id} className="flex flex-col gap-3 rounded-lg border p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium">{s.name}</span>
+                  <Badge variant={s.enabled ? "default" : "secondary"}>
+                    {s.enabled ? "Active" : "Disabled"}
+                  </Badge>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-xs text-muted-foreground">Webhook URL</Label>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 truncate rounded bg-muted px-2 py-1.5 font-mono text-xs">
+                      {s.endpointUrl}
+                    </code>
+                    <CopyButton text={s.endpointUrl} label="Copy" />
+                  </div>
+                </div>
+                {s.secret ? (
+                  <div className="flex flex-col gap-1.5">
+                    <Label className="text-xs text-muted-foreground">Signing secret</Label>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 truncate rounded bg-muted px-2 py-1.5 font-mono text-xs">
+                        {s.secret}
+                      </code>
+                      <CopyButton text={s.secret} label="Copy" />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Send <code className="font-mono">X-Nula-Signature: sha256=HMAC_SHA256(body,
+                      secret)</code>.
+                    </p>
+                  </div>
+                ) : null}
               </div>
             ))
           )}
