@@ -20,6 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import {
+  createEmailSource,
   createWebFormSource,
   getLeadEvents,
   getLeadSources,
@@ -96,11 +97,35 @@ export function LeadSourcesSettings() {
   const sources = data?.sources ?? []
   const events = data?.events ?? []
   const webForms = sources.filter((s) => s.channel === "web_form" && s.publicKey)
+  const emailSources = sources.filter((s) => s.channel === "email" && s.publicKey)
 
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
   const [name, setName] = useState("")
   const [successMessage, setSuccessMessage] = useState("")
+
+  const [showEmailForm, setShowEmailForm] = useState(false)
+  const [savingEmail, setSavingEmail] = useState(false)
+  const [emailName, setEmailName] = useState("")
+
+  async function handleCreateEmail() {
+    if (!emailName.trim()) {
+      toast.error("Give the email source a name")
+      return
+    }
+    setSavingEmail(true)
+    try {
+      await createEmailSource({ name: emailName })
+      toast.success("Inbound email source created")
+      setEmailName("")
+      setShowEmailForm(false)
+      mutate()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not create email source")
+    } finally {
+      setSavingEmail(false)
+    }
+  }
 
   async function handleCreate() {
     if (!name.trim()) {
@@ -256,6 +281,79 @@ export function LeadSourcesSettings() {
                   <pre className="max-h-48 overflow-auto rounded-md bg-muted p-3 font-mono text-xs">
                     {embedSnippet(s.endpointUrl)}
                   </pre>
+                </div>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-start justify-between gap-4">
+          <div>
+            <CardTitle>Inbound email</CardTitle>
+            <CardDescription>
+              Forward or auto‑route emails to a dedicated address and each one becomes a lead plus an
+              inbox conversation — deduped, scored, and routed.
+            </CardDescription>
+          </div>
+          {isAdmin ? (
+            <Button size="sm" onClick={() => setShowEmailForm((s) => !s)} disabled={savingEmail}>
+              <Plus className="size-4" />
+              New email source
+            </Button>
+          ) : null}
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          {showEmailForm && isAdmin ? (
+            <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-4">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="em-name">Source name</Label>
+                <Input
+                  id="em-name"
+                  value={emailName}
+                  onChange={(e) => setEmailName(e.target.value)}
+                  placeholder="Support inbox"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" onClick={() => setShowEmailForm(false)} disabled={savingEmail}>
+                  Cancel
+                </Button>
+                <Button onClick={handleCreateEmail} disabled={savingEmail}>
+                  {savingEmail ? <Loader2 className="size-4 animate-spin" /> : null}
+                  Create source
+                </Button>
+              </div>
+            </div>
+          ) : null}
+
+          {emailSources.length === 0 ? (
+            <p className="rounded-lg border p-4 text-center text-sm text-muted-foreground">
+              No inbound email sources yet. Create one to get a dedicated lead address.
+            </p>
+          ) : (
+            emailSources.map((s) => (
+              <div key={s.id} className="flex flex-col gap-3 rounded-lg border p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium">{s.name}</span>
+                  <Badge variant={s.enabled ? "default" : "secondary"}>
+                    {s.enabled ? "Active" : "Disabled"}
+                  </Badge>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-xs text-muted-foreground">Inbound address</Label>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 truncate rounded bg-muted px-2 py-1.5 font-mono text-xs">
+                      {s.inboundAddress}
+                    </code>
+                    <CopyButton text={s.inboundAddress} label="Copy" />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Point your email provider&apos;s inbound parse (Resend, Postmark, SendGrid,
+                    Mailgun) at <code className="font-mono">/api/inbound/email</code>, or forward mail
+                    to this address.
+                  </p>
                 </div>
               </div>
             ))

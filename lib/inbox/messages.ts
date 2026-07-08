@@ -74,9 +74,12 @@ async function findOrCreateContact(
 }
 
 /** Ingest an inbound customer message, matching or creating the contact. */
-export async function ingestInboundMessage(raw: unknown) {
+export async function ingestInboundMessage(
+  raw: unknown,
+  options?: { workspaceId?: string },
+) {
   const payload = inboundMessageSchema.parse(raw)
-  const workspaceId = resolveMessageWorkspaceId(payload.workspaceId)
+  const workspaceId = options?.workspaceId ?? resolveMessageWorkspaceId(payload.workspaceId)
   const scopeIds = await getWorkspaceScopeIds(workspaceId)
 
   const contact = await findOrCreateContact(workspaceId, scopeIds, payload)
