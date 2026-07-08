@@ -18,7 +18,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
-    const result = await processLeadIntake(body)
+    const result = await processLeadIntake(body, { source: { key: "webhook" } })
     return NextResponse.json({ ok: true, ...result })
   } catch (error) {
     if (error instanceof z.ZodError) {

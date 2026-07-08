@@ -45,14 +45,17 @@ export async function POST(request: Request) {
   // NULA_SHARED_WORKSPACE_ID. Never block the email path on this.
   try {
     const [firstName, ...rest] = parsed.data.name.trim().split(/\s+/)
-    await processLeadIntake({
-      firstName: firstName || parsed.data.name.trim() || "Website lead",
-      lastName: rest.join(" "),
-      email: parsed.data.email,
-      phone: parsed.data.phone,
-      source: "website-form",
-      message: parsed.data.message,
-    })
+    await processLeadIntake(
+      {
+        firstName: firstName || parsed.data.name.trim() || "Website lead",
+        lastName: rest.join(" "),
+        email: parsed.data.email,
+        phone: parsed.data.phone,
+        source: "website-form",
+        message: parsed.data.message,
+      },
+      { source: { key: "website-form" } },
+    )
   } catch (error) {
     console.warn(
       "[contact] CRM lead intake skipped:",

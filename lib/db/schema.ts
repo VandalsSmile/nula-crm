@@ -193,6 +193,36 @@ export const messages = pgTable("messages", {
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 
+/** A configured channel that leads flow in through (web form, webhook, etc.). */
+export const leadSources = pgTable("lead_sources", {
+  id: text("id").primaryKey(),
+  userId: text("userId").notNull(),
+  name: text("name").notNull(),
+  channel: text("channel").notNull().default("webhook"),
+  key: text("key").notNull(),
+  enabled: boolean("enabled").notNull().default(true),
+  defaults: jsonb("defaults")
+    .$type<{ tagSlug?: string; groupName?: string }>()
+    .notNull()
+    .default({}),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+/** Raw audit + idempotency log for every inbound lead across all channels. */
+export const leadEvents = pgTable("lead_events", {
+  id: text("id").primaryKey(),
+  userId: text("userId").notNull(),
+  sourceId: text("sourceId").notNull().default(""),
+  channel: text("channel").notNull().default("webhook"),
+  externalId: text("externalId").notNull().default(""),
+  dedupeHash: text("dedupeHash").notNull().default(""),
+  status: text("status").notNull().default("received"),
+  contactId: text("contactId"),
+  error: text("error").notNull().default(""),
+  payload: jsonb("payload").$type<Record<string, unknown>>().notNull().default({}),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
 export const aiActions = pgTable("ai_actions", {
   id: text("id").primaryKey(),
   userId: text("userId").notNull(),

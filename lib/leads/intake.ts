@@ -21,6 +21,13 @@ import { calculateLeadScore, recommendedNextActionForLead } from "@/lib/leads/sc
 import { generateLeadSummary } from "@/lib/leads/summary"
 import { processLeadAutomations } from "@/lib/automations/engine"
 import { getWorkspaceScopeIds } from "@/lib/workspace-scope"
+import {
+  dedupeHash,
+  ensureLeadSource,
+  markLeadEvent,
+  recordLeadEvent,
+  type SourceContext,
+} from "@/lib/leads/sources"
 
 export const leadIntakeSchema = z.object({
   firstName: z.string().min(1),
@@ -136,14 +143,31 @@ function sourceTagSlug(source?: string) {
   return `source-${normalized.replace(/^source-/, "")}`
 }
 
-export async function processLeadIntake(raw: unknown): Promise<LeadIntakeResult> {
+export async function processLeadIntake(
+  raw: unknown,
+  options?: { source?: SourceContext },
+): Promise<LeadIntakeResult> {
   const payload = leadIntakeSchema.parse(raw)
   const workspaceId = resolveWebhookWorkspaceId(payload.workspaceId)
   const scopeIds = await getWorkspaceScopeIds(workspaceId)
 
   const email = normalizeEmail(payload.email)
   const phone = normalizePhone(payload.phone)
-  const firstName = payload.firstName.trim()
+
+  // Lead Integration module: resolve the source and record a raw audit event.
+  const leadSource = options?.source ? await ensureLeadSource(workspaceId, options.source) : null
+  const eventId = leadSource
+    ? await recordLeadEvent({
+        workspaceId,
+        sourceId: leadSource.id,
+        channel: leadSource.channel,
+        dedupeHash: dedupeHash(email, phone),
+        payload: payload as Record<string, unknown>,
+      })
+    : null
+
+  try {
+    const firstName = payload.firstName.trim()
   const lastName = payload.lastName?.trim() ?? ""
   const source = payload.source?.trim() || "website-form"
 
@@ -256,13 +280,24 @@ export async function processLeadIntake(raw: unknown): Promise<LeadIntakeResult>
 
   await processLeadAutomations(workspaceId, contactId, { isNew, leadScore, source })
 
-  return {
-    contactId,
-    isNew,
-    isDuplicate,
-    leadScore,
-    aiSummary,
-    recommendedNextAction,
+    const result = {
+      contactId,
+      isNew,
+      isDuplicate,
+      leadScore,
+      aiSummary,
+      recommendedNextAction,
+    }
+    if (eventId) await markLeadEvent(eventId, { status: "processed", contactId })
+    return result
+  } catch (err) {
+    if (eventId) {
+      await markLeadEvent(eventId, {
+        status: "failed",
+        error: err instanceof Error ? err.message : "intake failed",
+      })
+    }
+    throw err
   }
 }
 
