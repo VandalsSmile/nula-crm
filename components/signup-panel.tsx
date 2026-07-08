@@ -11,11 +11,11 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Field, FieldGroup, FieldLabel, FieldDescription } from "@/components/ui/field"
 import { authClient } from "@/lib/auth-client"
-
 import { APP_ROUTES } from "@/lib/routes"
 
-export function LoginPanel({ callbackURL = APP_ROUTES.dashboard }: { callbackURL?: string }) {
+export function SignupPanel() {
   const router = useRouter()
+  const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -27,16 +27,21 @@ export function LoginPanel({ callbackURL = APP_ROUTES.dashboard }: { callbackURL
     setError(null)
     setLoading(true)
 
-    const { error } = await authClient.signIn.email({ email, password })
-
-    setLoading(false)
+    const { error } = await authClient.signUp.email({
+      email: email.trim(),
+      password,
+      name: name.trim() || email.split("@")[0],
+    })
 
     if (error) {
-      setError(error.message ?? "Something went wrong")
+      setLoading(false)
+      setError(error.message ?? "Could not create your account")
       return
     }
 
-    router.push(callbackURL)
+    // New self-serve accounts own a fresh workspace — send them to onboarding
+    // to set up their profile and company before entering the app.
+    router.push(APP_ROUTES.onboarding)
     router.refresh()
   }
 
@@ -52,11 +57,11 @@ export function LoginPanel({ callbackURL = APP_ROUTES.dashboard }: { callbackURL
         </div>
         <div className="relative flex flex-col gap-4">
           <h1 className="text-4xl font-semibold leading-tight tracking-tight text-balance">
-            Good to see you again.
+            Start managing customers the easy way.
           </h1>
           <p className="max-w-md text-lg leading-relaxed text-white/85">
-            Your customers are waiting. Sign in and let Nula help you stay on top of follow-ups,
-            outreach, and growth.
+            Create your free workspace in seconds. We&apos;ll help you set up your business and get
+            your first contacts in.
           </p>
         </div>
         <p className="relative text-sm text-white/60">
@@ -64,7 +69,7 @@ export function LoginPanel({ callbackURL = APP_ROUTES.dashboard }: { callbackURL
         </p>
       </div>
 
-      {/* Auth form */}
+      {/* Sign-up form */}
       <div className="flex flex-1 flex-col items-center justify-center marketing-warm-bg p-4 sm:p-6">
         <div className="mb-4 w-full max-w-sm lg:hidden">
           <Link href="/" className="text-sm font-medium text-nula-ink/60 transition-colors hover:text-nula-violet">
@@ -74,12 +79,24 @@ export function LoginPanel({ callbackURL = APP_ROUTES.dashboard }: { callbackURL
         <Card className="w-full max-w-sm rounded-2xl border-border/60 shadow-lg shadow-nula-violet/8">
           <CardHeader className="text-center">
             <Logo className="mx-auto mb-2 size-11 lg:hidden" />
-            <CardTitle className="text-xl">Welcome back</CardTitle>
-            <CardDescription>Sign in to your workspace — we&apos;ll take it from here.</CardDescription>
+            <CardTitle className="text-xl">Create your account</CardTitle>
+            <CardDescription>Set up your free Nula CRM workspace.</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit}>
               <FieldGroup>
+                <Field>
+                  <FieldLabel htmlFor="name">Full name</FieldLabel>
+                  <Input
+                    id="name"
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Jane Doe"
+                    required
+                    autoComplete="name"
+                  />
+                </Field>
                 <Field>
                   <FieldLabel htmlFor="email">Work email</FieldLabel>
                   <Input
@@ -102,7 +119,7 @@ export function LoginPanel({ callbackURL = APP_ROUTES.dashboard }: { callbackURL
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       minLength={8}
-                      autoComplete="current-password"
+                      autoComplete="new-password"
                       className="pr-10"
                     />
                     <button
@@ -116,7 +133,7 @@ export function LoginPanel({ callbackURL = APP_ROUTES.dashboard }: { callbackURL
                       {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                     </button>
                   </div>
-                  <FieldDescription>Invite-only access for your workspace team.</FieldDescription>
+                  <FieldDescription>At least 8 characters.</FieldDescription>
                 </Field>
 
                 {error && (
@@ -126,14 +143,14 @@ export function LoginPanel({ callbackURL = APP_ROUTES.dashboard }: { callbackURL
                 )}
 
                 <Button type="submit" className="w-full rounded-full" disabled={loading}>
-                  {loading ? "Please wait..." : "Sign in"}
+                  {loading ? "Creating your account..." : "Create account"}
                   {!loading && <ArrowRight data-icon="inline-end" />}
                 </Button>
 
                 <p className="text-center text-sm text-nula-ink/60">
-                  New to Nula?{" "}
-                  <Link href={APP_ROUTES.signup} className="font-medium text-nula-violet hover:underline">
-                    Create an account
+                  Already have an account?{" "}
+                  <Link href={APP_ROUTES.login} className="font-medium text-nula-violet hover:underline">
+                    Sign in
                   </Link>
                 </p>
               </FieldGroup>

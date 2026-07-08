@@ -14,6 +14,8 @@ export const APP_ROUTES = {
   reports: `${APP_BASE}/reports`,
   settings: `${APP_BASE}/settings`,
   login: "/login",
+  signup: "/signup",
+  onboarding: "/onboarding",
 } as const
 
 export const DEFAULT_APP_PATH = APP_ROUTES.dashboard

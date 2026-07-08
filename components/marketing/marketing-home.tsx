@@ -79,7 +79,7 @@ export function MarketingHome() {
               <Button
                 size="lg"
                 className="rounded-full px-6 shadow-md shadow-nula-violet/20"
-                render={<Link href={APP_ROUTES.login} />}
+                render={<Link href={APP_ROUTES.signup} />}
               >
                 Get started — it&apos;s free
                 <ArrowRight data-icon="inline-end" />
@@ -435,14 +435,14 @@ export function MarketingHome() {
                   growing. Send us a note and we&apos;ll be in touch.
                 </p>
                 <div className="mt-8 flex flex-wrap justify-center gap-3 md:justify-start">
-                  <Button
-                    size="lg"
-                    className="rounded-full bg-nula-signal px-7 text-nula-ink shadow-lg shadow-nula-signal/25 hover:bg-nula-signal/90"
-                    render={<Link href={APP_ROUTES.login} />}
-                  >
-                    Get started free
-                    <ArrowRight data-icon="inline-end" />
-                  </Button>
+                <Button
+                  size="lg"
+                  className="rounded-full bg-nula-signal px-7 text-nula-ink shadow-lg shadow-nula-signal/25 hover:bg-nula-signal/90"
+                  render={<Link href={APP_ROUTES.signup} />}
+                >
+                  Get started free
+                  <ArrowRight data-icon="inline-end" />
+                </Button>
                 </div>
                 <p className="mt-6 text-sm text-white/50">
                   Prefer email? Reach us at{" "}
