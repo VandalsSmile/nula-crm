@@ -9,9 +9,10 @@ import { getActingUser, workspaceUserIdMatches } from "@/lib/auth-helpers"
 import { randomId } from "@/lib/library-helpers"
 import { mapContact } from "@/lib/mappers"
 import type { Contact, LifecycleStage } from "@/lib/crm-types"
+import { formatRevenue } from "@/lib/crm-types"
 import { calculateLeadScore, recommendedNextActionForLead } from "@/lib/leads/scoring"
 import { generateLeadSummary } from "@/lib/leads/summary"
-import { processLeadAutomations } from "@/lib/automations/engine"
+import { processLeadAutomations, processPurchaseAutomations } from "@/lib/automations/engine"
 import { APP_ROUTES } from "@/lib/routes"
 
 export type ContactInput = {
@@ -106,6 +107,63 @@ export async function updateContact(id: string, input: Partial<ContactInput>): P
 
   revalidatePath(APP_ROUTES.contacts)
   revalidatePath(`${APP_ROUTES.contacts}/${id}`)
+  return mapContact(row)
+}
+
+export async function recordPurchase(input: {
+  contactId: string
+  product: string
+  amountCents?: number
+}): Promise<Contact> {
+  const { user, workspaceId, scopeIds } = await getActingUser()
+  const product = input.product?.trim()
+  if (!product) throw new Error("Product is required")
+  const amountCents = Math.max(0, Math.round(input.amountCents ?? 0))
+
+  const [existing] = await db
+    .select()
+    .from(contacts)
+    .where(and(eq(contacts.id, input.contactId), workspaceUserIdMatches(contacts.userId, scopeIds)))
+    .limit(1)
+  if (!existing) throw new Error("Contact not found")
+
+  const wasCustomer =
+    existing.lifecycleStage === "Customer" || existing.lifecycleStage === "Repeat Customer"
+  const products = [existing.productsPurchased, product].filter(Boolean).join(", ")
+
+  const [row] = await db
+    .update(contacts)
+    .set({
+      lifecycleStage: wasCustomer ? "Repeat Customer" : "Customer",
+      customerStatus: "Active",
+      leadStatus: "Converted",
+      lastPurchaseAt: new Date(),
+      lastActivityAt: new Date(),
+      totalRevenueCents: existing.totalRevenueCents + amountCents,
+      productsPurchased: products,
+      recommendedNextAction: "Send a thank-you and request a review.",
+    })
+    .where(and(eq(contacts.id, input.contactId), workspaceUserIdMatches(contacts.userId, scopeIds)))
+    .returning()
+
+  await db.insert(activities).values({
+    id: randomId("a"),
+    userId: workspaceId,
+    type: "purchase_made",
+    message:
+      amountCents > 0
+        ? `recorded purchase: ${product} (${formatRevenue(amountCents)})`
+        : `recorded purchase: ${product}`,
+    contactId: input.contactId,
+    actorId: user.id,
+  })
+
+  // Fire purchase-triggered automations (e.g. review request).
+  await processPurchaseAutomations(workspaceId, input.contactId)
+
+  revalidatePath(APP_ROUTES.contacts)
+  revalidatePath(`${APP_ROUTES.contacts}/${input.contactId}`)
+  revalidatePath(APP_ROUTES.dashboard)
   return mapContact(row)
 }
 

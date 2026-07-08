@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Mail, MapPin, Pencil, Phone, Plus, Sparkles, Trash2 } from "lucide-react"
+import { ArrowLeft, Mail, MapPin, Pencil, Phone, Plus, ShoppingBag, Sparkles, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { LifecycleBadge, LeadScoreBadge } from "@/components/lifecycle-badge"
@@ -11,6 +11,7 @@ import { ActivityFeed } from "@/components/activity-feed"
 import { EditContactDialog } from "@/components/edit-contact-dialog"
 import { ContactRelationsEditor } from "@/components/contact-relations-editor"
 import { DealFormDialog } from "@/components/deal-form-dialog"
+import { RecordPurchaseDialog } from "@/components/record-purchase-dialog"
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -49,6 +50,7 @@ export function ContactProfile({
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [dealOpen, setDealOpen] = useState(false)
+  const [purchaseOpen, setPurchaseOpen] = useState(false)
   const [editDeal, setEditDeal] = useState<Deal | null>(null)
   const [note, setNote] = useState("")
   const [pending, startTransition] = useTransition()
@@ -113,6 +115,10 @@ export function ContactProfile({
           <Button variant="outline" render={<Link href={APP_ROUTES.contacts} />}>
             <ArrowLeft data-icon="inline-start" />
             Back
+          </Button>
+          <Button variant="outline" onClick={() => setPurchaseOpen(true)}>
+            <ShoppingBag data-icon="inline-start" />
+            Record purchase
           </Button>
           <Button variant="outline" onClick={() => setEditOpen(true)}>
             <Pencil data-icon="inline-start" />
@@ -265,6 +271,7 @@ export function ContactProfile({
       </Card>
 
       <EditContactDialog open={editOpen} onOpenChange={setEditOpen} contact={contact} />
+      <RecordPurchaseDialog open={purchaseOpen} onOpenChange={setPurchaseOpen} contactId={contact.id} />
       <DealFormDialog
         open={dealOpen}
         onOpenChange={(open) => { setDealOpen(open); if (!open) setEditDeal(null) }}

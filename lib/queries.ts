@@ -20,7 +20,8 @@ import {
   mapGroup,
   mapTag,
 } from "@/lib/mappers"
-import type { Contact, DashboardStats } from "@/lib/crm-types"
+import type { Contact, DashboardStats, ReportData } from "@/lib/crm-types"
+import { LIFECYCLE_STAGES } from "@/lib/crm-types"
 import { getWorkspaceUserLabels } from "@/lib/workspace-users"
 
 async function contactLabels() {
@@ -264,6 +265,61 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     inactiveCustomers: contactRows.filter((c) => c.lifecycleStage === "Inactive Customer").length,
     tagCount: tagCount[0]?.count ?? 0,
     groupCount: groupCount[0]?.count ?? 0,
+  }
+}
+
+export async function getReportData(): Promise<ReportData> {
+  const { scopeIds } = await getWorkspaceScope()
+
+  const [contactRows, campaignRows] = await Promise.all([
+    db
+      .select({ lifecycleStage: contacts.lifecycleStage, source: contacts.source })
+      .from(contacts)
+      .where(workspaceUserIdMatches(contacts.userId, scopeIds)),
+    db
+      .select({ status: campaigns.status })
+      .from(campaigns)
+      .where(workspaceUserIdMatches(campaigns.userId, scopeIds)),
+  ])
+
+  const totalContacts = contactRows.length
+
+  const sourceMap = new Map<string, number>()
+  for (const c of contactRows) {
+    const source = c.source?.trim() || "Unknown"
+    sourceMap.set(source, (sourceMap.get(source) ?? 0) + 1)
+  }
+  const leadsBySource = [...sourceMap.entries()]
+    .map(([source, count]) => ({ source, count }))
+    .sort((a, b) => b.count - a.count)
+
+  const stageMap = new Map<string, number>()
+  for (const c of contactRows) {
+    stageMap.set(c.lifecycleStage, (stageMap.get(c.lifecycleStage) ?? 0) + 1)
+  }
+  const lifecycleFunnel = LIFECYCLE_STAGES.map((stage) => ({ stage, count: stageMap.get(stage) ?? 0 }))
+
+  const customers = contactRows.filter(
+    (c) => c.lifecycleStage === "Customer" || c.lifecycleStage === "Repeat Customer",
+  ).length
+  const conversionRate = totalContacts > 0 ? Math.round((customers / totalContacts) * 100) : 0
+
+  const statusMap = new Map<string, number>()
+  for (const c of campaignRows) {
+    statusMap.set(c.status, (statusMap.get(c.status) ?? 0) + 1)
+  }
+  const campaignsByStatus = [...statusMap.entries()]
+    .map(([status, count]) => ({ status, count }))
+    .sort((a, b) => b.count - a.count)
+
+  return {
+    totalContacts,
+    customers,
+    conversionRate,
+    totalCampaigns: campaignRows.length,
+    leadsBySource,
+    lifecycleFunnel,
+    campaignsByStatus,
   }
 }
 

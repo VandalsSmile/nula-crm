@@ -154,6 +154,20 @@ export const campaigns = pgTable("campaigns", {
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 })
 
+export const campaignSends = pgTable("campaign_sends", {
+  id: text("id").primaryKey(),
+  userId: text("userId").notNull(),
+  campaignId: text("campaignId").notNull(),
+  contactId: text("contactId").notNull(),
+  step: integer("step").notNull().default(1),
+  channel: text("channel").notNull().default("email"),
+  status: text("status").notNull().default("scheduled"),
+  scheduledFor: timestamp("scheduledFor").notNull().defaultNow(),
+  sentAt: timestamp("sentAt"),
+  error: text("error").notNull().default(""),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
 export const activities = pgTable("activities", {
   id: text("id").primaryKey(),
   userId: text("userId").notNull(),
