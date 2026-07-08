@@ -10,9 +10,8 @@ import { randomId } from "@/lib/library-helpers"
 import { mapContact } from "@/lib/mappers"
 import type { Contact, LifecycleStage } from "@/lib/crm-types"
 import { formatRevenue } from "@/lib/crm-types"
-import { calculateLeadScore, recommendedNextActionForLead } from "@/lib/leads/scoring"
-import { generateLeadSummary } from "@/lib/leads/summary"
-import { processLeadAutomations, processPurchaseAutomations } from "@/lib/automations/engine"
+import { processPurchaseAutomations } from "@/lib/automations/engine"
+import { processLeadIntake } from "@/lib/leads/intake"
 import { APP_ROUTES } from "@/lib/routes"
 
 export type ContactInput = {
@@ -250,47 +249,26 @@ export async function importContactsFromCsv(csvText: string): Promise<CsvImportR
     const notes = notesIdx >= 0 ? cols[notesIdx]?.trim() ?? "" : ""
 
     try {
-      const leadScore = calculateLeadScore({ source, email, phone, notes })
-      const aiSummary = await generateLeadSummary({
-        firstName,
-        lastName,
-        source,
-        notes,
-        leadScore,
-      })
-      const recommendedNextAction = recommendedNextActionForLead(leadScore, source)
-
-      const [row] = await db
-        .insert(contacts)
-        .values({
-          id: randomId("ct"),
-          userId: workspaceId,
-          firstName,
-          lastName,
-          name: [firstName, lastName].filter(Boolean).join(" "),
-          email,
-          phone,
-          source,
-          lifecycleStage: "New Lead",
-          notes,
-          leadScore,
-          aiSummary,
-          recommendedNextAction,
-          lastActivityAt: new Date(),
-        })
-        .returning()
+      // Route each row through the unified intake core: dedupe/merge,
+      // scoring, source/interest/campaign tags, routing rules, automations.
+      const result = await processLeadIntake(
+        { firstName, lastName, email, phone, source, notes },
+        { source: { key: "csv-import", channel: "csv" }, workspaceId },
+      )
 
       await db.insert(activities).values({
         id: randomId("a"),
         userId: workspaceId,
         type: "created",
-        message: `imported contact ${firstName} from CSV`,
-        contactId: row.id,
+        message: result.isNew
+          ? `imported contact ${firstName} from CSV`
+          : `merged CSV row into existing contact ${firstName}`,
+        contactId: result.contactId,
         actorId: user.id,
       })
 
-      await processLeadAutomations(workspaceId, row.id, { isNew: true, leadScore, source })
-      created++
+      if (result.isNew) created++
+      else skipped++
     } catch (err) {
       errors.push(`Row ${i + 1}: ${err instanceof Error ? err.message : "import failed"}`)
       skipped++

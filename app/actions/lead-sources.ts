@@ -7,9 +7,16 @@ import { revalidatePath } from "next/cache"
 import { getActingUser, requireRole } from "@/lib/auth-helpers"
 import {
   createLeadSource,
+  getLeadEventById,
+  getLeadSourceById,
   getLeadSourcesForWorkspace,
   getRecentLeadEvents,
+  getSourceMetrics,
+  markLeadEvent,
+  type LeadChannel,
+  type SourceMetric,
 } from "@/lib/leads/sources"
+import { processLeadIntake } from "@/lib/leads/intake"
 import { providerPreset } from "@/lib/leads/providers"
 
 function appBaseUrl(): string {
@@ -134,6 +141,36 @@ export async function createWebhookSource(input: {
   })
   revalidatePath("/app/settings")
   return toInfo(row)
+}
+
+export async function getLeadSourceMetrics(): Promise<Record<string, SourceMetric>> {
+  const { workspaceId } = await getActingUser()
+  return getSourceMetrics(workspaceId)
+}
+
+export async function retryLeadEvent(eventId: string): Promise<{ ok: boolean }> {
+  const { workspaceId } = await requireRole("Admin")
+  const event = await getLeadEventById(workspaceId, eventId)
+  if (!event) throw new Error("Event not found")
+  const source = event.sourceId ? await getLeadSourceById(workspaceId, event.sourceId) : null
+  try {
+    const result = await processLeadIntake(event.payload, {
+      workspaceId,
+      skipEvent: true,
+      source: source
+        ? { key: source.key, name: source.name, channel: source.channel as LeadChannel }
+        : undefined,
+    })
+    await markLeadEvent(eventId, { status: "processed", contactId: result.contactId })
+    revalidatePath("/app/settings")
+    return { ok: true }
+  } catch (err) {
+    await markLeadEvent(eventId, {
+      status: "failed",
+      error: err instanceof Error ? err.message : "retry failed",
+    })
+    throw err instanceof Error ? err : new Error("retry failed")
+  }
 }
 
 export async function getLeadEvents(): Promise<LeadEventInfo[]> {
