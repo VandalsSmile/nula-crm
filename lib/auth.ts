@@ -1,6 +1,32 @@
 import { betterAuth } from "better-auth"
 import { pool } from "@/lib/db"
 
+/** Sends a password-reset email via Resend (logs the link when unconfigured). */
+async function sendResetPasswordEmail(email: string, url: string) {
+  const key = process.env.RESEND_API_KEY?.trim()
+  const from = process.env.RESEND_FROM_EMAIL?.trim() || "Nula CRM <info@nulacrm.ai>"
+  if (!key) {
+    // Local/dev without Resend: log the link so it can still be used.
+    console.log(`[auth] Password reset link for ${email}: ${url}`)
+    return
+  }
+  try {
+    await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from,
+        to: email,
+        subject: "Reset your Nula password",
+        html: `<p>We received a request to reset your Nula CRM password.</p><p><a href="${url}">Reset your password</a></p><p>If you didn't request this, you can safely ignore this email. This link expires in 1 hour.</p>`,
+        text: `Reset your Nula CRM password: ${url}\n\nIf you didn't request this, ignore this email. This link expires in 1 hour.`,
+      }),
+    })
+  } catch (error) {
+    console.error("[auth] Failed to send reset email", error)
+  }
+}
+
 export const auth = betterAuth({
   database: pool,
   // Sign-up is self-serve: a new account becomes its own workspace owner
@@ -17,8 +43,10 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,
-    // Registration is gated by the invite-only `before` hook above, not by
-    // disableSignUp — invited teammates must be able to complete sign-up.
+    // Forgot-password: emails a reset link that lands on /reset-password.
+    sendResetPassword: async ({ user, url }) => {
+      await sendResetPasswordEmail(user.email, url)
+    },
   },
   trustedOrigins: [
     ...(process.env.V0_RUNTIME_URL ? [process.env.V0_RUNTIME_URL] : []),
