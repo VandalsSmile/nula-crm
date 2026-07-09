@@ -42,6 +42,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Logo } from "@/components/logo"
+import { InstallAppButton } from "@/components/install-app-button"
 import { VersionBadge } from "@/components/version-badge"
 import { initials } from "@/lib/crm-types"
 import { useSessionUser } from "@/lib/session-context"
@@ -116,6 +117,7 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
+          <InstallAppButton />
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger
