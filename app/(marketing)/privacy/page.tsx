@@ -28,8 +28,8 @@ export default function PrivacyPage() {
             log and device information for security and reliability.
           </li>
           <li>
-            <strong>Payment information</strong> — handled by our payment processor (Stripe); we do
-            not store full card numbers.
+            <strong>Payment information</strong> — handled by Paddle, our Merchant of Record; we do
+            not receive or store full card numbers.
           </li>
         </ul>
       </LegalSection>
@@ -67,8 +67,8 @@ export default function PrivacyPage() {
         <ul>
           <li>
             <strong>Service providers (subprocessors)</strong> that help us operate — cloud hosting,
-            our payment processor (Stripe), email delivery (Resend), and AI model providers — under
-            confidentiality obligations.
+            our payment provider and Merchant of Record (Paddle), email delivery (Resend), and AI
+            model providers — under confidentiality obligations.
           </li>
           <li>
             <strong>Authorities</strong> when required by law, or to protect rights, safety, and the
