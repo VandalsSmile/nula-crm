@@ -9,7 +9,7 @@ import { Logo } from "@/components/logo"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Field, FieldGroup, FieldLabel, FieldDescription } from "@/components/ui/field"
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { authClient } from "@/lib/auth-client"
 
 import { APP_ROUTES } from "@/lib/routes"
@@ -116,7 +116,14 @@ export function LoginPanel({ callbackURL = APP_ROUTES.dashboard }: { callbackURL
                       {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                     </button>
                   </div>
-                  <FieldDescription>Invite-only access for your workspace team.</FieldDescription>
+                  <div className="text-right">
+                    <Link
+                      href="/forgot-password"
+                      className="text-xs font-medium text-nula-violet hover:underline"
+                    >
+                      Forgot password?
+                    </Link>
+                  </div>
                 </Field>
 
                 {error && (
