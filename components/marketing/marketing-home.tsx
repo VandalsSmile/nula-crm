@@ -14,6 +14,8 @@ import {
   Target,
   TrendingUp,
   Users,
+  Wand2,
+  Undo2,
   X,
   Check,
 } from "lucide-react"
@@ -31,6 +33,63 @@ import {
 } from "@/components/marketing/illustrations"
 import { APP_ROUTES } from "@/lib/routes"
 import { ProductShowcase } from "@/components/marketing/product-showcase"
+
+/** Real, plain-English commands and what Nula does with them. */
+const AI_EXAMPLES: { prompt: string; result: string }[] = [
+  {
+    prompt: "Show me leads who haven't booked in 60 days",
+    result: "42 contacts found, grouped and ready to email — no filters to build.",
+  },
+  {
+    prompt: "Draft a friendly follow-up to Maria about her consult",
+    result: "A personalized draft, written in your voice, waiting for your approval.",
+  },
+  {
+    prompt: "Find and merge duplicate contacts",
+    result: "Matched on email & phone, merged cleanly — with one-click undo.",
+  },
+  {
+    prompt: "Tag everyone who bought the Gold package",
+    result: "Applied to 18 contacts in a single step, instead of one-by-one.",
+  },
+  {
+    prompt: "Summarize and score this new website lead",
+    result: "\u201cHot lead, score 88 — call within 15 minutes.\u201d Written for you.",
+  },
+  {
+    prompt: "Build a win-back campaign for lapsed customers",
+    result: "A multi-step email + SMS sequence, drafted in seconds. Launch when ready.",
+  },
+]
+
+/** Task-by-task: the old way vs. the Nula way. */
+const AI_COMPARISON: { task: string; old: string; nula: string }[] = [
+  {
+    task: "Segment your list",
+    old: "Build multi-condition filters and hope they're right",
+    nula: "Ask in plain English — get the exact group back",
+  },
+  {
+    task: "Follow up a lead",
+    old: "Remember to, write it, and hope it's on time",
+    nula: "Auto-scored, summarized, and the reply drafted for you",
+  },
+  {
+    task: "Clean up duplicates",
+    old: "Export to a spreadsheet, dedupe by hand, re-import",
+    nula: "\u201cMerge duplicates\u201d — matched and merged, with undo",
+  },
+  {
+    task: "Launch a campaign",
+    old: "Days of list-building and copywriting",
+    nula: "Drafted in seconds, sent the moment you approve",
+  },
+  {
+    task: "Get productive",
+    old: "Weeks of configuration and training",
+    nula: "Type what you need on day one",
+  },
+]
 
 function SectionEyebrow({
   children,
@@ -201,6 +260,111 @@ export function MarketingHome() {
                 <p className="mt-2 text-sm leading-relaxed text-nula-ink/60">{item.body}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* See the AI in action */}
+      <section id="ai-in-action" className="border-t border-border/60 marketing-warm-bg py-20 md:py-24">
+        <div className="mx-auto max-w-6xl px-4 md:px-6">
+          <div className="mx-auto max-w-2xl text-center">
+            <SectionEyebrow>
+              <Wand2 className="size-3.5" />
+              See the AI in action
+            </SectionEyebrow>
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-nula-ink md:text-4xl">
+              Just say it. Nula does the work.
+            </h2>
+            <p className="mt-4 text-lg leading-relaxed text-nula-ink/65">
+              Nula&apos;s AI isn&apos;t a chatbot bolted on the side — it&apos;s how you run the CRM.
+              Type what you want in plain English; Nula figures it out, shows you a preview, and only
+              acts when you say go. Changed your mind? Undo in one click.
+            </p>
+          </div>
+
+          {/* Example command → result cards */}
+          <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {AI_EXAMPLES.map((ex) => (
+              <div
+                key={ex.prompt}
+                className="flex flex-col gap-3 rounded-3xl border border-white/80 bg-white/90 p-5 marketing-card-soft"
+              >
+                <div className="flex items-start gap-2.5 rounded-2xl border border-nula-violet/10 bg-nula-paper/70 px-3.5 py-3 text-sm leading-relaxed text-nula-ink">
+                  <Sparkles className="mt-0.5 size-4 shrink-0 text-nula-violet" />
+                  <span>&ldquo;{ex.prompt}&rdquo;</span>
+                </div>
+                <div className="flex items-start gap-2.5 px-1 text-sm leading-relaxed text-nula-ink/65">
+                  <Check className="mt-0.5 size-4 shrink-0 text-nula-signal" />
+                  <span>{ex.result}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Safety flow */}
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-2 text-xs font-medium text-nula-ink/60">
+            {[
+              { label: "Interpret", icon: Wand2 },
+              { label: "Preview", icon: ShieldCheck },
+              { label: "Approve", icon: Check },
+              { label: "Undo anytime", icon: Undo2 },
+            ].map((step, i) => (
+              <span key={step.label} className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-white px-3 py-1.5">
+                  <step.icon className="size-3.5 text-nula-violet" />
+                  {step.label}
+                </span>
+                {i < 3 ? <ArrowRight className="size-3.5 text-nula-ink/30" /> : null}
+              </span>
+            ))}
+          </div>
+
+          {/* Traditional CRM vs Nula */}
+          <div className="mt-16">
+            <div className="mx-auto max-w-2xl text-center">
+              <h3 className="text-2xl font-semibold tracking-tight text-nula-ink md:text-3xl">
+                The AI difference
+              </h3>
+              <p className="mt-3 text-base leading-relaxed text-nula-ink/65">
+                What used to take steps — or a specialist — is now a single sentence.
+              </p>
+            </div>
+            <div className="mt-8 overflow-hidden rounded-2xl border border-border/70 bg-white marketing-card-soft">
+              <div className="hidden grid-cols-3 gap-4 border-b border-border/60 bg-nula-paper/50 px-6 py-3 text-xs font-semibold uppercase tracking-wide text-nula-ink/50 md:grid">
+                <span>The job</span>
+                <span>Traditional CRM</span>
+                <span className="text-nula-violet">With Nula</span>
+              </div>
+              <div className="divide-y divide-border/60">
+                {AI_COMPARISON.map((row) => (
+                  <div
+                    key={row.task}
+                    className="grid gap-2 px-6 py-4 md:grid-cols-3 md:items-center md:gap-4"
+                  >
+                    <span className="font-medium text-nula-ink">{row.task}</span>
+                    <span className="flex items-start gap-2 text-sm leading-relaxed text-nula-ink/55">
+                      <X className="mt-0.5 size-4 shrink-0 text-nula-mist" />
+                      {row.old}
+                    </span>
+                    <span className="flex items-start gap-2 text-sm leading-relaxed text-nula-ink/80">
+                      <Check className="mt-0.5 size-4 shrink-0 text-nula-signal" />
+                      {row.nula}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-10 text-center">
+            <Button
+              size="lg"
+              className="rounded-full px-6 shadow-md shadow-nula-violet/20"
+              render={<Link href={APP_ROUTES.signup} />}
+            >
+              Try the AI free for 14 days
+              <ArrowRight data-icon="inline-end" />
+            </Button>
           </div>
         </div>
       </section>

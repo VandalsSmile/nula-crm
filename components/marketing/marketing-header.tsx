@@ -51,8 +51,8 @@ const NAV: NavGroup[] = [
       },
       {
         label: "AI changes everything",
-        href: "/#ai-advantage",
-        description: "Your CRM should respond to you — not the other way around.",
+        href: "/#ai-in-action",
+        description: "See real commands, real results — and how it beats a traditional CRM.",
       },
       {
         label: "Less maintenance",
