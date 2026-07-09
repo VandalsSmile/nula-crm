@@ -362,7 +362,7 @@ export function MarketingHome() {
               className="rounded-full px-6 shadow-md shadow-nula-violet/20"
               render={<Link href={APP_ROUTES.signup} />}
             >
-              Try the AI free for 14 days
+              Try the AI free for 7 days
               <ArrowRight data-icon="inline-end" />
             </Button>
           </div>

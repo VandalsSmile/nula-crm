@@ -30,7 +30,7 @@ const AI_INCLUDED = [
 const FAQ = [
   {
     q: "What's included in the free trial?",
-    a: "Everything — including all the AI. Use Nula free for 14 days, no credit card required. Cancel anytime.",
+    a: "Everything — including all the AI. Use Nula free for 7 days, no credit card required. Cancel anytime.",
   },
   {
     q: "Is it really one price?",
@@ -119,7 +119,7 @@ export function MarketingPricing() {
                 className="mt-7 w-full rounded-full px-6 shadow-md shadow-nula-violet/20"
                 size="lg"
               >
-                Start your 14-day free trial
+                Start your 7-day free trial
               </Button>
               <p className="mt-3 text-xs text-nula-ink/50">No credit card required · Cancel anytime</p>
             </div>
@@ -179,7 +179,7 @@ export function MarketingPricing() {
               Ready to let AI do the busywork?
             </h3>
             <p className="mt-2 text-sm text-nula-ink/65">
-              Start free for 14 days. No credit card, no contracts.
+              Start free for 7 days. No credit card, no contracts.
             </p>
             <Button
               render={<Link href={APP_ROUTES.signup} />}

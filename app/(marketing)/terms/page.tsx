@@ -32,7 +32,7 @@ export default function TermsPage() {
 
       <LegalSection heading="3. Free trial">
         <p>
-          We offer a 14-day free trial, no credit card required. At the end of the trial you may
+          We offer a 7-day free trial, no credit card required. At the end of the trial you may
           subscribe to continue using the Service. We may change trial terms at any time.
         </p>
       </LegalSection>

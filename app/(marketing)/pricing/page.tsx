@@ -5,7 +5,7 @@ import { MarketingPricing } from "@/components/marketing/marketing-pricing"
 export const metadata = {
   title: "Pricing — Nula CRM",
   description:
-    "One simple price for everyone — AI included. No tiers, no contracts. Try Nula free for 14 days, no credit card required.",
+    "One simple price for everyone — AI included. No tiers, no contracts. Try Nula free for 7 days, no credit card required.",
   alternates: { canonical: "/pricing" },
 }
 
