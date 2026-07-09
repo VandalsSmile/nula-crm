@@ -10,9 +10,14 @@ import { TrialBanner } from "@/components/trial-banner"
 import { SessionUserProvider } from "@/lib/session-context"
 import { safeRedirectPath } from "@/lib/routes"
 import { appPrivateMetadata } from "@/lib/seo"
+import { eq } from "drizzle-orm"
+
 import { auth } from "@/lib/auth"
-import { getUserProfile } from "@/lib/auth-helpers"
+import { getUserProfile, resolveActingWorkspaceId } from "@/lib/auth-helpers"
 import { getTrialStatus } from "@/app/actions/workspace"
+import { isSuperAdminEmail } from "@/lib/superadmin"
+import { db } from "@/lib/db"
+import { workspaceSettings } from "@/lib/db/schema"
 
 export const metadata = appPrivateMetadata
 
@@ -24,6 +29,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     redirect(`/login?callbackURL=${encodeURIComponent(callbackURL)}`)
   }
 
+  // Block access to suspended accounts (super-admins manage via /dashboard).
+  const workspaceId = await resolveActingWorkspaceId(session.user.id)
+  const [ws] = await db
+    .select({ suspended: workspaceSettings.suspended })
+    .from(workspaceSettings)
+    .where(eq(workspaceSettings.workspaceId, workspaceId))
+    .limit(1)
+  if (ws?.suspended) redirect("/suspended")
+
   const profile = await getUserProfile(session.user.id)
   const trial = await getTrialStatus()
   const user = {
@@ -34,6 +48,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     phone: profile.phone,
     jobTitle: profile.jobTitle,
     image: session.user.image ?? null,
+    isSuperAdmin: isSuperAdminEmail(session.user.email),
   }
 
   return (

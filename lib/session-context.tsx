@@ -12,6 +12,7 @@ export type SessionUser = {
   phone: string
   jobTitle: string
   image: string | null
+  isSuperAdmin: boolean
 }
 
 const SessionUserContext = createContext<SessionUser | null>(null)

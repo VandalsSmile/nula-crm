@@ -16,6 +16,7 @@ import {
   BookOpen,
   Settings,
   ChevronsUpDown,
+  ShieldAlert,
   LogOut,
 } from "lucide-react"
 
@@ -140,6 +141,16 @@ export function AppSidebar() {
                   <DropdownMenuLabel>Account</DropdownMenuLabel>
                   <DropdownMenuItem render={<Link href={APP_ROUTES.help}>Help &amp; docs</Link>} />
                   <DropdownMenuItem render={<Link href={APP_ROUTES.settings}>Settings</Link>} />
+                  {user.isSuperAdmin ? (
+                    <DropdownMenuItem
+                      render={
+                        <Link href="/dashboard">
+                          <ShieldAlert />
+                          System console
+                        </Link>
+                      }
+                    />
+                  ) : null}
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>

@@ -20,7 +20,6 @@ const PROTECTED_PREFIXES = [
 ]
 
 const LEGACY_PREFIXES = [
-  "/dashboard",
   "/contacts",
   "/groups",
   "/tags",

@@ -128,9 +128,10 @@ export function PlanSettings() {
   }
 
   const loading = trialLoading || billingLoading
-  const subscribed = Boolean(billing?.hasActiveSubscription)
-  const isExpired = Boolean(trial?.isExpired) && !subscribed
-  const canCheckout = Boolean(billing?.configured) && (billing?.plans.length ?? 0) > 0
+  const isComp = billing?.plan === "free"
+  const subscribed = Boolean(billing?.hasActiveSubscription) && !isComp
+  const isExpired = Boolean(trial?.isExpired) && !subscribed && !isComp
+  const canCheckout = Boolean(billing?.configured) && (billing?.plans.length ?? 0) > 0 && !isComp
 
   return (
     <div className="flex flex-col gap-6">
@@ -138,7 +139,9 @@ export function PlanSettings() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             Plan &amp; billing
-            {subscribed ? (
+            {isComp ? (
+              <Badge>Complimentary</Badge>
+            ) : subscribed ? (
               <Badge>Active</Badge>
             ) : isExpired ? (
               <Badge variant="destructive">Trial ended</Badge>
@@ -149,17 +152,24 @@ export function PlanSettings() {
           <CardDescription>
             {loading
               ? "Loading your plan…"
-              : subscribed
-                ? `You're subscribed to ${billing?.currentPlanName ?? "Nula"}${
-                    billing?.currentInterval ? ` (${billing.currentInterval}ly)` : ""
-                  }.`
-                : isExpired
-                  ? "Your free trial has ended. Subscribe to keep using Nula."
-                  : `You're on a ${TRIAL_DAYS}-day free trial.`}
+              : isComp
+                ? "Your workspace has complimentary access — full features, no charge."
+                : subscribed
+                  ? `You're subscribed to ${billing?.currentPlanName ?? "Nula"}${
+                      billing?.currentInterval ? ` (${billing.currentInterval}ly)` : ""
+                    }.`
+                  : isExpired
+                    ? "Your free trial has ended. Subscribe to keep using Nula."
+                    : `You're on a ${TRIAL_DAYS}-day free trial.`}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          {subscribed ? (
+          {isComp ? (
+            <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm">
+              <Check className="size-4 text-primary" />
+              <span>You have full access to Nula at no charge. Nothing to do here.</span>
+            </div>
+          ) : subscribed ? (
             <div className="flex flex-col gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
               <div className="flex items-center gap-2 text-sm">
                 <Check className="size-4 text-primary" />
