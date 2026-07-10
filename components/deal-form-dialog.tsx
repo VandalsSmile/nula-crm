@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Loader2, Save } from "lucide-react"
 import { toast } from "sonner"
@@ -47,7 +47,13 @@ export function DealFormDialog({
     nextStep: "",
   })
 
-  useEffect(() => {
+  // Re-populate the form whenever the dialog opens or targets a different deal,
+  // using React's "adjust state during render" pattern instead of a
+  // state-setting effect.
+  const resetKey = open ? (deal?.id ?? "new") : null
+  const [appliedKey, setAppliedKey] = useState<string | null>(null)
+  if (resetKey !== appliedKey) {
+    setAppliedKey(resetKey)
     if (open) {
       setForm({
         title: deal?.title ?? "",
@@ -58,7 +64,7 @@ export function DealFormDialog({
         nextStep: deal?.nextStep ?? "",
       })
     }
-  }, [open, deal])
+  }
 
   async function handleSave() {
     if (!form.title.trim()) {

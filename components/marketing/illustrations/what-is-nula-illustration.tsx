@@ -1,5 +1,3 @@
-import { cn } from "@/lib/utils"
-
 import type { IllustrationProps } from "./shared"
 import { MARKETING_ILLUSTRATIONS, MarketingIllustration } from "./shared"
 

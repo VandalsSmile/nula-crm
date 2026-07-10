@@ -7,7 +7,7 @@ import { useTheme } from "next-themes"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
-import { APP_BASE, APP_ROUTES } from "@/lib/routes"
+import { APP_ROUTES } from "@/lib/routes"
 
 const titles: Record<string, string> = {
   [APP_ROUTES.dashboard]: "Dashboard",

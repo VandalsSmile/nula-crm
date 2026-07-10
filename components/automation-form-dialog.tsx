@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Loader2, Save } from "lucide-react"
 import { toast } from "sonner"
@@ -68,7 +68,13 @@ export function AutomationFormDialog({
     enabled: true,
   })
 
-  useEffect(() => {
+  // Re-populate the form whenever the dialog opens or targets a different
+  // automation, using React's "adjust state during render" pattern instead of a
+  // state-setting effect.
+  const resetKey = open ? (automation?.id ?? "new") : null
+  const [appliedKey, setAppliedKey] = useState<string | null>(null)
+  if (resetKey !== appliedKey) {
+    setAppliedKey(resetKey)
     if (open) {
       setForm({
         name: automation?.name ?? "",
@@ -77,7 +83,7 @@ export function AutomationFormDialog({
         enabled: automation?.enabled ?? true,
       })
     }
-  }, [open, automation])
+  }
 
   async function handleSave() {
     if (!form.name.trim()) {

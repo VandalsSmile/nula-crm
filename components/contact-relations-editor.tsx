@@ -2,11 +2,10 @@
 
 import { useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, X } from "lucide-react"
+import { X } from "lucide-react"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import {
   Select,
   SelectContent,

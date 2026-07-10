@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Loader2, Save } from "lucide-react"
 import { toast } from "sonner"
@@ -46,7 +46,13 @@ export function EditContactDialog({
     notes: "",
   })
 
-  useEffect(() => {
+  // Re-populate the form whenever the dialog opens or targets a different
+  // contact, using React's "adjust state during render" pattern instead of a
+  // state-setting effect.
+  const resetKey = open && contact ? contact.id : null
+  const [appliedKey, setAppliedKey] = useState<string | null>(null)
+  if (resetKey !== appliedKey) {
+    setAppliedKey(resetKey)
     if (open && contact) {
       setForm({
         firstName: contact.firstName,
@@ -58,7 +64,7 @@ export function EditContactDialog({
         notes: contact.notes,
       })
     }
-  }, [open, contact])
+  }
 
   async function handleSave() {
     if (!form.firstName?.trim()) {

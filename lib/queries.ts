@@ -11,7 +11,7 @@ import {
   tags,
   workspaceSettings,
 } from "@/lib/db/schema"
-import { and, desc, eq, gte, ilike, inArray, or, sql } from "drizzle-orm"
+import { and, desc, eq, ilike, inArray, or, sql } from "drizzle-orm"
 import { getWorkspaceScope, workspaceUserIdMatches } from "@/lib/auth-helpers"
 import {
   mapActivity,
@@ -189,7 +189,7 @@ export async function getCampaigns() {
 }
 
 export async function getActivities(limit = 20) {
-  const { workspaceId, scopeIds } = await getWorkspaceScope()
+  const { scopeIds } = await getWorkspaceScope()
   const [rows, contactRows, labels] = await Promise.all([
     db
       .select()
