@@ -28,7 +28,7 @@ import {
 import { slugifyTag } from "@/lib/crm-defaults"
 import type { AiActionPreview } from "@/lib/crm-types"
 
-async function ensureGroup(workspaceId: string, scopeIds: string[], name: string, actorId: string) {
+async function ensureGroup(workspaceId: string, scopeIds: string[], name: string) {
   const slug = slugifyTag(name)
   const [existing] = await db
     .select()
@@ -218,7 +218,7 @@ async function executeAiActionInternal(
       })
     }
 
-    const group = await ensureGroup(workspaceId, scopeIds, groupName, user.id)
+    const group = await ensureGroup(workspaceId, scopeIds, groupName)
     const contactIds = matches.map((c) => c.id)
     undoPayload = { contactIds, groupId: group.id }
     await addContactsToGroup(contactIds, group.id, user.id, workspaceId)

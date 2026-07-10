@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server"
-import { eq, isNull, or } from "drizzle-orm"
 
 import { sharedWorkspaceId } from "@/lib/workspace-scope"
 import { runInactiveCustomerAutomation } from "@/lib/automations/engine"

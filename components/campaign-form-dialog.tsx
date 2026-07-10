@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Loader2, Plus, Save, Trash2 } from "lucide-react"
 import { toast } from "sonner"
@@ -42,7 +42,13 @@ export function CampaignFormDialog({
   const [form, setForm] = useState({ name: "", goal: "", audience: "", groupId: "" })
   const [steps, setSteps] = useState<CampaignStep[]>([])
 
-  useEffect(() => {
+  // Re-populate the form whenever the dialog opens or targets a different
+  // campaign, using React's "adjust state during render" pattern instead of a
+  // state-setting effect.
+  const resetKey = open && campaign ? campaign.id : null
+  const [appliedKey, setAppliedKey] = useState<string | null>(null)
+  if (resetKey !== appliedKey) {
+    setAppliedKey(resetKey)
     if (open && campaign) {
       setForm({
         name: campaign.name,
@@ -52,7 +58,7 @@ export function CampaignFormDialog({
       })
       setSteps(campaign.sequence ?? [])
     }
-  }, [open, campaign])
+  }
 
   function updateStep(index: number, patch: Partial<CampaignStep>) {
     setSteps((prev) => prev.map((s, i) => (i === index ? { ...s, ...patch } : s)))

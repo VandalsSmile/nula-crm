@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Loader2, Save } from "lucide-react"
 import { toast } from "sonner"
@@ -31,7 +31,13 @@ export function TagFormDialog({
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({ name: "", description: "", color: "#4F3DF5" })
 
-  useEffect(() => {
+  // Re-populate the form whenever the dialog opens or targets a different tag,
+  // using React's "adjust state during render" pattern instead of a
+  // state-setting effect.
+  const resetKey = open ? (tag?.id ?? "new") : null
+  const [appliedKey, setAppliedKey] = useState<string | null>(null)
+  if (resetKey !== appliedKey) {
+    setAppliedKey(resetKey)
     if (open) {
       setForm({
         name: tag?.name ?? "",
@@ -39,7 +45,7 @@ export function TagFormDialog({
         color: tag?.color ?? "#4F3DF5",
       })
     }
-  }, [open, tag])
+  }
 
   async function handleSave() {
     if (!form.name.trim()) {

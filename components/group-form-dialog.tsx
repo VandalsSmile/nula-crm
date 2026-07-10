@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Loader2, Save } from "lucide-react"
 import { toast } from "sonner"
@@ -31,14 +31,20 @@ export function GroupFormDialog({
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({ name: "", description: "" })
 
-  useEffect(() => {
+  // Re-populate the form whenever the dialog opens or targets a different group,
+  // using React's "adjust state during render" pattern instead of a
+  // state-setting effect.
+  const resetKey = open ? (group?.id ?? "new") : null
+  const [appliedKey, setAppliedKey] = useState<string | null>(null)
+  if (resetKey !== appliedKey) {
+    setAppliedKey(resetKey)
     if (open) {
       setForm({
         name: group?.name ?? "",
         description: group?.description ?? "",
       })
     }
-  }, [open, group])
+  }
 
   async function handleSave() {
     if (!form.name.trim()) {
