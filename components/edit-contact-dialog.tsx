@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select"
 import { OwnerSelect } from "@/components/owner-select"
 import { CompanySelect } from "@/components/company-select"
+import { LocationSelect } from "@/components/location-select"
 import { updateContact, type ContactInput } from "@/app/actions/contacts"
 import { LIFECYCLE_STAGES, type Contact } from "@/lib/crm-types"
 
@@ -43,6 +44,7 @@ export function EditContactDialog({
     lastName: "",
     companyName: "",
     companyId: "",
+    locationId: "",
     ownerId: "",
     email: "",
     phone: "",
@@ -69,6 +71,7 @@ export function EditContactDialog({
         lastName: contact.lastName,
         companyName: contact.companyName,
         companyId: contact.companyId,
+        locationId: contact.locationId,
         ownerId: contact.ownerId,
         email: contact.email,
         phone: contact.phone,
@@ -129,9 +132,21 @@ export function EditContactDialog({
             <FieldLabel>Company</FieldLabel>
             <CompanySelect
               value={form.companyId ?? ""}
-              onChange={(companyId, companyName) => setForm((f) => ({ ...f, companyId, companyName }))}
+              onChange={(companyId, companyName) =>
+                setForm((f) => ({ ...f, companyId, companyName, locationId: "" }))
+              }
             />
           </Field>
+          {form.companyId ? (
+            <Field>
+              <FieldLabel>Location</FieldLabel>
+              <LocationSelect
+                companyId={form.companyId ?? ""}
+                value={form.locationId ?? ""}
+                onChange={(locationId) => setForm((f) => ({ ...f, locationId }))}
+              />
+            </Field>
+          ) : null}
           <Field>
             <FieldLabel>Email</FieldLabel>
             <Input

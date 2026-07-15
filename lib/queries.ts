@@ -8,6 +8,7 @@ import {
   contactTags,
   deals,
   groups,
+  locations,
   messages,
   tags,
   workspaceSettings,
@@ -21,15 +22,25 @@ import {
   mapContact,
   mapDeal,
   mapGroup,
+  mapLocation,
   mapTag,
 } from "@/lib/mappers"
-import type { Company, Contact, DashboardStats, Deal, InboxConversation, Message, ReportData } from "@/lib/crm-types"
+import type { Company, Contact, DashboardStats, Deal, InboxConversation, Location, Message, ReportData } from "@/lib/crm-types"
 import { LIFECYCLE_STAGES } from "@/lib/crm-types"
 import { getWorkspaceUserLabels, labelForUserId } from "@/lib/workspace-users"
 
 async function contactLabels() {
   const { workspaceId } = await getWorkspaceScope()
   return getWorkspaceUserLabels(workspaceId)
+}
+
+/** Map of locationId -> location name for the workspace (for contact display). */
+async function locationLabels(scopeIds: string[]): Promise<Map<string, string>> {
+  const rows = await db
+    .select({ id: locations.id, name: locations.name })
+    .from(locations)
+    .where(workspaceUserIdMatches(locations.userId, scopeIds))
+  return new Map(rows.map((r) => [r.id, r.name]))
 }
 
 async function loadContactRelations(contactIds: string[], scopeIds: string[]) {
@@ -82,12 +93,13 @@ export async function getContacts(search?: string): Promise<Contact[]> {
     : workspaceUserIdMatches(contacts.userId, scopeIds)
 
   const rows = await db.select().from(contacts).where(where).orderBy(desc(contacts.createdAt))
-  const [{ tagMap, groupMap }, labels] = await Promise.all([
+  const [{ tagMap, groupMap }, labels, locMap] = await Promise.all([
     loadContactRelations(
       rows.map((r) => r.id),
       scopeIds,
     ),
     contactLabels(),
+    locationLabels(scopeIds),
   ])
 
   return rows.map((row) =>
@@ -95,6 +107,7 @@ export async function getContacts(search?: string): Promise<Contact[]> {
       tags: tagMap.get(row.id) ?? [],
       groups: groupMap.get(row.id) ?? [],
       ownerName: row.ownerId ? labelForUserId(labels, row.ownerId) : "",
+      locationName: row.locationId ? locMap.get(row.locationId) ?? "" : "",
     }),
   )
 }
@@ -108,14 +121,16 @@ export async function getContactById(id: string): Promise<Contact | null> {
     .limit(1)
   if (!row) return null
 
-  const [{ tagMap, groupMap }, labels] = await Promise.all([
+  const [{ tagMap, groupMap }, labels, locMap] = await Promise.all([
     loadContactRelations([id], scopeIds),
     contactLabels(),
+    locationLabels(scopeIds),
   ])
   return mapContact(row, {
     tags: tagMap.get(id) ?? [],
     groups: groupMap.get(id) ?? [],
     ownerName: row.ownerId ? labelForUserId(labels, row.ownerId) : "",
+    locationName: row.locationId ? locMap.get(row.locationId) ?? "" : "",
   })
 }
 
@@ -155,6 +170,24 @@ export async function getCompanyById(id: string): Promise<Company | null> {
   return mapCompany(row, countRow?.count ?? 0)
 }
 
+export async function getLocationsForCompany(companyId: string): Promise<Location[]> {
+  const { scopeIds } = await getWorkspaceScope()
+  const [rows, counts] = await Promise.all([
+    db
+      .select()
+      .from(locations)
+      .where(and(eq(locations.companyId, companyId), workspaceUserIdMatches(locations.userId, scopeIds)))
+      .orderBy(locations.name),
+    db
+      .select({ locationId: contacts.locationId, count: sql<number>`count(*)::int` })
+      .from(contacts)
+      .where(and(eq(contacts.companyId, companyId), workspaceUserIdMatches(contacts.userId, scopeIds)))
+      .groupBy(contacts.locationId),
+  ])
+  const countMap = new Map(counts.map((r) => [r.locationId, r.count]))
+  return rows.map((r) => mapLocation(r, countMap.get(r.id) ?? 0))
+}
+
 export async function getContactsForCompany(companyId: string): Promise<Contact[]> {
   const { scopeIds } = await getWorkspaceScope()
   const rows = await db
@@ -163,12 +196,13 @@ export async function getContactsForCompany(companyId: string): Promise<Contact[
     .where(and(eq(contacts.companyId, companyId), workspaceUserIdMatches(contacts.userId, scopeIds)))
     .orderBy(desc(contacts.createdAt))
 
-  const [{ tagMap, groupMap }, labels] = await Promise.all([
+  const [{ tagMap, groupMap }, labels, locMap] = await Promise.all([
     loadContactRelations(
       rows.map((r) => r.id),
       scopeIds,
     ),
     contactLabels(),
+    locationLabels(scopeIds),
   ])
 
   return rows.map((row) =>
@@ -176,6 +210,7 @@ export async function getContactsForCompany(companyId: string): Promise<Contact[
       tags: tagMap.get(row.id) ?? [],
       groups: groupMap.get(row.id) ?? [],
       ownerName: row.ownerId ? labelForUserId(labels, row.ownerId) : "",
+      locationName: row.locationId ? locMap.get(row.locationId) ?? "" : "",
     }),
   )
 }

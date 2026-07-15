@@ -164,6 +164,9 @@ export function ContactProfile({
                 ) : (
                   contact.companyName
                 )}
+                {contact.locationName ? (
+                  <span className="text-muted-foreground">· {contact.locationName}</span>
+                ) : null}
               </div>
             ) : null}
             {contact.email ? (

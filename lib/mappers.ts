@@ -11,6 +11,7 @@ import type {
   Group,
   LeadStatus,
   LifecycleStage,
+  Location,
   Tag,
 } from "@/lib/crm-types"
 import { contactFullName } from "@/lib/crm-types"
@@ -21,6 +22,7 @@ import type {
   contacts,
   deals,
   groups,
+  locations,
   tags,
 } from "@/lib/db/schema"
 import { labelForUserId, type UserLabelMap } from "@/lib/workspace-users"
@@ -29,6 +31,7 @@ const iso = (d: Date | null | undefined) => (d ? d.toISOString() : null)
 
 type ContactRow = typeof contacts.$inferSelect
 type CompanyRow = typeof companies.$inferSelect
+type LocationRow = typeof locations.$inferSelect
 type TagRow = typeof tags.$inferSelect
 type GroupRow = typeof groups.$inferSelect
 type ActivityRow = typeof activities.$inferSelect
@@ -61,6 +64,21 @@ export function mapCompany(row: CompanyRow, contactCount = 0): Company {
   }
 }
 
+export function mapLocation(row: LocationRow, contactCount = 0): Location {
+  return {
+    id: row.id,
+    companyId: row.companyId,
+    name: row.name,
+    address: row.address,
+    city: row.city,
+    state: row.state,
+    zip: row.zip,
+    phone: row.phone,
+    contactCount,
+    createdAt: iso(row.createdAt) ?? "",
+  }
+}
+
 export function mapGroup(row: GroupRow, memberCount = 0): Group {
   return {
     id: row.id,
@@ -75,7 +93,7 @@ export function mapGroup(row: GroupRow, memberCount = 0): Group {
 
 export function mapContact(
   row: ContactRow,
-  extra: { tags?: Tag[]; groups?: Group[]; ownerName?: string } = {},
+  extra: { tags?: Tag[]; groups?: Group[]; ownerName?: string; locationName?: string } = {},
 ): Contact {
   // When a structured first name is present, trust the stored last name verbatim
   // (including an intentionally empty one). Only fall back to deriving first/last
@@ -102,6 +120,8 @@ export function mapContact(
     fullName,
     companyName: row.companyName,
     companyId: row.companyId,
+    locationId: row.locationId,
+    locationName: extra.locationName ?? "",
     ownerId: row.ownerId,
     ownerName: extra.ownerName ?? "",
     email: row.email,
