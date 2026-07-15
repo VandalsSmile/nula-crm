@@ -104,6 +104,8 @@ export type Contact = {
   lastName: string
   fullName: string
   companyName: string
+  ownerId: string
+  ownerName: string
   email: string
   phone: string
   websiteUrl: string

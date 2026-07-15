@@ -23,7 +23,7 @@ import {
 } from "@/lib/mappers"
 import type { Contact, DashboardStats, Deal, InboxConversation, Message, ReportData } from "@/lib/crm-types"
 import { LIFECYCLE_STAGES } from "@/lib/crm-types"
-import { getWorkspaceUserLabels } from "@/lib/workspace-users"
+import { getWorkspaceUserLabels, labelForUserId } from "@/lib/workspace-users"
 
 async function contactLabels() {
   const { workspaceId } = await getWorkspaceScope()
@@ -80,15 +80,19 @@ export async function getContacts(search?: string): Promise<Contact[]> {
     : workspaceUserIdMatches(contacts.userId, scopeIds)
 
   const rows = await db.select().from(contacts).where(where).orderBy(desc(contacts.createdAt))
-  const { tagMap, groupMap } = await loadContactRelations(
-    rows.map((r) => r.id),
-    scopeIds,
-  )
+  const [{ tagMap, groupMap }, labels] = await Promise.all([
+    loadContactRelations(
+      rows.map((r) => r.id),
+      scopeIds,
+    ),
+    contactLabels(),
+  ])
 
   return rows.map((row) =>
     mapContact(row, {
       tags: tagMap.get(row.id) ?? [],
       groups: groupMap.get(row.id) ?? [],
+      ownerName: labelForUserId(labels, row.ownerId),
     }),
   )
 }
@@ -102,10 +106,14 @@ export async function getContactById(id: string): Promise<Contact | null> {
     .limit(1)
   if (!row) return null
 
-  const { tagMap, groupMap } = await loadContactRelations([id], scopeIds)
+  const [{ tagMap, groupMap }, labels] = await Promise.all([
+    loadContactRelations([id], scopeIds),
+    contactLabels(),
+  ])
   return mapContact(row, {
     tags: tagMap.get(id) ?? [],
     groups: groupMap.get(id) ?? [],
+    ownerName: labelForUserId(labels, row.ownerId),
   })
 }
 

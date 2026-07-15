@@ -64,6 +64,7 @@ export const contacts = pgTable("contacts", {
   lastName: text("lastName").notNull().default(""),
   name: text("name").notNull().default(""),
   companyName: text("companyName").notNull().default(""),
+  ownerId: text("ownerId").notNull().default(""),
   legacyContactName: text("legacyContactName").notNull().default(""),
   email: text("email").notNull().default(""),
   phone: text("phone").notNull().default(""),
