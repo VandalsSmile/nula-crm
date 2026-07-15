@@ -119,6 +119,54 @@ export async function resetTagsToDefaults(): Promise<{ removed: number; added: n
   return { removed: ids.length, added: tagNames.length }
 }
 
+/**
+ * Replace the workspace's groups with the default set for its business type.
+ * Destructive: removes all existing groups, their contact memberships, and
+ * unlinks them from any campaigns, then seeds the defaults fresh. Admin-only.
+ */
+export async function resetGroupsToDefaults(): Promise<{ removed: number; added: number }> {
+  const { workspaceId, scopeIds } = await requireRole("Admin")
+
+  const [ws] = await db
+    .select({ businessType: workspaceSettings.businessType })
+    .from(workspaceSettings)
+    .where(eq(workspaceSettings.workspaceId, workspaceId))
+    .limit(1)
+  const businessType = (ws?.businessType as BusinessTypeId) ?? DEFAULT_BUSINESS_TYPE
+
+  const existing = await db
+    .select({ id: groups.id })
+    .from(groups)
+    .where(workspaceUserIdMatches(groups.userId, scopeIds))
+  const ids = existing.map((g) => g.id)
+  if (ids.length > 0) {
+    await db.delete(contactGroups).where(inArray(contactGroups.groupId, ids))
+    await db
+      .update(campaigns)
+      .set({ groupId: null, updatedAt: new Date() })
+      .where(inArray(campaigns.groupId, ids))
+    await db.delete(groups).where(inArray(groups.id, ids))
+  }
+
+  const groupNames = DEFAULT_GROUPS[businessType] ?? DEFAULT_GROUPS[DEFAULT_BUSINESS_TYPE]
+  for (const name of groupNames) {
+    await db.insert(groups).values({
+      id: randomId("g"),
+      userId: workspaceId,
+      name,
+      slug: slugifyTag(name),
+      description: "Default group",
+      type: "audience",
+      isSystem: true,
+    })
+  }
+
+  revalidatePath(APP_ROUTES.groups)
+  revalidatePath(APP_ROUTES.campaigns)
+  revalidatePath(APP_ROUTES.contacts)
+  return { removed: ids.length, added: groupNames.length }
+}
+
 export async function seedWorkspaceDefaults(businessType?: BusinessTypeId) {
   const { workspaceId, scopeIds } = await getActingUser()
 

@@ -20,6 +20,7 @@ import {
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog"
 import {
   getCompanyProfile,
+  resetGroupsToDefaults,
   resetTagsToDefaults,
   updateWorkspaceSettings,
   type CompanyProfile,
@@ -35,7 +36,8 @@ export function WorkspaceSettings() {
   const { data, isLoading, mutate } = useSWR("company-profile", () => getCompanyProfile())
   const [edits, setEdits] = useState<Partial<CompanyProfile>>({})
   const [saving, setSaving] = useState(false)
-  const [resetOpen, setResetOpen] = useState(false)
+  const [resetTagsOpen, setResetTagsOpen] = useState(false)
+  const [resetGroupsOpen, setResetGroupsOpen] = useState(false)
 
   async function handleResetTags() {
     try {
@@ -44,6 +46,17 @@ export function WorkspaceSettings() {
       router.refresh()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not reset tags")
+      throw err
+    }
+  }
+
+  async function handleResetGroups() {
+    try {
+      const { removed, added } = await resetGroupsToDefaults()
+      toast.success(`Reset groups — removed ${removed}, added ${added} default groups`)
+      router.refresh()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not reset groups")
       throw err
     }
   }
@@ -190,33 +203,54 @@ export function WorkspaceSettings() {
         ) : null}
 
         {isAdmin ? (
-          <div className="mt-2 flex flex-col gap-2 rounded-lg border border-destructive/20 bg-destructive/5 p-4">
-            <p className="text-sm font-medium">Reset contact tags</p>
-            <p className="text-sm text-muted-foreground">
-              Replace all existing contact tags with the default set for your industry
-              ({BUSINESS_TYPES.find((b) => b.id === businessType)?.label ?? "General"}). This removes
-              your current tags (including any applied to contacts) and can&apos;t be undone.
-            </p>
-            <Button
-              variant="outline"
-              className="w-fit"
-              onClick={() => setResetOpen(true)}
-              disabled={isLoading}
-            >
-              <RotateCcw data-icon="inline-start" />
-              Reset tags to defaults
-            </Button>
+          <div className="mt-2 flex flex-col gap-3 rounded-lg border border-destructive/20 bg-destructive/5 p-4">
+            <div>
+              <p className="text-sm font-medium">Reset to industry defaults</p>
+              <p className="text-sm text-muted-foreground">
+                Replace your tags or groups with the default set for your industry
+                ({BUSINESS_TYPES.find((b) => b.id === businessType)?.label ?? "General"}). This removes
+                the current ones (including any applied to contacts) and can&apos;t be undone.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                className="w-fit"
+                onClick={() => setResetTagsOpen(true)}
+                disabled={isLoading}
+              >
+                <RotateCcw data-icon="inline-start" />
+                Reset tags to defaults
+              </Button>
+              <Button
+                variant="outline"
+                className="w-fit"
+                onClick={() => setResetGroupsOpen(true)}
+                disabled={isLoading}
+              >
+                <RotateCcw data-icon="inline-start" />
+                Reset groups to defaults
+              </Button>
+            </div>
           </div>
         ) : null}
       </CardContent>
 
       <ConfirmDeleteDialog
-        open={resetOpen}
-        onOpenChange={setResetOpen}
+        open={resetTagsOpen}
+        onOpenChange={setResetTagsOpen}
         title="Reset tags to defaults?"
         description="This permanently removes all current contact tags (including ones applied to contacts) and replaces them with the default set for your industry. This can't be undone."
         confirmLabel="Reset tags"
         onConfirm={handleResetTags}
+      />
+      <ConfirmDeleteDialog
+        open={resetGroupsOpen}
+        onOpenChange={setResetGroupsOpen}
+        title="Reset groups to defaults?"
+        description="This permanently removes all current groups (including their contact memberships and links to campaigns) and replaces them with the default set for your industry. This can't be undone."
+        confirmLabel="Reset groups"
+        onConfirm={handleResetGroups}
       />
     </Card>
   )
