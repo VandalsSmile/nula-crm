@@ -105,6 +105,8 @@ export type Contact = {
   fullName: string
   companyName: string
   companyId: string
+  locationId: string
+  locationName: string
   ownerId: string
   ownerName: string
   email: string
@@ -144,6 +146,19 @@ export type Company = {
   state: string
   zip: string
   notes: string
+  contactCount: number
+  createdAt: string
+}
+
+export type Location = {
+  id: string
+  companyId: string
+  name: string
+  address: string
+  city: string
+  state: string
+  zip: string
+  phone: string
   contactCount: number
   createdAt: string
 }

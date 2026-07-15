@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { OwnerSelect } from "@/components/owner-select"
 import { CompanySelect } from "@/components/company-select"
+import { LocationSelect } from "@/components/location-select"
 import { useSessionUser } from "@/lib/session-context"
 import { createContact } from "@/app/actions/contacts"
 
@@ -35,6 +36,7 @@ export function AddContactDialog({
     lastName: "",
     companyName: "",
     companyId: "",
+    locationId: "",
     ownerId: me.id,
     email: "",
     phone: "",
@@ -52,6 +54,7 @@ export function AddContactDialog({
       lastName: "",
       companyName: "",
       companyId: "",
+      locationId: "",
       ownerId: me.id,
       email: "",
       phone: "",
@@ -110,9 +113,21 @@ export function AddContactDialog({
             <FieldLabel>Company</FieldLabel>
             <CompanySelect
               value={form.companyId}
-              onChange={(companyId, companyName) => setForm((f) => ({ ...f, companyId, companyName }))}
+              onChange={(companyId, companyName) =>
+                setForm((f) => ({ ...f, companyId, companyName, locationId: "" }))
+              }
             />
           </Field>
+          {form.companyId ? (
+            <Field>
+              <FieldLabel>Location</FieldLabel>
+              <LocationSelect
+                companyId={form.companyId}
+                value={form.locationId}
+                onChange={(locationId) => setForm((f) => ({ ...f, locationId }))}
+              />
+            </Field>
+          ) : null}
           <Field>
             <FieldLabel>Email</FieldLabel>
             <Input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
