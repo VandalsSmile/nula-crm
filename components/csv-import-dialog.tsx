@@ -51,7 +51,8 @@ export function CsvImportDialog({
         <DialogHeader>
           <DialogTitle>Import contacts from CSV</DialogTitle>
           <DialogDescription>
-            Include columns like first name, last name, email, phone, source, and notes. A header row is required.
+            Include columns like first name, last name, company, email, phone, website, address, city,
+            state, zip, source, and notes. A header row is required.
           </DialogDescription>
         </DialogHeader>
 

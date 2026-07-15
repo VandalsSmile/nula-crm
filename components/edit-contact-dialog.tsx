@@ -39,8 +39,14 @@ export function EditContactDialog({
   const [form, setForm] = useState<ContactInput>({
     firstName: "",
     lastName: "",
+    companyName: "",
     email: "",
     phone: "",
+    websiteUrl: "",
+    address: "",
+    city: "",
+    state: "",
+    zip: "",
     source: "",
     lifecycleStage: "New Lead",
     notes: "",
@@ -57,8 +63,14 @@ export function EditContactDialog({
       setForm({
         firstName: contact.firstName,
         lastName: contact.lastName,
+        companyName: contact.companyName,
         email: contact.email,
         phone: contact.phone,
+        websiteUrl: contact.websiteUrl,
+        address: contact.address,
+        city: contact.city,
+        state: contact.state,
+        zip: contact.zip,
         source: contact.source,
         lifecycleStage: contact.lifecycleStage,
         notes: contact.notes,
@@ -67,8 +79,8 @@ export function EditContactDialog({
   }
 
   async function handleSave() {
-    if (!form.firstName?.trim()) {
-      toast.error("First name is required")
+    if (!form.firstName?.trim() && !form.companyName?.trim()) {
+      toast.error("Enter a first name or a company name")
       return
     }
     setSaving(true)
@@ -108,6 +120,13 @@ export function EditContactDialog({
             </Field>
           </div>
           <Field>
+            <FieldLabel>Company</FieldLabel>
+            <Input
+              value={form.companyName}
+              onChange={(e) => setForm((f) => ({ ...f, companyName: e.target.value }))}
+            />
+          </Field>
+          <Field>
             <FieldLabel>Email</FieldLabel>
             <Input
               type="email"
@@ -119,6 +138,32 @@ export function EditContactDialog({
             <FieldLabel>Phone</FieldLabel>
             <Input value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} />
           </Field>
+          <Field>
+            <FieldLabel>Website</FieldLabel>
+            <Input
+              placeholder="https://"
+              value={form.websiteUrl}
+              onChange={(e) => setForm((f) => ({ ...f, websiteUrl: e.target.value }))}
+            />
+          </Field>
+          <Field>
+            <FieldLabel>Address</FieldLabel>
+            <Input value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} />
+          </Field>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field>
+              <FieldLabel>City</FieldLabel>
+              <Input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} />
+            </Field>
+            <Field>
+              <FieldLabel>State</FieldLabel>
+              <Input value={form.state} onChange={(e) => setForm((f) => ({ ...f, state: e.target.value }))} />
+            </Field>
+            <Field>
+              <FieldLabel>ZIP</FieldLabel>
+              <Input value={form.zip} onChange={(e) => setForm((f) => ({ ...f, zip: e.target.value }))} />
+            </Field>
+          </div>
           <Field>
             <FieldLabel>Source</FieldLabel>
             <Input value={form.source} onChange={(e) => setForm((f) => ({ ...f, source: e.target.value }))} />

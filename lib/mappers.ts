@@ -58,20 +58,33 @@ export function mapContact(
   row: ContactRow,
   extra: { tags?: Tag[]; groups?: Group[] } = {},
 ): Contact {
-  const firstName = row.firstName || row.legacyContactName?.split(" ")[0] || row.name || "Contact"
-  const lastName =
-    row.lastName ||
-    row.legacyContactName?.split(" ").slice(1).join(" ") ||
-    row.name?.split(" ").slice(1).join(" ") ||
-    ""
+  // When a structured first name is present, trust the stored last name verbatim
+  // (including an intentionally empty one). Only fall back to deriving first/last
+  // from the combined `name`/legacy fields for legacy rows that never had a
+  // structured first name — otherwise an empty last name would appear "auto-filled".
+  const hasStructuredName = Boolean(row.firstName)
+  const firstName = row.firstName || row.legacyContactName?.split(" ")[0] || row.name || ""
+  const lastName = hasStructuredName
+    ? row.lastName
+    : row.lastName ||
+      row.legacyContactName?.split(" ").slice(1).join(" ") ||
+      row.name?.split(" ").slice(1).join(" ") ||
+      ""
+
+  // Fall back to the company name for company-only contacts (cold outreach where
+  // the person's name isn't known yet).
+  const fullName =
+    firstName || lastName ? contactFullName(firstName, lastName) : row.companyName || "Unnamed contact"
 
   return {
     id: row.id,
     firstName,
     lastName,
-    fullName: contactFullName(firstName, lastName),
+    fullName,
+    companyName: row.companyName,
     email: row.email,
     phone: row.phone,
+    websiteUrl: row.websiteUrl,
     address: row.address,
     city: row.city,
     state: row.state,

@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Mail, MapPin, Pencil, Phone, Plus, ShoppingBag, Sparkles, Trash2 } from "lucide-react"
+import { ArrowLeft, Building2, Globe, Mail, MapPin, Pencil, Phone, Plus, ShoppingBag, Sparkles, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { LifecycleBadge, LeadScoreBadge } from "@/components/lifecycle-badge"
@@ -154,6 +154,12 @@ export function ContactProfile({
             <CardTitle>Contact info</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3 text-sm">
+            {contact.companyName ? (
+              <div className="flex items-center gap-2">
+                <Building2 className="size-4 text-muted-foreground" />
+                {contact.companyName}
+              </div>
+            ) : null}
             {contact.email ? (
               <div className="flex items-center gap-2">
                 <Mail className="size-4 text-muted-foreground" />
@@ -164,6 +170,19 @@ export function ContactProfile({
               <div className="flex items-center gap-2">
                 <Phone className="size-4 text-muted-foreground" />
                 {contact.phone}
+              </div>
+            ) : null}
+            {contact.websiteUrl ? (
+              <div className="flex items-center gap-2">
+                <Globe className="size-4 text-muted-foreground" />
+                <a
+                  href={/^https?:\/\//i.test(contact.websiteUrl) ? contact.websiteUrl : `https://${contact.websiteUrl}`}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="text-nula-violet hover:underline"
+                >
+                  {contact.websiteUrl}
+                </a>
               </div>
             ) : null}
             {contact.city || contact.state ? (

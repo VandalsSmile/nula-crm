@@ -17,8 +17,10 @@ import { APP_ROUTES } from "@/lib/routes"
 export type ContactInput = {
   firstName: string
   lastName?: string
+  companyName?: string
   email?: string
   phone?: string
+  websiteUrl?: string
   address?: string
   city?: string
   state?: string
@@ -32,10 +34,14 @@ export type ContactInput = {
 
 export async function createContact(input: ContactInput): Promise<Contact> {
   const { user, workspaceId } = await getActingUser()
-  if (!input.firstName?.trim()) throw new Error("First name is required")
-
-  const firstName = input.firstName.trim()
+  const firstName = input.firstName?.trim() ?? ""
   const lastName = input.lastName?.trim() ?? ""
+  const companyName = input.companyName?.trim() ?? ""
+  // For cold outreach the person's name may be unknown — allow a company-only
+  // contact, but require at least one identifier.
+  if (!firstName && !companyName) {
+    throw new Error("Enter a first name or a company name")
+  }
 
   const [row] = await db
     .insert(contacts)
@@ -45,8 +51,10 @@ export async function createContact(input: ContactInput): Promise<Contact> {
       firstName,
       lastName,
       name: [firstName, lastName].filter(Boolean).join(" "),
+      companyName,
       email: input.email ?? "",
       phone: input.phone ?? "",
+      websiteUrl: input.websiteUrl ?? "",
       address: input.address ?? "",
       city: input.city ?? "",
       state: input.state ?? "",
@@ -60,11 +68,12 @@ export async function createContact(input: ContactInput): Promise<Contact> {
     })
     .returning()
 
+  const displayLabel = [firstName, lastName].filter(Boolean).join(" ") || companyName
   await db.insert(activities).values({
     id: randomId("a"),
     userId: workspaceId,
     type: "created",
-    message: `added contact ${firstName} ${lastName}`.trim(),
+    message: `added contact ${displayLabel}`.trim(),
     contactId: row.id,
     actorId: user.id,
   })
@@ -227,6 +236,12 @@ export async function importContactsFromCsv(csvText: string): Promise<CsvImportR
   const lastIdx = headerIndex(headers, "lastname", "last", "last name")
   const emailIdx = headerIndex(headers, "email", "email address")
   const phoneIdx = headerIndex(headers, "phone", "mobile", "cell")
+  const companyIdx = headerIndex(headers, "company", "company name", "organization", "organisation")
+  const websiteIdx = headerIndex(headers, "website", "url", "site", "web")
+  const addressIdx = headerIndex(headers, "address", "street", "street address")
+  const cityIdx = headerIndex(headers, "city", "town")
+  const stateIdx = headerIndex(headers, "state", "province", "region")
+  const zipIdx = headerIndex(headers, "zip", "zipcode", "postal", "postal code", "postcode")
   const sourceIdx = headerIndex(headers, "source", "lead source")
   const notesIdx = headerIndex(headers, "notes", "note")
 
@@ -245,6 +260,12 @@ export async function importContactsFromCsv(csvText: string): Promise<CsvImportR
     const lastName = lastIdx >= 0 ? cols[lastIdx]?.trim() ?? "" : ""
     const email = emailIdx >= 0 ? cols[emailIdx]?.trim() ?? "" : ""
     const phone = phoneIdx >= 0 ? cols[phoneIdx]?.trim() ?? "" : ""
+    const companyName = companyIdx >= 0 ? cols[companyIdx]?.trim() ?? "" : ""
+    const websiteUrl = websiteIdx >= 0 ? cols[websiteIdx]?.trim() ?? "" : ""
+    const address = addressIdx >= 0 ? cols[addressIdx]?.trim() ?? "" : ""
+    const city = cityIdx >= 0 ? cols[cityIdx]?.trim() ?? "" : ""
+    const state = stateIdx >= 0 ? cols[stateIdx]?.trim() ?? "" : ""
+    const zip = zipIdx >= 0 ? cols[zipIdx]?.trim() ?? "" : ""
     const source = sourceIdx >= 0 ? cols[sourceIdx]?.trim() || "csv-import" : "csv-import"
     const notes = notesIdx >= 0 ? cols[notesIdx]?.trim() ?? "" : ""
 
@@ -252,7 +273,7 @@ export async function importContactsFromCsv(csvText: string): Promise<CsvImportR
       // Route each row through the unified intake core: dedupe/merge,
       // scoring, source/interest/campaign tags, routing rules, automations.
       const result = await processLeadIntake(
-        { firstName, lastName, email, phone, source, notes },
+        { firstName, lastName, companyName, email, phone, websiteUrl, address, city, state, zip, source, notes },
         { source: { key: "csv-import", channel: "csv" }, workspaceId },
       )
 

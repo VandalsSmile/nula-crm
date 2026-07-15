@@ -31,28 +31,30 @@ export function SettingsView() {
           <TabsTrigger value="plan">Plan</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="profile" className="mt-6">
+        {/* keepMounted keeps each panel's form state alive when switching tabs,
+            so unsaved edits aren't lost by unmounting the inactive tab. */}
+        <TabsContent value="profile" className="mt-6" keepMounted>
           <ProfileSettings />
         </TabsContent>
 
-        <TabsContent value="security" className="mt-6">
+        <TabsContent value="security" className="mt-6" keepMounted>
           <SecuritySettings />
         </TabsContent>
 
-        <TabsContent value="team" className="mt-6">
+        <TabsContent value="team" className="mt-6" keepMounted>
           <TeamSettings />
         </TabsContent>
 
-        <TabsContent value="workspace" className="mt-6">
+        <TabsContent value="workspace" className="mt-6" keepMounted>
           <WorkspaceSettings />
         </TabsContent>
 
-        <TabsContent value="leads" className="mt-6 flex flex-col gap-6">
+        <TabsContent value="leads" className="mt-6 flex flex-col gap-6" keepMounted>
           <RoutingRulesSettings />
           <LeadSourcesSettings />
         </TabsContent>
 
-        <TabsContent value="plan" className="mt-6">
+        <TabsContent value="plan" className="mt-6" keepMounted>
           <PlanSettings />
         </TabsContent>
       </Tabs>

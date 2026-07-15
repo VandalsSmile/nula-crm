@@ -103,8 +103,10 @@ export type Contact = {
   firstName: string
   lastName: string
   fullName: string
+  companyName: string
   email: string
   phone: string
+  websiteUrl: string
   address: string
   city: string
   state: string
