@@ -15,6 +15,8 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { OwnerSelect } from "@/components/owner-select"
+import { useSessionUser } from "@/lib/session-context"
 import { createContact } from "@/app/actions/contacts"
 
 export function AddContactDialog({
@@ -25,11 +27,13 @@ export function AddContactDialog({
   onOpenChange: (open: boolean) => void
 }) {
   const router = useRouter()
+  const me = useSessionUser()
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
     companyName: "",
+    ownerId: me.id,
     email: "",
     phone: "",
     websiteUrl: "",
@@ -45,6 +49,7 @@ export function AddContactDialog({
       firstName: "",
       lastName: "",
       companyName: "",
+      ownerId: me.id,
       email: "",
       phone: "",
       websiteUrl: "",
@@ -140,10 +145,16 @@ export function AddContactDialog({
               <Input value={form.zip} onChange={(e) => setForm((f) => ({ ...f, zip: e.target.value }))} />
             </Field>
           </div>
-          <Field>
-            <FieldLabel>Source</FieldLabel>
-            <Input placeholder="website, facebook, referral..." value={form.source} onChange={(e) => setForm((f) => ({ ...f, source: e.target.value }))} />
-          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field>
+              <FieldLabel>Source</FieldLabel>
+              <Input placeholder="website, facebook, referral..." value={form.source} onChange={(e) => setForm((f) => ({ ...f, source: e.target.value }))} />
+            </Field>
+            <Field>
+              <FieldLabel>Owner</FieldLabel>
+              <OwnerSelect value={form.ownerId} onChange={(ownerId) => setForm((f) => ({ ...f, ownerId }))} />
+            </Field>
+          </div>
         </FieldGroup>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>

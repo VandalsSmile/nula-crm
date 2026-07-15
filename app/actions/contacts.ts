@@ -18,6 +18,7 @@ export type ContactInput = {
   firstName: string
   lastName?: string
   companyName?: string
+  ownerId?: string
   email?: string
   phone?: string
   websiteUrl?: string
@@ -52,6 +53,8 @@ export async function createContact(input: ContactInput): Promise<Contact> {
       lastName,
       name: [firstName, lastName].filter(Boolean).join(" "),
       companyName,
+      // Default the owner to whoever created the contact; can be reassigned later.
+      ownerId: input.ownerId?.trim() || user.id,
       email: input.email ?? "",
       phone: input.phone ?? "",
       websiteUrl: input.websiteUrl ?? "",

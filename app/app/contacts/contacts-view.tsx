@@ -23,7 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { deleteContact } from "@/app/actions/contacts"
-import { Mail, Phone } from "lucide-react"
+import { Building2, Mail, Phone, UserRound } from "lucide-react"
 import { type Contact } from "@/lib/crm-types"
 import { APP_ROUTES, contactPath } from "@/lib/routes"
 
@@ -111,6 +111,12 @@ export function ContactsView({ contacts }: { contacts: Contact[] }) {
                       {contact.fullName}
                     </Link>
                   </CardTitle>
+                  {contact.companyName ? (
+                    <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Building2 className="size-3.5" />
+                      {contact.companyName}
+                    </p>
+                  ) : null}
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     <LifecycleBadge stage={contact.lifecycleStage} />
                     {contact.leadScore > 0 ? <LeadScoreBadge score={contact.leadScore} /> : null}
@@ -150,6 +156,12 @@ export function ContactsView({ contacts }: { contacts: Contact[] }) {
                   <div className="flex items-center gap-2">
                     <Phone className="size-4" />
                     {contact.phone}
+                  </div>
+                ) : null}
+                {contact.ownerName ? (
+                  <div className="flex items-center gap-2">
+                    <UserRound className="size-4" />
+                    {contact.ownerName}
                   </div>
                 ) : null}
                 {contact.tags.length > 0 ? (

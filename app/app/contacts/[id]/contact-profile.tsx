@@ -193,6 +193,10 @@ export function ContactProfile({
             ) : null}
             <Separator />
             <div>
+              <span className="text-muted-foreground">Owner: </span>
+              <span className="font-medium">{contact.ownerName || "Unassigned"}</span>
+            </div>
+            <div>
               <span className="text-muted-foreground">Revenue: </span>
               <span className="font-medium">{formatRevenue(contact.totalRevenueCents)}</span>
             </div>

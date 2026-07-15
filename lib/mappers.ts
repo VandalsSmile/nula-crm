@@ -56,7 +56,7 @@ export function mapGroup(row: GroupRow, memberCount = 0): Group {
 
 export function mapContact(
   row: ContactRow,
-  extra: { tags?: Tag[]; groups?: Group[] } = {},
+  extra: { tags?: Tag[]; groups?: Group[]; ownerName?: string } = {},
 ): Contact {
   // When a structured first name is present, trust the stored last name verbatim
   // (including an intentionally empty one). Only fall back to deriving first/last
@@ -82,6 +82,8 @@ export function mapContact(
     lastName,
     fullName,
     companyName: row.companyName,
+    ownerId: row.ownerId,
+    ownerName: extra.ownerName ?? "",
     email: row.email,
     phone: row.phone,
     websiteUrl: row.websiteUrl,
