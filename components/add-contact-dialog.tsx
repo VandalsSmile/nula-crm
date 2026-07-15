@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { OwnerSelect } from "@/components/owner-select"
+import { CompanySelect } from "@/components/company-select"
 import { useSessionUser } from "@/lib/session-context"
 import { createContact } from "@/app/actions/contacts"
 
@@ -33,6 +34,7 @@ export function AddContactDialog({
     firstName: "",
     lastName: "",
     companyName: "",
+    companyId: "",
     ownerId: me.id,
     email: "",
     phone: "",
@@ -49,6 +51,7 @@ export function AddContactDialog({
       firstName: "",
       lastName: "",
       companyName: "",
+      companyId: "",
       ownerId: me.id,
       email: "",
       phone: "",
@@ -105,10 +108,9 @@ export function AddContactDialog({
           </div>
           <Field>
             <FieldLabel>Company</FieldLabel>
-            <Input
-              placeholder="For cold outreach, a company is enough"
-              value={form.companyName}
-              onChange={(e) => setForm((f) => ({ ...f, companyName: e.target.value }))}
+            <CompanySelect
+              value={form.companyId}
+              onChange={(companyId, companyName) => setForm((f) => ({ ...f, companyId, companyName }))}
             />
           </Field>
           <Field>

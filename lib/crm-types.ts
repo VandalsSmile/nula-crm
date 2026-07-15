@@ -104,6 +104,7 @@ export type Contact = {
   lastName: string
   fullName: string
   companyName: string
+  companyId: string
   ownerId: string
   ownerName: string
   email: string
@@ -130,6 +131,20 @@ export type Contact = {
   recommendedNextAction: string
   tags: Tag[]
   groups: Group[]
+  createdAt: string
+}
+
+export type Company = {
+  id: string
+  name: string
+  website: string
+  phone: string
+  address: string
+  city: string
+  state: string
+  zip: string
+  notes: string
+  contactCount: number
   createdAt: string
 }
 

@@ -31,7 +31,7 @@ import { deleteContact } from "@/app/actions/contacts"
 import { deleteDeal } from "@/app/actions/deals"
 import { formatDateTime } from "@/lib/format"
 import { formatRevenue, type Activity, type Contact, type Deal, type Group, type Tag } from "@/lib/crm-types"
-import { APP_ROUTES } from "@/lib/routes"
+import { APP_ROUTES, companyPath } from "@/lib/routes"
 
 export function ContactProfile({
   contact,
@@ -157,7 +157,13 @@ export function ContactProfile({
             {contact.companyName ? (
               <div className="flex items-center gap-2">
                 <Building2 className="size-4 text-muted-foreground" />
-                {contact.companyName}
+                {contact.companyId ? (
+                  <Link href={companyPath(contact.companyId)} className="text-nula-violet hover:underline">
+                    {contact.companyName}
+                  </Link>
+                ) : (
+                  contact.companyName
+                )}
               </div>
             ) : null}
             {contact.email ? (

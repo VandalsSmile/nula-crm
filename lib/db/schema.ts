@@ -64,6 +64,7 @@ export const contacts = pgTable("contacts", {
   lastName: text("lastName").notNull().default(""),
   name: text("name").notNull().default(""),
   companyName: text("companyName").notNull().default(""),
+  companyId: text("companyId").notNull().default(""),
   ownerId: text("ownerId").notNull().default(""),
   legacyContactName: text("legacyContactName").notNull().default(""),
   email: text("email").notNull().default(""),
@@ -91,6 +92,20 @@ export const contacts = pgTable("contacts", {
   timezone: text("timezone").notNull().default("America/New_York"),
   industry: text("industry").notNull().default(""),
   websiteUrl: text("websiteUrl").notNull().default(""),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+export const companies = pgTable("companies", {
+  id: text("id").primaryKey(),
+  userId: text("userId").notNull(),
+  name: text("name").notNull().default(""),
+  website: text("website").notNull().default(""),
+  phone: text("phone").notNull().default(""),
+  address: text("address").notNull().default(""),
+  city: text("city").notNull().default(""),
+  state: text("state").notNull().default(""),
+  zip: text("zip").notNull().default(""),
+  notes: text("notes").notNull().default(""),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 

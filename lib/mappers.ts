@@ -3,6 +3,7 @@ import type {
   Campaign,
   CampaignStatus,
   CampaignType,
+  Company,
   Contact,
   CustomerStatus,
   Deal,
@@ -16,6 +17,7 @@ import { contactFullName } from "@/lib/crm-types"
 import type {
   activities,
   campaigns,
+  companies,
   contacts,
   deals,
   groups,
@@ -26,6 +28,7 @@ import { labelForUserId, type UserLabelMap } from "@/lib/workspace-users"
 const iso = (d: Date | null | undefined) => (d ? d.toISOString() : null)
 
 type ContactRow = typeof contacts.$inferSelect
+type CompanyRow = typeof companies.$inferSelect
 type TagRow = typeof tags.$inferSelect
 type GroupRow = typeof groups.$inferSelect
 type ActivityRow = typeof activities.$inferSelect
@@ -39,6 +42,22 @@ export function mapTag(row: TagRow): Tag {
     slug: row.slug,
     color: row.color,
     description: row.description,
+  }
+}
+
+export function mapCompany(row: CompanyRow, contactCount = 0): Company {
+  return {
+    id: row.id,
+    name: row.name,
+    website: row.website,
+    phone: row.phone,
+    address: row.address,
+    city: row.city,
+    state: row.state,
+    zip: row.zip,
+    notes: row.notes,
+    contactCount,
+    createdAt: iso(row.createdAt) ?? "",
   }
 }
 
@@ -82,6 +101,7 @@ export function mapContact(
     lastName,
     fullName,
     companyName: row.companyName,
+    companyId: row.companyId,
     ownerId: row.ownerId,
     ownerName: extra.ownerName ?? "",
     email: row.email,

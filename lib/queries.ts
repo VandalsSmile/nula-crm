@@ -2,6 +2,7 @@ import { db } from "@/lib/db"
 import {
   activities,
   campaigns,
+  companies,
   contactGroups,
   contacts,
   contactTags,
@@ -16,12 +17,13 @@ import { getWorkspaceScope, workspaceUserIdMatches } from "@/lib/auth-helpers"
 import {
   mapActivity,
   mapCampaign,
+  mapCompany,
   mapContact,
   mapDeal,
   mapGroup,
   mapTag,
 } from "@/lib/mappers"
-import type { Contact, DashboardStats, Deal, InboxConversation, Message, ReportData } from "@/lib/crm-types"
+import type { Company, Contact, DashboardStats, Deal, InboxConversation, Message, ReportData } from "@/lib/crm-types"
 import { LIFECYCLE_STAGES } from "@/lib/crm-types"
 import { getWorkspaceUserLabels, labelForUserId } from "@/lib/workspace-users"
 
@@ -115,6 +117,67 @@ export async function getContactById(id: string): Promise<Contact | null> {
     groups: groupMap.get(id) ?? [],
     ownerName: row.ownerId ? labelForUserId(labels, row.ownerId) : "",
   })
+}
+
+export async function getCompanies(): Promise<Company[]> {
+  const { scopeIds } = await getWorkspaceScope()
+  const [companyRows, counts] = await Promise.all([
+    db
+      .select()
+      .from(companies)
+      .where(workspaceUserIdMatches(companies.userId, scopeIds))
+      .orderBy(companies.name),
+    db
+      .select({ companyId: contacts.companyId, count: sql<number>`count(*)::int` })
+      .from(contacts)
+      .where(workspaceUserIdMatches(contacts.userId, scopeIds))
+      .groupBy(contacts.companyId),
+  ])
+
+  const countMap = new Map(counts.map((r) => [r.companyId, r.count]))
+  return companyRows.map((c) => mapCompany(c, countMap.get(c.id) ?? 0))
+}
+
+export async function getCompanyById(id: string): Promise<Company | null> {
+  const { scopeIds } = await getWorkspaceScope()
+  const [row] = await db
+    .select()
+    .from(companies)
+    .where(and(eq(companies.id, id), workspaceUserIdMatches(companies.userId, scopeIds)))
+    .limit(1)
+  if (!row) return null
+
+  const [countRow] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(contacts)
+    .where(and(eq(contacts.companyId, id), workspaceUserIdMatches(contacts.userId, scopeIds)))
+
+  return mapCompany(row, countRow?.count ?? 0)
+}
+
+export async function getContactsForCompany(companyId: string): Promise<Contact[]> {
+  const { scopeIds } = await getWorkspaceScope()
+  const rows = await db
+    .select()
+    .from(contacts)
+    .where(and(eq(contacts.companyId, companyId), workspaceUserIdMatches(contacts.userId, scopeIds)))
+    .orderBy(desc(contacts.createdAt))
+
+  const [{ tagMap, groupMap }, labels] = await Promise.all([
+    loadContactRelations(
+      rows.map((r) => r.id),
+      scopeIds,
+    ),
+    contactLabels(),
+  ])
+
+  return rows.map((row) =>
+    mapContact(row, {
+      tags: tagMap.get(row.id) ?? [],
+      groups: groupMap.get(row.id) ?? [],
+      ownerName: row.ownerId ? labelForUserId(labels, row.ownerId) : "",
+    }),
+  )
 }
 
 export async function getTags() {
