@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import useSWR from "swr"
-import { Copy, Check, PlusIcon, AlertCircle, MoreHorizontal, UserMinus } from "lucide-react"
+import { Copy, Check, Send, Mail, AlertCircle, MoreHorizontal, UserMinus } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -50,6 +50,7 @@ import {
   listTeamInvites,
   listTeamMembers,
   removeMember,
+  resendTeamInvite,
   revokeTeamInvite,
   updateMemberRole,
   type TeamInvite,
@@ -90,21 +91,41 @@ export function TeamSettings() {
       setLastInvite(invite)
       setCopied(false)
       setEmail("")
-      // Best-effort auto-copy so the admin can paste the link straight away.
-      try {
-        await navigator.clipboard?.writeText(invite.url)
-        setCopied(true)
-        toast.success("Invite link created and copied", {
-          description: `Send it to ${invite.email} to let them join.`,
+      if (invite.emailSent) {
+        toast.success(`Invite sent to ${invite.email}`, {
+          description: "They'll get an email with a link to join. You can also copy the link below.",
         })
-      } catch {
-        toast.success("Invite link created", { description: `Copy the link below to send to ${invite.email}.` })
+      } else {
+        // Email couldn't be sent (e.g. email isn't configured) — fall back to the
+        // copyable link so the admin can still share it manually.
+        try {
+          await navigator.clipboard?.writeText(invite.url)
+          setCopied(true)
+        } catch {}
+        toast.warning("Invite created, but the email couldn't be sent", {
+          description: `Copy the link below and send it to ${invite.email}.`,
+        })
       }
       mutate()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not create invite")
     } finally {
       setInviting(false)
+    }
+  }
+
+  async function handleResend(invite: TeamInvite) {
+    try {
+      const { emailSent } = await resendTeamInvite(invite.id)
+      if (emailSent) {
+        toast.success(`Invite re-sent to ${invite.email}`)
+      } else {
+        toast.warning("Couldn't send the email", {
+          description: `Copy the invite link and send it to ${invite.email} instead.`,
+        })
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not resend invite")
     }
   }
 
@@ -154,8 +175,8 @@ export function TeamSettings() {
         <CardHeader>
           <CardTitle>Invite a teammate</CardTitle>
           <CardDescription>
-            Enter their email and choose a role to generate a private invite link. Send it to them and
-            they&apos;ll join this shared workspace.
+            Enter their email and choose a role. We&apos;ll email them a private invite link to join
+            this shared workspace — you can also copy the link to share it yourself.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
@@ -189,8 +210,8 @@ export function TeamSettings() {
               </Select>
             </Field>
             <Button type="submit" disabled={inviting || !email.trim()}>
-              <PlusIcon data-icon="inline-start" />
-              {inviting ? "Generating…" : "Generate invite"}
+              <Send data-icon="inline-start" />
+              {inviting ? "Sending…" : "Send invite"}
             </Button>
           </form>
 
@@ -352,6 +373,10 @@ export function TeamSettings() {
                             }
                           />
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleResend(inv)}>
+                              <Mail data-icon="inline-start" />
+                              Resend email
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => copyLink(inv.url)}>
                               <Copy data-icon="inline-start" />
                               Copy invite link

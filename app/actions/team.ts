@@ -10,6 +10,7 @@ import { teamInvites, user as userTable } from "@/lib/db/schema"
 import { getActingUser, normalizeRole, requireRole, type WorkspaceRole } from "@/lib/auth-helpers"
 import { ASSIGNABLE_ROLES, canManageMember } from "@/lib/roles"
 import { APP_ROUTES } from "@/lib/routes"
+import { sendTeamInviteEmail } from "@/lib/team/invite-email"
 
 function toAssignableRole(role: WorkspaceRole): WorkspaceRole {
   const normalized = normalizeRole(role)
@@ -28,6 +29,8 @@ export type TeamInvite = {
   expiresAt: string
   expired: boolean
   url: string
+  /** Whether the invite email was successfully sent on this request (transient). */
+  emailSent?: boolean
 }
 
 export type TeamMember = {
@@ -116,7 +119,16 @@ export async function createTeamInvite(
     )
     .limit(1)
   if (pending && pending.expiresAt.getTime() > Date.now()) {
-    return mapInvite(pending, origin)
+    // Re-send the email so clicking "Send invite" again resends to the invitee.
+    const invite = mapInvite(pending, origin)
+    const send = await sendTeamInviteEmail({
+      to: invite.email,
+      url: invite.url,
+      invitedByName: pending.invitedByName,
+      role: invite.role,
+      expiresInDays: INVITE_TTL_DAYS,
+    })
+    return { ...invite, emailSent: send.ok }
   }
   // Expired pending invite: revoke it before issuing a fresh one.
   if (pending) {
@@ -140,8 +152,43 @@ export async function createTeamInvite(
     })
     .returning()
 
+  const invite = mapInvite(row, origin)
+  const send = await sendTeamInviteEmail({
+    to: invite.email,
+    url: invite.url,
+    invitedByName: user.name,
+    role: invite.role,
+    expiresInDays: INVITE_TTL_DAYS,
+  })
+
   revalidatePath(APP_ROUTES.settings)
-  return mapInvite(row, origin)
+  return { ...invite, emailSent: send.ok }
+}
+
+/** Re-send the invite email for an existing pending invite. */
+export async function resendTeamInvite(token: string): Promise<{ emailSent: boolean }> {
+  const { workspaceId } = await requireRole("Admin")
+  const origin = await getOrigin()
+
+  const [inv] = await db
+    .select()
+    .from(teamInvites)
+    .where(and(eq(teamInvites.id, token), eq(teamInvites.workspaceId, workspaceId)))
+    .limit(1)
+  if (!inv) throw new Error("Invite not found.")
+  if (inv.status !== "Pending" || inv.expiresAt.getTime() < Date.now()) {
+    throw new Error("This invite is no longer active.")
+  }
+
+  const invite = mapInvite(inv, origin)
+  const send = await sendTeamInviteEmail({
+    to: invite.email,
+    url: invite.url,
+    invitedByName: inv.invitedByName,
+    role: invite.role,
+    expiresInDays: INVITE_TTL_DAYS,
+  })
+  return { emailSent: send.ok }
 }
 
 /** All invites for the current workspace, newest first. */
