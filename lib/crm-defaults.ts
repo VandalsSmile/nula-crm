@@ -18,7 +18,15 @@ export type BusinessTypeId = (typeof BUSINESS_TYPES)[number]["id"]
 export const DEFAULT_BUSINESS_TYPE: BusinessTypeId = "general"
 
 export const DEFAULT_GROUPS: Record<BusinessTypeId, string[]> = {
-  general: ["New Leads", "Active Customers", "Past Customers", "Reactivation List", "Do Not Market"],
+  general: [
+    "New Leads",
+    "Active Customers",
+    "Repeat Customers",
+    "Past Customers",
+    "VIP / High Value",
+    "Reactivation List",
+    "Do Not Market",
+  ],
   "iv-therapy": [
     "New Leads",
     "Active Customers",
@@ -45,13 +53,23 @@ export const DEFAULT_GROUPS: Record<BusinessTypeId, string[]> = {
 }
 
 export const DEFAULT_TAGS: Record<BusinessTypeId, string[]> = {
+  // Industry-neutral starter set that works across any business type — lead
+  // sources, follow-up state, and value/status facts (no industry specifics).
   general: [
     "source-website",
     "source-referral",
+    "source-social",
     "source-google-ads",
+    "source-walk-in",
+    "source-event",
     "needs-follow-up",
+    "appointment-set",
+    "quote-sent",
     "high-value",
+    "repeat-customer",
+    "at-risk",
     "inactive-90",
+    "do-not-contact",
   ],
   "iv-therapy": [
     "source-google-ads",
