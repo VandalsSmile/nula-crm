@@ -154,7 +154,7 @@ export function ContactProfile({
             <CardTitle>Contact info</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3 text-sm">
-            {contact.companyName ? (
+            {contact.companyName && contact.companyName !== contact.fullName ? (
               <div className="flex items-center gap-2">
                 <Building2 className="size-4 text-muted-foreground" />
                 {contact.companyId ? (

@@ -97,7 +97,9 @@ export async function updateContact(id: string, input: Partial<ContactInput>): P
   for (const [key, value] of Object.entries(input)) {
     if (value !== undefined) patch[key] = value as string | number
   }
-  if (input.firstName || input.lastName) {
+  // Recompute the denormalized `name` whenever either name field is provided —
+  // including when it's cleared to "" — so a stale name is never left behind.
+  if (input.firstName !== undefined || input.lastName !== undefined) {
     const first = input.firstName ?? ""
     const last = input.lastName ?? ""
     patch.name = [first, last].filter(Boolean).join(" ")

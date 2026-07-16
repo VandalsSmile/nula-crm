@@ -160,7 +160,7 @@ export function ContactsView({
                       {contact.fullName}
                     </Link>
                   </CardTitle>
-                  {contact.companyName ? (
+                  {contact.companyName && contact.companyName !== contact.fullName ? (
                     <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
                       <Building2 className="size-3.5" />
                       {contact.companyName}
