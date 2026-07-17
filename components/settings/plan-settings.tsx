@@ -3,8 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import useSWR from "swr"
-import { initializePaddle, type Paddle } from "@paddle/paddle-js"
-import { Check, ExternalLink, Loader2, Sparkles } from "lucide-react"
+import { Check, Loader2, Sparkles, XCircle } from "lucide-react"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
@@ -12,7 +11,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { activatePlan, getTrialStatus } from "@/app/actions/workspace"
 import {
-  createBillingPortalSession,
+  cancelSubscription,
+  createCheckout,
   getBillingState,
   type BillingState,
   type PlanOption,
@@ -21,10 +21,6 @@ import { PLAN_FEATURES } from "@/lib/billing/plans"
 import { TRIAL_DAYS, type TrialStatus } from "@/lib/trial"
 import { isBillingManager } from "@/lib/roles"
 import { useSessionUser } from "@/lib/session-context"
-
-const PADDLE_ENV =
-  process.env.NEXT_PUBLIC_PADDLE_ENV === "production" ? "production" : "sandbox"
-const PADDLE_CLIENT_TOKEN = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN
 
 function formatDate(iso: string | null): string {
   if (!iso) return "—"
@@ -44,7 +40,6 @@ export function PlanSettings() {
     "billing-state",
     () => getBillingState(),
   )
-  const [paddle, setPaddle] = useState<Paddle | undefined>()
   const [busy, setBusy] = useState<string | null>(null)
 
   const refresh = useCallback(() => {
@@ -52,33 +47,7 @@ export function PlanSettings() {
     mutateTrial()
   }, [mutateBilling, mutateTrial])
 
-  // Load Paddle.js for the client-side checkout overlay.
-  useEffect(() => {
-    if (!PADDLE_CLIENT_TOKEN || paddle) return
-    let cancelled = false
-    initializePaddle({
-      environment: PADDLE_ENV,
-      token: PADDLE_CLIENT_TOKEN,
-      eventCallback: (event) => {
-        if (event?.name === "checkout.completed") {
-          toast.success("Thanks! Activating your subscription…")
-          // The webhook finalizes it; refetch shortly after.
-          setTimeout(refresh, 2500)
-        }
-      },
-    })
-      .then((instance) => {
-        if (!cancelled) setPaddle(instance)
-      })
-      .catch(() => {
-        /* checkout stays unavailable; UI handles it */
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [paddle, refresh])
-
-  // Surface returning from a hosted checkout success URL.
+  // Surface returning from Square's hosted checkout success URL.
   useEffect(() => {
     if (searchParams.get("checkout") === "success") {
       toast.success("Thanks! Your subscription is being activated.")
@@ -86,30 +55,26 @@ export function PlanSettings() {
     }
   }, [searchParams, refresh])
 
-  function handleSubscribe(plan: PlanOption) {
-    if (!paddle) {
-      toast.error("Checkout isn't ready yet — please try again in a moment.")
-      return
+  async function handleSubscribe(plan: PlanOption) {
+    setBusy(plan.id)
+    try {
+      const { url } = await createCheckout(plan.id)
+      window.location.assign(url)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not start checkout")
+      setBusy(null)
     }
-    if (!billing) return
-    paddle.Checkout.open({
-      items: [{ priceId: plan.priceId, quantity: 1 }],
-      ...(billing.customerEmail ? { customer: { email: billing.customerEmail } } : {}),
-      customData: { workspaceId: billing.workspaceId },
-      settings: {
-        displayMode: "overlay",
-        successUrl: `${window.location.origin}/app/settings?tab=plan&checkout=success`,
-      },
-    })
   }
 
   async function handleManage() {
     setBusy("manage")
     try {
-      const { url } = await createBillingPortalSession()
-      window.location.assign(url)
+      await cancelSubscription()
+      toast.success("Your subscription will cancel at the end of the billing period.")
+      refresh()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not open billing")
+      toast.error(err instanceof Error ? err.message : "Could not cancel subscription")
+    } finally {
       setBusy(null)
     }
   }
@@ -197,9 +162,9 @@ export function PlanSettings() {
                   {busy === "manage" ? (
                     <Loader2 className="size-4 animate-spin" />
                   ) : (
-                    <ExternalLink className="size-4" />
+                    <XCircle className="size-4" />
                   )}
-                  Manage billing
+                  Cancel subscription
                 </Button>
               ) : (
                 <p className="text-sm text-muted-foreground">
@@ -246,8 +211,10 @@ export function PlanSettings() {
                       {canManageBilling ? (
                         <Button
                           onClick={() => handleSubscribe(plan)}
+                          disabled={busy === plan.id}
                           className="mt-1 w-full"
                         >
+                          {busy === plan.id ? <Loader2 className="size-4 animate-spin" /> : null}
                           Subscribe
                         </Button>
                       ) : null}
@@ -275,7 +242,7 @@ export function PlanSettings() {
                         Upgrade now
                       </Button>
                       <p className="text-xs text-muted-foreground">
-                        Card checkout activates once Paddle is connected; this activates your
+                        Card checkout activates once Square is connected; this activates your
                         workspace in the meantime.
                       </p>
                     </div>

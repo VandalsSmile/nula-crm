@@ -1,10 +1,11 @@
 /**
- * Paid plan catalog. Paddle Price IDs come from env so the same code works
- * across sandbox/production and lets you change pricing in Paddle without a
- * deploy.
+ * Paid plan catalog. Square subscription plan *variation* IDs come from env so
+ * the same code works across sandbox/production and lets you change pricing in
+ * Square without a deploy.
  *
- * Set these after creating recurring Prices in Paddle:
- *   PADDLE_PRICE_PRO_MONTHLY, PADDLE_PRICE_PRO_ANNUAL   (pri_...)
+ * Set these to the subscription plan VARIATION ids (not the plan id) created in
+ * the Square Dashboard/Catalog:
+ *   SQUARE_PLAN_PRO_MONTHLY, SQUARE_PLAN_PRO_ANNUAL
  */
 export type BillingInterval = "month" | "year"
 
@@ -12,8 +13,9 @@ export type Plan = {
   id: string
   name: string
   interval: BillingInterval
+  /** Square subscription plan variation id. */
   priceId: string
-  amount: number // in cents, for display
+  amount: number // in cents, charged + displayed
   currency: string
   blurb: string
 }
@@ -31,7 +33,7 @@ export const PLANS: Plan[] = [
     id: "pro-monthly",
     name: "Nula Pro",
     interval: "month",
-    priceId: process.env.PADDLE_PRICE_PRO_MONTHLY?.trim() ?? "",
+    priceId: process.env.SQUARE_PLAN_PRO_MONTHLY?.trim() ?? "",
     amount: 2900,
     currency: "usd",
     blurb: "Billed monthly",
@@ -40,7 +42,7 @@ export const PLANS: Plan[] = [
     id: "pro-annual",
     name: "Nula Pro",
     interval: "year",
-    priceId: process.env.PADDLE_PRICE_PRO_ANNUAL?.trim() ?? "",
+    priceId: process.env.SQUARE_PLAN_PRO_ANNUAL?.trim() ?? "",
     amount: 29000,
     currency: "usd",
     blurb: "Billed annually — save ~17%",
@@ -56,7 +58,7 @@ export function planByPriceId(priceId: string): Plan | undefined {
   return PLANS.find((p) => p.priceId === priceId)
 }
 
-/** Plans that have a Paddle Price ID configured (i.e. are purchasable). */
+/** Plans that have a Square plan variation id configured (i.e. are purchasable). */
 export function availablePlans(): Plan[] {
   return PLANS.filter((p) => p.priceId)
 }

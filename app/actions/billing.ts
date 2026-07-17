@@ -1,13 +1,18 @@
 "use server"
 
 import { eq } from "drizzle-orm"
+import { headers } from "next/headers"
 
 import { getActingUser, requireOwner } from "@/lib/auth-helpers"
 import { db } from "@/lib/db"
 import { workspaceSettings } from "@/lib/db/schema"
 import { isBillingManager } from "@/lib/roles"
-import { getPaddle, isPaddleConfigured } from "@/lib/paddle"
-import { availablePlans, formatPrice, planByPriceId } from "@/lib/billing/plans"
+import {
+  cancelSquareSubscription,
+  createSubscriptionPaymentLink,
+  isBillingConfigured,
+} from "@/lib/square"
+import { availablePlans, formatPrice, planById, planByPriceId } from "@/lib/billing/plans"
 
 export type PlanOption = {
   id: string
@@ -40,7 +45,7 @@ export async function getBillingState(): Promise<BillingState> {
       subscriptionStatus: workspaceSettings.subscriptionStatus,
       currentPeriodEnd: workspaceSettings.currentPeriodEnd,
       priceId: workspaceSettings.priceId,
-      paddleSubscriptionId: workspaceSettings.paddleSubscriptionId,
+      squareSubscriptionId: workspaceSettings.squareSubscriptionId,
     })
     .from(workspaceSettings)
     .where(eq(workspaceSettings.workspaceId, workspaceId))
@@ -48,11 +53,11 @@ export async function getBillingState(): Promise<BillingState> {
 
   const current = row?.priceId ? planByPriceId(row.priceId) : undefined
   const hasActiveSubscription =
-    Boolean(row?.paddleSubscriptionId) &&
-    ["active", "trialing", "past_due"].includes(row?.subscriptionStatus ?? "")
+    Boolean(row?.squareSubscriptionId) &&
+    ["active", "pending", "paused", "past_due"].includes(row?.subscriptionStatus ?? "")
 
   return {
-    configured: isPaddleConfigured(),
+    configured: isBillingConfigured(),
     canManage: isBillingManager(role),
     workspaceId,
     customerEmail: user.email,
@@ -73,26 +78,45 @@ export async function getBillingState(): Promise<BillingState> {
   }
 }
 
-/** Open the Paddle customer portal to manage/cancel a subscription. Owner-only. */
-export async function createBillingPortalSession(): Promise<{ url: string }> {
+function appOrigin(h: Headers): string {
+  const explicit = process.env.NEXT_PUBLIC_APP_URL?.trim() || process.env.BETTER_AUTH_URL?.trim()
+  if (explicit) return explicit.replace(/\/$/, "")
+  const proto = h.get("x-forwarded-proto") ?? "https"
+  const host = h.get("x-forwarded-host") ?? h.get("host")
+  return `${proto}://${host}`
+}
+
+/** Create a Square-hosted checkout for a plan and return its URL. Owner-only. */
+export async function createCheckout(planId: string): Promise<{ url: string }> {
+  const { user } = await requireOwner()
+  if (!isBillingConfigured()) throw new Error("Billing isn't set up yet.")
+
+  const plan = planById(planId)
+  if (!plan || !plan.priceId) throw new Error("That plan isn't available.")
+
+  const origin = appOrigin(await headers())
+  const { url } = await createSubscriptionPaymentLink({
+    planVariationId: plan.priceId,
+    amountCents: plan.amount,
+    planName: `${plan.name} (${plan.interval === "year" ? "annual" : "monthly"})`,
+    buyerEmail: user.email,
+    redirectUrl: `${origin}/app/settings?tab=plan&checkout=success`,
+  })
+  return { url }
+}
+
+/** Cancel the workspace's Square subscription (at period end). Owner-only. */
+export async function cancelSubscription(): Promise<{ ok: true }> {
   const { workspaceId } = await requireOwner()
-  if (!isPaddleConfigured()) throw new Error("Billing isn't set up yet.")
+  if (!isBillingConfigured()) throw new Error("Billing isn't set up yet.")
 
   const [row] = await db
-    .select({
-      paddleCustomerId: workspaceSettings.paddleCustomerId,
-      paddleSubscriptionId: workspaceSettings.paddleSubscriptionId,
-    })
+    .select({ squareSubscriptionId: workspaceSettings.squareSubscriptionId })
     .from(workspaceSettings)
     .where(eq(workspaceSettings.workspaceId, workspaceId))
     .limit(1)
-  if (!row?.paddleCustomerId) throw new Error("No billing account yet.")
+  if (!row?.squareSubscriptionId) throw new Error("No active subscription to cancel.")
 
-  const session = await getPaddle().customerPortalSessions.create(
-    row.paddleCustomerId,
-    row.paddleSubscriptionId ? [row.paddleSubscriptionId] : [],
-  )
-  const url = session.urls?.general?.overview
-  if (!url) throw new Error("Could not open the billing portal.")
-  return { url }
+  await cancelSquareSubscription(row.squareSubscriptionId)
+  return { ok: true }
 }

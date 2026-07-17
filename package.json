@@ -17,8 +17,6 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
-    "@paddle/paddle-js": "^1.6.4",
-    "@paddle/paddle-node-sdk": "^3.8.0",
     "@vercel/blob": "^2.4.1",
     "better-auth": "^1.6.20",
     "class-variance-authority": "^0.7.1",

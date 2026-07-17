@@ -28,7 +28,7 @@ export default function PrivacyPage() {
             log and device information for security and reliability.
           </li>
           <li>
-            <strong>Payment information</strong> — handled by Paddle, our Merchant of Record; we do
+            <strong>Payment information</strong> — handled by Square, our payment processor; we do
             not receive or store full card numbers.
           </li>
         </ul>
@@ -67,7 +67,7 @@ export default function PrivacyPage() {
         <ul>
           <li>
             <strong>Service providers (subprocessors)</strong> that help us operate — cloud hosting,
-            our payment provider and Merchant of Record (Paddle), email delivery (Resend), and AI
+            our payment processor (Square), email delivery (Resend), and AI
             model providers — under confidentiality obligations.
           </li>
           <li>
