@@ -8,12 +8,19 @@ import { activities, contactTags, tags } from "@/lib/db/schema"
 import { getActingUser, workspaceUserIdMatches } from "@/lib/auth-helpers"
 import { slugifyTag } from "@/lib/crm-defaults"
 import { randomId } from "@/lib/library-helpers"
+import { getTags } from "@/lib/queries"
+import type { Tag } from "@/lib/crm-types"
 import { APP_ROUTES } from "@/lib/routes"
 
 export type TagInput = {
   name: string
   description?: string
   color?: string
+}
+
+/** All tags in the workspace — for client-side pickers. */
+export async function listTags(): Promise<Tag[]> {
+  return getTags()
 }
 
 async function assertTagAccess(tagId: string, scopeIds: string[]) {

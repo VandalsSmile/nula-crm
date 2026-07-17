@@ -156,6 +156,7 @@ export function mapActivity(
   row: ActivityRow,
   labels: UserLabelMap,
   contactName = "",
+  company: { companyId?: string; companyName?: string } = {},
 ): Activity {
   return {
     id: row.id,
@@ -163,6 +164,8 @@ export function mapActivity(
     message: row.message,
     contactId: row.contactId,
     contactName,
+    companyId: company.companyId ?? "",
+    companyName: company.companyName ?? "",
     actorName: labelForUserId(labels, row.actorId),
     at: iso(row.at) ?? "",
   }

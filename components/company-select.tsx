@@ -30,7 +30,7 @@ export function CompanySelect({
   id,
 }: {
   value: string
-  onChange: (companyId: string, companyName: string) => void
+  onChange: (companyId: string, companyName: string, company?: Company) => void
   id?: string
 }) {
   const { data: comps, mutate } = useSWR<Company[]>("companies", listCompanies)
@@ -51,7 +51,7 @@ export function CompanySelect({
       return
     }
     const company = comps?.find((c) => c.id === next)
-    onChange(next, company?.name ?? "")
+    onChange(next, company?.name ?? "", company)
   }
 
   return (
@@ -80,7 +80,7 @@ export function CompanySelect({
         onOpenChange={setCreateOpen}
         onSaved={(company) => {
           void mutate()
-          onChange(company.id, company.name)
+          onChange(company.id, company.name, company)
         }}
       />
     </>

@@ -31,7 +31,7 @@ export function LocationSelect({
 }: {
   companyId: string
   value: string
-  onChange: (locationId: string) => void
+  onChange: (locationId: string, location?: Location) => void
   id?: string
 }) {
   const { data: locs, mutate } = useSWR<Location[]>(
@@ -52,7 +52,11 @@ export function LocationSelect({
       setCreateOpen(true)
       return
     }
-    onChange(!next || next === NONE ? "" : next)
+    if (!next || next === NONE) {
+      onChange("")
+      return
+    }
+    onChange(next, locs?.find((l) => l.id === next))
   }
 
   return (
@@ -82,7 +86,7 @@ export function LocationSelect({
         companyId={companyId}
         onSaved={(location) => {
           void mutate()
-          onChange(location.id)
+          onChange(location.id, location)
         }}
       />
     </>

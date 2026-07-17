@@ -18,6 +18,7 @@ import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { OwnerSelect } from "@/components/owner-select"
 import { CompanySelect } from "@/components/company-select"
 import { LocationSelect } from "@/components/location-select"
+import { TagPicker } from "@/components/tag-picker"
 import { useSessionUser } from "@/lib/session-context"
 import { createContact } from "@/app/actions/contacts"
 
@@ -46,6 +47,7 @@ export function AddContactDialog({
     state: "",
     zip: "",
     source: "",
+    tagIds: [] as string[],
   })
 
   function reset() {
@@ -64,6 +66,7 @@ export function AddContactDialog({
       state: "",
       zip: "",
       source: "",
+      tagIds: [],
     })
   }
 
@@ -113,8 +116,20 @@ export function AddContactDialog({
             <FieldLabel>Company</FieldLabel>
             <CompanySelect
               value={form.companyId}
-              onChange={(companyId, companyName) =>
-                setForm((f) => ({ ...f, companyId, companyName, locationId: "" }))
+              onChange={(companyId, companyName, company) =>
+                setForm((f) => ({
+                  ...f,
+                  companyId,
+                  companyName,
+                  locationId: "",
+                  // Prefill empty fields from the company's details.
+                  websiteUrl: f.websiteUrl || company?.website || "",
+                  phone: f.phone || company?.phone || "",
+                  address: f.address || company?.address || "",
+                  city: f.city || company?.city || "",
+                  state: f.state || company?.state || "",
+                  zip: f.zip || company?.zip || "",
+                }))
               }
             />
           </Field>
@@ -124,7 +139,18 @@ export function AddContactDialog({
               <LocationSelect
                 companyId={form.companyId}
                 value={form.locationId}
-                onChange={(locationId) => setForm((f) => ({ ...f, locationId }))}
+                onChange={(locationId, location) =>
+                  setForm((f) => ({
+                    ...f,
+                    locationId,
+                    // A chosen location is more specific — use its address/phone.
+                    address: location?.address || f.address,
+                    city: location?.city || f.city,
+                    state: location?.state || f.state,
+                    zip: location?.zip || f.zip,
+                    phone: location?.phone || f.phone,
+                  }))
+                }
               />
             </Field>
           ) : null}
@@ -172,6 +198,13 @@ export function AddContactDialog({
               <OwnerSelect value={form.ownerId} onChange={(ownerId) => setForm((f) => ({ ...f, ownerId }))} />
             </Field>
           </div>
+          <Field>
+            <FieldLabel>Tags</FieldLabel>
+            <TagPicker
+              selected={form.tagIds}
+              onChange={(tagIds) => setForm((f) => ({ ...f, tagIds }))}
+            />
+          </Field>
         </FieldGroup>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>

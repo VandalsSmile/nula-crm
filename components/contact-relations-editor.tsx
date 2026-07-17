@@ -6,6 +6,7 @@ import { X } from "lucide-react"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
+import { TagBadge } from "@/components/tag-badge"
 import {
   Select,
   SelectContent,
@@ -91,18 +92,13 @@ export function ContactRelationsEditor({
         <div className="flex flex-wrap gap-1.5">
           {contact.tags.length ? (
             contact.tags.map((t) => (
-              <Badge key={t.id} variant="outline" className="gap-1 pr-1">
-                {t.name}
-                <button
-                  type="button"
-                  className="rounded-sm p-0.5 hover:bg-muted"
-                  disabled={pending}
-                  onClick={() => removeTag(t.id)}
-                  aria-label={`Remove ${t.name}`}
-                >
-                  <X className="size-3" />
-                </button>
-              </Badge>
+              <TagBadge
+                key={t.id}
+                name={t.name}
+                color={t.color}
+                onRemove={() => removeTag(t.id)}
+                removeDisabled={pending}
+              />
             ))
           ) : (
             <span className="text-sm text-muted-foreground">No tags</span>

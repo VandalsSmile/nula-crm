@@ -325,16 +325,36 @@ export async function getActivities(limit = 20) {
       .orderBy(desc(activities.at))
       .limit(limit),
     db
-      .select({ id: contacts.id, firstName: contacts.firstName, lastName: contacts.lastName, name: contacts.name })
+      .select({
+        id: contacts.id,
+        firstName: contacts.firstName,
+        lastName: contacts.lastName,
+        name: contacts.name,
+        companyId: contacts.companyId,
+        companyName: contacts.companyName,
+      })
       .from(contacts)
       .where(workspaceUserIdMatches(contacts.userId, scopeIds)),
     contactLabels(),
   ])
 
-  const names = new Map(
-    contactRows.map((c) => [c.id, [c.firstName, c.lastName].filter(Boolean).join(" ") || c.name]),
+  const info = new Map(
+    contactRows.map((c) => [
+      c.id,
+      {
+        name: [c.firstName, c.lastName].filter(Boolean).join(" ") || c.name || c.companyName,
+        companyId: c.companyId,
+        companyName: c.companyName,
+      },
+    ]),
   )
-  return rows.map((row) => mapActivity(row, labels, names.get(row.contactId) ?? ""))
+  return rows.map((row) => {
+    const c = info.get(row.contactId)
+    return mapActivity(row, labels, c?.name ?? "", {
+      companyId: c?.companyId,
+      companyName: c?.companyName,
+    })
+  })
 }
 
 export async function getDealsForContact(contactId: string) {

@@ -33,6 +33,7 @@ export type ContactInput = {
   notes?: string
   productsPurchased?: string
   leadScore?: number
+  tagIds?: string[]
 }
 
 export async function createContact(input: ContactInput): Promise<Contact> {
@@ -74,6 +75,13 @@ export async function createContact(input: ContactInput): Promise<Contact> {
       lastActivityAt: new Date(),
     })
     .returning()
+
+  if (input.tagIds?.length) {
+    await db
+      .insert(contactTags)
+      .values(input.tagIds.map((tagId) => ({ contactId: row.id, tagId, addedBy: user.id })))
+      .onConflictDoNothing()
+  }
 
   const displayLabel = [firstName, lastName].filter(Boolean).join(" ") || companyName
   await db.insert(activities).values({

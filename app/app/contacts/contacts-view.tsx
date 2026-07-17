@@ -14,8 +14,17 @@ import { EditContactDialog } from "@/components/edit-contact-dialog"
 import { CsvImportDialog } from "@/components/csv-import-dialog"
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { TagBadge } from "@/components/tag-badge"
+import { ViewToggle } from "@/components/view-toggle"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,6 +41,7 @@ import {
 import { deleteContact } from "@/app/actions/contacts"
 import { Building2, Mail, Phone, UserRound } from "lucide-react"
 import { type Company, type Contact } from "@/lib/crm-types"
+import { useViewMode } from "@/hooks/use-view-mode"
 import { APP_ROUTES, contactPath } from "@/lib/routes"
 
 const ALL_COMPANIES = "__all__"
@@ -61,6 +71,7 @@ export function ContactsView({
   const [importOpen, setImportOpen] = useState(false)
   const [editContact, setEditContact] = useState<Contact | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Contact | null>(null)
+  const [view, setView] = useViewMode("contacts")
   const [, startTransition] = useTransition()
 
   useEffect(() => {
@@ -91,7 +102,8 @@ export function ContactsView({
         title="Contacts"
         description="Your people — leads, customers, and everyone in between."
         actions={
-          <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+            <ViewToggle mode={view} onChange={setView} />
             <Button variant="outline" onClick={() => setImportOpen(true)}>
               <Upload data-icon="inline-start" />
               Import CSV
@@ -149,7 +161,7 @@ export function ContactsView({
               : "No contacts yet. Add your first contact or import a CSV."}
           </CardContent>
         </Card>
-      ) : (
+      ) : view === "grid" ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {contacts.map((contact) => (
             <Card key={contact.id}>
@@ -215,10 +227,8 @@ export function ContactsView({
                 ) : null}
                 {contact.tags.length > 0 ? (
                   <div className="flex flex-wrap gap-1 pt-1">
-                    {contact.tags.slice(0, 3).map((t) => (
-                      <Badge key={t.id} variant="secondary" className="text-xs">
-                        {t.name}
-                      </Badge>
+                    {contact.tags.slice(0, 5).map((t) => (
+                      <TagBadge key={t.id} name={t.name} color={t.color} />
                     ))}
                   </div>
                 ) : null}
@@ -226,6 +236,73 @@ export function ContactsView({
             </Card>
           ))}
         </div>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Company</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead>Owner</TableHead>
+                    <TableHead className="w-10" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {contacts.map((contact) => (
+                    <TableRow key={contact.id}>
+                      <TableCell>
+                        <Link href={contactPath(contact.id)} className="font-medium hover:underline">
+                          {contact.fullName}
+                        </Link>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {contact.tags.slice(0, 3).map((t) => (
+                            <TagBadge key={t.id} name={t.name} color={t.color} />
+                          ))}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {contact.companyName && contact.companyName !== contact.fullName
+                          ? contact.companyName
+                          : "—"}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{contact.email || "—"}</TableCell>
+                      <TableCell className="text-muted-foreground">{contact.phone || "—"}</TableCell>
+                      <TableCell className="text-muted-foreground">{contact.ownerName || "—"}</TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            render={
+                              <Button variant="ghost" size="icon-sm">
+                                <MoreHorizontal />
+                              </Button>
+                            }
+                          />
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem render={<Link href={contactPath(contact.id)} />}>
+                              View profile
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setEditContact(contact)}>
+                              <Pencil />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(contact)}>
+                              <Trash2 />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       <AddContactDialog open={addOpen} onOpenChange={setAddOpen} />

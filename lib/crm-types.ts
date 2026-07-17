@@ -223,6 +223,8 @@ export type Activity = {
   message: string
   contactId: string
   contactName: string
+  companyId: string
+  companyName: string
   actorName: string
   at: string
 }
