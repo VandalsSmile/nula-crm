@@ -91,7 +91,7 @@ export function DashboardView({
             <CardTitle>Recent activity</CardTitle>
           </CardHeader>
           <CardContent>
-            <ActivityFeed items={activities} />
+            <ActivityFeed items={activities} showContext />
           </CardContent>
         </Card>
       </div>

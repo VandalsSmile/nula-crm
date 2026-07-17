@@ -10,6 +10,14 @@ import { PageHeader } from "@/components/page-header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -17,7 +25,9 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { CompanyFormDialog } from "@/components/company-form-dialog"
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog"
+import { ViewToggle } from "@/components/view-toggle"
 import { backfillCompaniesFromContacts, deleteCompany } from "@/app/actions/companies"
+import { useViewMode } from "@/hooks/use-view-mode"
 import { companyPath } from "@/lib/routes"
 import type { Company } from "@/lib/crm-types"
 
@@ -33,6 +43,7 @@ export function CompaniesView({
   const [editCompany, setEditCompany] = useState<Company | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Company | null>(null)
   const [backfilling, setBackfilling] = useState(false)
+  const [view, setView] = useViewMode("companies")
   const [, startTransition] = useTransition()
 
   async function handleBackfill() {
@@ -67,10 +78,13 @@ export function CompaniesView({
         title="Companies"
         description="The organizations your contacts belong to."
         actions={
-          <Button onClick={() => setAddOpen(true)}>
-            <Plus data-icon="inline-start" />
-            Add company
-          </Button>
+          <div className="flex items-center gap-2">
+            <ViewToggle mode={view} onChange={setView} />
+            <Button onClick={() => setAddOpen(true)}>
+              <Plus data-icon="inline-start" />
+              Add company
+            </Button>
+          </div>
         }
       />
 
@@ -97,7 +111,7 @@ export function CompaniesView({
             No companies yet. Add one, or set a company when creating a contact.
           </CardContent>
         </Card>
-      ) : (
+      ) : view === "grid" ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {companies.map((company) => (
             <Card key={company.id}>
@@ -154,6 +168,66 @@ export function CompaniesView({
             </Card>
           ))}
         </div>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Company</TableHead>
+                    <TableHead>Contacts</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead>Website</TableHead>
+                    <TableHead className="w-10" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {companies.map((company) => (
+                    <TableRow key={company.id}>
+                      <TableCell>
+                        <Link href={companyPath(company.id)} className="font-medium hover:underline">
+                          {company.name}
+                        </Link>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {company.contactCount} {company.contactCount === 1 ? "contact" : "contacts"}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {[company.city, company.state].filter(Boolean).join(", ") || "—"}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{company.website || "—"}</TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            render={
+                              <Button variant="ghost" size="icon-sm">
+                                <MoreHorizontal />
+                              </Button>
+                            }
+                          />
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem render={<Link href={companyPath(company.id)} />}>
+                              View company
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setEditCompany(company)}>
+                              <Pencil />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(company)}>
+                              <Trash2 />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       <CompanyFormDialog open={addOpen} onOpenChange={setAddOpen} />

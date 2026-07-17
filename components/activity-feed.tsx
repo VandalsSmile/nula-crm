@@ -18,9 +18,12 @@ import {
   Users,
 } from "lucide-react"
 
+import Link from "next/link"
+
 import { type Activity } from "@/lib/crm-types"
 import { relativeTime } from "@/lib/format"
 import { cn } from "@/lib/utils"
+import { companyPath, contactPath } from "@/lib/routes"
 
 type IconConfig = { icon: typeof FilePlus2; className: string }
 
@@ -52,7 +55,14 @@ const config: Record<string, IconConfig> = {
 
 const defaultConfig: IconConfig = config.created
 
-export function ActivityFeed({ items = [] }: { items?: Activity[] }) {
+export function ActivityFeed({
+  items = [],
+  showContext = false,
+}: {
+  items?: Activity[]
+  /** Show which contact/company each activity is tied to (e.g. on the dashboard). */
+  showContext?: boolean
+}) {
   if (items.length === 0) {
     return <p className="text-sm text-muted-foreground">No recent activity yet.</p>
   }
@@ -70,6 +80,31 @@ export function ActivityFeed({ items = [] }: { items?: Activity[] }) {
             </div>
             <div className="flex flex-col pb-5">
               <p className="text-sm leading-snug text-muted-foreground">{a.message}</p>
+              {showContext && (a.contactName || a.companyName) ? (
+                <span className="text-xs text-foreground/70">
+                  {a.contactName ? (
+                    a.contactId ? (
+                      <Link href={contactPath(a.contactId)} className="font-medium hover:underline">
+                        {a.contactName}
+                      </Link>
+                    ) : (
+                      <span className="font-medium">{a.contactName}</span>
+                    )
+                  ) : null}
+                  {a.companyName ? (
+                    <>
+                      {a.contactName ? " · " : null}
+                      {a.companyId ? (
+                        <Link href={companyPath(a.companyId)} className="hover:underline">
+                          {a.companyName}
+                        </Link>
+                      ) : (
+                        a.companyName
+                      )}
+                    </>
+                  ) : null}
+                </span>
+              ) : null}
               <span className="text-xs text-muted-foreground/80">{relativeTime(a.at)}</span>
             </div>
           </li>
