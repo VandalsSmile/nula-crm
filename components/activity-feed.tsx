@@ -91,7 +91,7 @@ export function ActivityFeed({
                       <span className="font-medium">{a.contactName}</span>
                     )
                   ) : null}
-                  {a.companyName ? (
+                  {a.companyName && a.companyName !== a.contactName ? (
                     <>
                       {a.contactName ? " · " : null}
                       {a.companyId ? (
