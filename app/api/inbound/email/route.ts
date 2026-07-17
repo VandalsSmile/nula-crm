@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { ingestInboundMessage } from "@/lib/inbox/messages"
 import { processLeadIntake } from "@/lib/leads/intake"
 import { resolveSourceByPublicKey, type LeadChannel } from "@/lib/leads/sources"
+import { logMailboxEmail, resolveEmailConnectionByToken } from "@/lib/email/mailbox"
 
 export const runtime = "nodejs"
 
@@ -137,16 +138,17 @@ export async function POST(request: NextRequest) {
     ...collectStrings(data.received_for),
     ...collectStrings(data.recipient),
     ...collectStrings(data.To),
+    ...collectStrings(data.cc),
+    ...collectStrings(data.Cc),
     ...collectStrings((data.envelope as Record<string, unknown> | undefined)?.to),
   ]
   const token =
     firstToken(recipients) || str(new URL(request.url).searchParams.get("key"))
-  const source = token ? await resolveSourceByPublicKey(token) : null
-  if (!source || !source.enabled) {
+  if (!token) {
     return NextResponse.json({ ok: false, error: "Unknown inbound address" }, { status: 404 })
   }
-  const workspaceId = source.userId
 
+  // Parse sender + body once (shared by the mailbox and lead paths).
   const fromRaw = first(data, ["from", "sender", "From"])
   const { name, email } = parseAddress(fromRaw)
   if (!email) {
@@ -167,6 +169,36 @@ export async function POST(request: NextRequest) {
   }
 
   const bodyText = text || subject || "(no content)"
+  const externalId =
+    str(data.email_id) || first(data, ["message_id", "Message-Id", "messageId", "Message-ID"])
+
+  // Personal email dropbox: a user BCC'd/forwarded mail to me+{token}@… — log it
+  // against the matching contact (no lead scoring/tagging).
+  const connection = await resolveEmailConnectionByToken(token)
+  if (connection) {
+    const recipientEmails = recipients
+      .map((r) => parseAddress(r).email)
+      .filter(Boolean)
+    try {
+      const result = await logMailboxEmail(
+        { fromEmail: email, fromName: name, recipientEmails, subject, body: bodyText, externalId },
+        connection,
+      )
+      return NextResponse.json({ ok: true, ...result })
+    } catch (err) {
+      return NextResponse.json(
+        { ok: false, error: err instanceof Error ? err.message : "Could not log email" },
+        { status: 400 },
+      )
+    }
+  }
+
+  // Otherwise this is a lead-source inbound address.
+  const source = await resolveSourceByPublicKey(token)
+  if (!source || !source.enabled) {
+    return NextResponse.json({ ok: false, error: "Unknown inbound address" }, { status: 404 })
+  }
+  const workspaceId = source.userId
   const [firstName, ...rest] = (name || email.split("@")[0]).split(/\s+/)
 
   try {

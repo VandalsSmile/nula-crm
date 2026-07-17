@@ -7,6 +7,7 @@ import { SecuritySettings } from "@/components/settings/security-settings"
 import { TeamSettings } from "@/components/settings/team-settings"
 import { WorkspaceSettings } from "@/components/settings/workspace-settings"
 import { LeadSourcesSettings } from "@/components/settings/lead-sources-settings"
+import { EmailConnectionSettings } from "@/components/settings/email-connection-settings"
 import { RoutingRulesSettings } from "@/components/settings/routing-rules-settings"
 import { PlanSettings } from "@/components/settings/plan-settings"
 import { useUrlTab } from "@/hooks/use-url-tab"
@@ -50,6 +51,7 @@ export function SettingsView() {
         </TabsContent>
 
         <TabsContent value="leads" className="mt-6 flex flex-col gap-6" keepMounted>
+          <EmailConnectionSettings />
           <RoutingRulesSettings />
           <LeadSourcesSettings />
         </TabsContent>
