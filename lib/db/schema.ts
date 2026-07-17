@@ -221,6 +221,21 @@ export const messages = pgTable("messages", {
   subject: text("subject").notNull().default(""),
   body: text("body").notNull().default(""),
   status: text("status").notNull().default("received"),
+  externalId: text("externalId").notNull().default(""),
+  fromEmail: text("fromEmail").notNull().default(""),
+  toEmail: text("toEmail").notNull().default(""),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+export const emailConnections = pgTable("email_connections", {
+  id: text("id").primaryKey(),
+  userId: text("userId").notNull(),
+  workspaceId: text("workspaceId").notNull(),
+  token: text("token").notNull(),
+  // Comma-separated list of the user's own sending addresses (for direction).
+  ownedEmails: text("ownedEmails").notNull().default(""),
+  // "contacts_only" logs mail only for existing contacts; "all" also creates them.
+  mode: text("mode").notNull().default("contacts_only"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 

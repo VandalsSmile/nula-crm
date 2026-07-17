@@ -81,6 +81,8 @@ export type CampaignStatus = (typeof CAMPAIGN_STATUSES)[number]
 export const ACTIVITY_TYPES = [
   "form_submitted",
   "email_opened",
+  "email_sent",
+  "email_received",
   "link_clicked",
   "sms_sent",
   "call_made",
