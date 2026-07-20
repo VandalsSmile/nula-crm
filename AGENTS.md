@@ -59,5 +59,9 @@ AI-first small business CRM. Core objects: **Contacts**, **Tags**, **Groups**, *
 ## Integrations
 
 - **AI** (`AI_PROVIDER=anthropic|openai`) — command interpreter + lead summaries; regex fallback without keys
-- **Resend** (`RESEND_API_KEY`, `RESEND_FROM_EMAIL`) — campaign email sends
+- **Resend** (`RESEND_API_KEY`, `RESEND_FROM_EMAIL`) — campaign email sends. `RESEND_API_KEY` must be **Full access**, not sending-only: inbound email logging reads the received message via `GET /emails/receiving/{id}` and a sending-only key returns 401.
 - **Lead webhook** — duplicate match, scoring, tags, groups, automations on intake
+- **Inbound email** (`POST /api/inbound/email`, Resend inbound) — powers both lead intake (`leads+{key}@`) and the per-user BCC "dropbox" (`me+{token}@`). Addresses use `INBOUND_EMAIL_DOMAIN` (prod: `reply.nulacrm.ai`). Non-obvious gotchas learned the hard way:
+  - The receiving MX (`inbound-smtp.us-east-1.amazonaws.com`) must be on a **dedicated subdomain** that has **no CNAME** (Resend's click-tracking CNAME e.g. `inbox` collides with an MX and silently breaks receiving). Keep the root domain's MX on the real mail provider (Google) so real `@nulacrm.ai` mail / transactional resets aren't swallowed.
+  - Resend must have that subdomain added as a domain with **Enable Receiving** ON **and** a webhook subscribed to **`email.received`** pointing at the exact `https://www.nulacrm.ai/api/inbound/email` (no apex/trailing-slash 308 redirects — senders don't follow them).
+  - For a **BCC'd** copy, the webhook's `to`/`received_for` are the delivered-to (dropbox) address; the real contact is only in the fetched message's `headers.to`. The route fetches the full message to resolve the counterparty — hence the Full-access key requirement above.
