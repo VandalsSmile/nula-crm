@@ -116,10 +116,10 @@
     --popover-foreground: var(--nula-paper);
     --primary: #6b5ff7;
     --primary-foreground: #ffffff;
-    --secondary: #2d2650;
+    --secondary: #363061;
     --secondary-foreground: var(--nula-paper);
-    --muted: #2d2650;
-    --muted-foreground: var(--nula-mist);
+    --muted: #363061;
+    --muted-foreground: #aca7cb;
     --accent: #1a4a42;
     --accent-foreground: var(--nula-signal);
     --destructive: #ff6369;
@@ -129,8 +129,8 @@
     --warning-foreground: var(--nula-ink);
     --info: var(--nula-signal);
     --info-foreground: var(--nula-ink);
-    --border: #3d3660;
-    --input: #3d3660;
+    --border: #4e477a;
+    --input: #4e477a;
     --ring: #6b5ff7;
     --chart-1: #6b5ff7;
     --chart-2: var(--nula-signal);
@@ -141,10 +141,20 @@
     --sidebar-foreground: var(--nula-paper);
     --sidebar-primary: #6b5ff7;
     --sidebar-primary-foreground: #ffffff;
-    --sidebar-accent: #2d2650;
+    --sidebar-accent: #363061;
     --sidebar-accent-foreground: var(--nula-signal);
-    --sidebar-border: #3d3660;
+    --sidebar-border: #4e477a;
     --sidebar-ring: #6b5ff7;
+}
+
+/*
+ * Dark mode: --primary is tuned as a button background (white text needs it dark
+ * enough to keep AA contrast), which makes it too low-contrast as accent *text*
+ * on the dark purple surfaces ("purple on light purple"). Brighten text-primary
+ * usages (links, badges, stat icons) here without touching button backgrounds.
+ */
+.dark .text-primary {
+  color: #8f83ff;
 }
 
 @layer base {
