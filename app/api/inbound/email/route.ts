@@ -123,21 +123,10 @@ async function fetchResendEmail(emailId: string): Promise<FetchedEmail | null> {
       headers?: Record<string, unknown> | null
     }
     const headers = (data.headers ?? {}) as Record<string, unknown>
+    // The receiving API's top-level `to` is the delivered-to (dropbox) address
+    // for a BCC'd copy; the real recipient is in the raw `headers.to`.
     const headerTo = [...collectStrings(headers.to), ...collectStrings(headers.To)]
     const headerCc = [...collectStrings(headers.cc), ...collectStrings(headers.Cc)]
-    // Diagnostic: reveal exactly what the receiving API returns for recipients so
-    // we can see where the real (non-dropbox) contact address lives.
-    console.log(
-      "[inbound/email] fetched",
-      JSON.stringify({
-        apiTo: data.to,
-        apiCc: data.cc,
-        apiFrom: data.from,
-        headerTo,
-        headerCc,
-        keys: Object.keys(data),
-      }),
-    )
     const text = str(data.text) || (data.html ? htmlToText(data.html) : "")
     return {
       text,
@@ -198,19 +187,6 @@ export async function POST(request: NextRequest) {
   const token =
     firstToken(recipients) || str(new URL(request.url).searchParams.get("key"))
 
-  // Observability: one concise line per inbound so we can trace delivery,
-  // address routing, and processing outcome in the logs.
-  console.log(
-    "[inbound/email]",
-    JSON.stringify({
-      isResend,
-      keys: Object.keys(data),
-      recipients,
-      tokenLen: token.length,
-      hasFrom: Boolean(first(data, ["from", "sender", "From"])),
-    }),
-  )
-
   if (!token) {
     console.warn("[inbound/email] no token in recipients — returning 404")
     return NextResponse.json({ ok: false, error: "Unknown inbound address" }, { status: 404 })
@@ -255,7 +231,7 @@ export async function POST(request: NextRequest) {
         { fromEmail: email, fromName: name, recipientEmails, subject, body: bodyText, externalId },
         connection,
       )
-      console.log("[inbound/email] mailbox", JSON.stringify({ from: email, recipientEmails, result }))
+      console.log("[inbound/email] mailbox", JSON.stringify(result))
       return NextResponse.json({ ok: true, ...result })
     } catch (err) {
       console.error("[inbound/email] mailbox error", err)
