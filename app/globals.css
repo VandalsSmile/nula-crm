@@ -82,11 +82,15 @@
     --accent: #d8faf4;
     --accent-foreground: #0d5c4e;
     --destructive: #e5484d;
-    --success: #12a594;
+    /* Darker teal/green so tinted badges (light background tint plus same-color
+       text) stay legible on light backgrounds. The bright signal mint is only
+       used for solid marketing art (nula-signal), not these semantic tints.
+       Dark mode keeps the bright values. */
+    --success: #0a7357;
     --success-foreground: #ffffff;
     --warning: #f5a524;
     --warning-foreground: #5c3d00;
-    --info: var(--nula-signal);
+    --info: #0b7285;
     --info-foreground: var(--nula-ink);
     --border: #e3e1eb;
     --input: #e3e1eb;
