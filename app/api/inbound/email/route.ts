@@ -84,10 +84,22 @@ function verifySvixSignature(secret: string, req: NextRequest, rawBody: string):
   })
 }
 
-/** Fetch the email body via the Resend Received Emails API (webhook has none). */
-async function fetchResendBody(
-  emailId: string,
-): Promise<{ text: string; subject: string } | null> {
+type FetchedEmail = {
+  text: string
+  subject: string
+  from: string
+  to: string[]
+  cc: string[]
+}
+
+/**
+ * Fetch the full received email via the Resend Received Emails API. The webhook
+ * payload carries only metadata (and, for a BCC'd copy, its `to`/`received_for`
+ * reflect the *delivered-to* address, not the message's real `To` header). The
+ * receiving API returns the true `from`/`to`/`cc` headers plus the body, which
+ * we need to resolve the real counterparty for a BCC'd/forwarded email.
+ */
+async function fetchResendEmail(emailId: string): Promise<FetchedEmail | null> {
   const apiKey = process.env.RESEND_API_KEY?.trim()
   if (!apiKey || !emailId) return null
   try {
@@ -95,9 +107,22 @@ async function fetchResendBody(
       headers: { Authorization: `Bearer ${apiKey}` },
     })
     if (!res.ok) return null
-    const data = (await res.json()) as { text?: string | null; html?: string | null; subject?: string | null }
+    const data = (await res.json()) as {
+      text?: string | null
+      html?: string | null
+      subject?: string | null
+      from?: string | null
+      to?: string | string[] | null
+      cc?: string | string[] | null
+    }
     const text = str(data.text) || (data.html ? htmlToText(data.html) : "")
-    return { text, subject: str(data.subject) }
+    return {
+      text,
+      subject: str(data.subject),
+      from: str(data.from),
+      to: collectStrings(data.to),
+      cc: collectStrings(data.cc),
+    }
   } catch {
     return null
   }
@@ -167,25 +192,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: "Unknown inbound address" }, { status: 404 })
   }
 
-  // Parse sender + body once (shared by the mailbox and lead paths).
-  const fromRaw = first(data, ["from", "sender", "From"])
+  // Resend webhooks carry only metadata, and a BCC'd copy's `to`/`received_for`
+  // reflect the delivered-to (dropbox) address rather than the message's real
+  // `To`. Fetch the full message so we have the body and true From/To/Cc headers.
+  const fetched = data.email_id ? await fetchResendEmail(str(data.email_id)) : null
+
+  // Parse sender (fall back to the fetched header if the webhook omits it).
+  const fromRaw = first(data, ["from", "sender", "From"]) || (fetched?.from ?? "")
   const { name, email } = parseAddress(fromRaw)
   if (!email) {
     return NextResponse.json({ ok: false, error: "Missing sender address" }, { status: 400 })
   }
 
-  let subject = first(data, ["subject", "Subject"])
+  const subject = first(data, ["subject", "Subject"]) || (fetched?.subject ?? "")
   let text = first(data, ["text", "body", "body-plain", "stripped-text", "TextBody", "plain"])
   if (!text && data.html) text = htmlToText(str(data.html))
-
-  // Resend webhooks carry metadata only — fetch the body via the receiving API.
-  if (!text && data.email_id) {
-    const fetched = await fetchResendBody(str(data.email_id))
-    if (fetched) {
-      text = fetched.text
-      if (!subject) subject = fetched.subject
-    }
-  }
+  if (!text && fetched) text = fetched.text
 
   const bodyText = text || subject || "(no content)"
   const externalId =
@@ -195,7 +217,13 @@ export async function POST(request: NextRequest) {
   // against the matching contact (no lead scoring/tagging).
   const connection = await resolveEmailConnectionByToken(token)
   if (connection) {
-    const recipientEmails = recipients
+    // Combine the webhook recipients with the true To/Cc headers from the
+    // fetched message — a BCC'd copy hides the real recipient in the webhook,
+    // so without this the counterparty can't be resolved.
+    const recipientEmails = [
+      ...recipients,
+      ...(fetched ? [...fetched.to, ...fetched.cc] : []),
+    ]
       .map((r) => parseAddress(r).email)
       .filter(Boolean)
     try {
