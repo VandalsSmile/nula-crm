@@ -101,12 +101,18 @@ type FetchedEmail = {
  */
 async function fetchResendEmail(emailId: string): Promise<FetchedEmail | null> {
   const apiKey = process.env.RESEND_API_KEY?.trim()
-  if (!apiKey || !emailId) return null
+  if (!apiKey || !emailId) {
+    console.warn("[inbound/email] receiving fetch skipped", JSON.stringify({ hasKey: Boolean(apiKey), hasId: Boolean(emailId) }))
+    return null
+  }
   try {
     const res = await fetch(`https://api.resend.com/emails/receiving/${emailId}`, {
       headers: { Authorization: `Bearer ${apiKey}` },
     })
-    if (!res.ok) return null
+    if (!res.ok) {
+      console.warn("[inbound/email] receiving API non-200", JSON.stringify({ status: res.status }))
+      return null
+    }
     const data = (await res.json()) as {
       text?: string | null
       html?: string | null
@@ -114,16 +120,34 @@ async function fetchResendEmail(emailId: string): Promise<FetchedEmail | null> {
       from?: string | null
       to?: string | string[] | null
       cc?: string | string[] | null
+      headers?: Record<string, unknown> | null
     }
+    const headers = (data.headers ?? {}) as Record<string, unknown>
+    const headerTo = [...collectStrings(headers.to), ...collectStrings(headers.To)]
+    const headerCc = [...collectStrings(headers.cc), ...collectStrings(headers.Cc)]
+    // Diagnostic: reveal exactly what the receiving API returns for recipients so
+    // we can see where the real (non-dropbox) contact address lives.
+    console.log(
+      "[inbound/email] fetched",
+      JSON.stringify({
+        apiTo: data.to,
+        apiCc: data.cc,
+        apiFrom: data.from,
+        headerTo,
+        headerCc,
+        keys: Object.keys(data),
+      }),
+    )
     const text = str(data.text) || (data.html ? htmlToText(data.html) : "")
     return {
       text,
       subject: str(data.subject),
-      from: str(data.from),
-      to: collectStrings(data.to),
-      cc: collectStrings(data.cc),
+      from: str(data.from) || str(headers.from),
+      to: [...collectStrings(data.to), ...headerTo],
+      cc: [...collectStrings(data.cc), ...headerCc],
     }
-  } catch {
+  } catch (err) {
+    console.error("[inbound/email] receiving fetch error", err)
     return null
   }
 }
