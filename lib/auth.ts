@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth"
 import { pool } from "@/lib/db"
+import { sendSignupNotificationEmail } from "@/lib/signup-notify-email"
 
 /** Sends a password-reset email via Resend (logs the link when unconfigured). */
 async function sendResetPasswordEmail(email: string, url: string) {
@@ -29,6 +30,26 @@ async function sendResetPasswordEmail(email: string, url: string) {
 
 export const auth = betterAuth({
   database: pool,
+  databaseHooks: {
+    user: {
+      create: {
+        // Notify the admin inbox for every new account (self-serve trial sign-up
+        // or teammate). Best-effort and non-blocking — a send failure must never
+        // break sign-up.
+        after: async (user) => {
+          try {
+            await sendSignupNotificationEmail({
+              email: (user as { email?: string | null }).email,
+              name: (user as { name?: string | null }).name,
+              id: (user as { id?: string | null }).id,
+            })
+          } catch (error) {
+            console.error("[auth] Failed to send signup notification", error)
+          }
+        },
+      },
+    },
+  },
   // Sign-up is self-serve: a new account becomes its own workspace owner
   // (see resolveActingWorkspaceId). Teammates still join an existing workspace
   // via invite links, which bind them to the inviting workspace on accept
