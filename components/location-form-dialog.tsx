@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { createLocation, updateLocation } from "@/app/actions/locations"
+import { lookupZip } from "@/app/actions/geo"
 import type { Location } from "@/lib/crm-types"
 
 type LocationFormValue = {
@@ -67,6 +68,19 @@ export function LocationFormDialog({
           : { ...EMPTY, name: initialName ?? "" },
       )
     }
+  }
+
+  // Autofill city/state from a US ZIP without clobbering values already entered.
+  async function handleZip(zip: string) {
+    setForm((f) => ({ ...f, zip }))
+    if (!/^\d{5}$/.test(zip.trim())) return
+    const place = await lookupZip(zip)
+    if (!place) return
+    setForm((f) => ({
+      ...f,
+      city: f.city.trim() ? f.city : place.city,
+      state: f.state.trim() ? f.state : place.state,
+    }))
   }
 
   async function handleSave() {
@@ -124,7 +138,7 @@ export function LocationFormDialog({
             </Field>
             <Field>
               <FieldLabel>ZIP</FieldLabel>
-              <Input value={form.zip} onChange={(e) => setForm((f) => ({ ...f, zip: e.target.value }))} />
+              <Input value={form.zip} onChange={(e) => handleZip(e.target.value)} />
             </Field>
           </div>
           <Field>

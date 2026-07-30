@@ -21,53 +21,88 @@ import { LocationSelect } from "@/components/location-select"
 import { TagPicker } from "@/components/tag-picker"
 import { useSessionUser } from "@/lib/session-context"
 import { createContact } from "@/app/actions/contacts"
+import { lookupZip } from "@/app/actions/geo"
+import type { Company } from "@/lib/crm-types"
+
+type ContactForm = {
+  firstName: string
+  lastName: string
+  companyName: string
+  companyId: string
+  locationId: string
+  ownerId: string
+  email: string
+  phone: string
+  websiteUrl: string
+  address: string
+  city: string
+  state: string
+  zip: string
+  source: string
+  tagIds: string[]
+}
+
+/** Build a blank contact form, optionally prefilled from a company (name +
+ * contact details), e.g. when adding a contact from a company page. */
+function makeForm(ownerId: string, company?: Company | null): ContactForm {
+  return {
+    firstName: "",
+    lastName: "",
+    companyName: company?.name ?? "",
+    companyId: company?.id ?? "",
+    locationId: "",
+    ownerId,
+    email: "",
+    phone: company?.phone ?? "",
+    websiteUrl: company?.website ?? "",
+    address: company?.address ?? "",
+    city: company?.city ?? "",
+    state: company?.state ?? "",
+    zip: company?.zip ?? "",
+    source: "",
+    tagIds: [],
+  }
+}
 
 export function AddContactDialog({
   open,
   onOpenChange,
+  defaultCompany,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** Prefill company context — e.g. when opening from a company page. */
+  defaultCompany?: Company | null
 }) {
   const router = useRouter()
   const me = useSessionUser()
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
-    companyName: "",
-    companyId: "",
-    locationId: "",
-    ownerId: me.id,
-    email: "",
-    phone: "",
-    websiteUrl: "",
-    address: "",
-    city: "",
-    state: "",
-    zip: "",
-    source: "",
-    tagIds: [] as string[],
-  })
+  const [form, setForm] = useState<ContactForm>(() => makeForm(me.id, defaultCompany))
+
+  // Re-populate on open (adjust state during render — no state-setting effect),
+  // so opening from a company page starts prefilled with that company.
+  const resetKey = open ? (defaultCompany?.id ?? "new") : null
+  const [appliedKey, setAppliedKey] = useState<string | null>(null)
+  if (resetKey !== appliedKey) {
+    setAppliedKey(resetKey)
+    if (open) setForm(makeForm(me.id, defaultCompany))
+  }
 
   function reset() {
-    setForm({
-      firstName: "",
-      lastName: "",
-      companyName: "",
-      companyId: "",
-      locationId: "",
-      ownerId: me.id,
-      email: "",
-      phone: "",
-      websiteUrl: "",
-      address: "",
-      city: "",
-      state: "",
-      zip: "",
-      source: "",
-      tagIds: [],
-    })
+    setForm(makeForm(me.id, defaultCompany))
+  }
+
+  // Autofill city/state from a US ZIP without clobbering values already entered.
+  async function handleZip(zip: string) {
+    setForm((f) => ({ ...f, zip }))
+    if (!/^\d{5}$/.test(zip.trim())) return
+    const place = await lookupZip(zip)
+    if (!place) return
+    setForm((f) => ({
+      ...f,
+      city: f.city.trim() ? f.city : place.city,
+      state: f.state.trim() ? f.state : place.state,
+    }))
   }
 
   async function handleCreate() {
@@ -185,7 +220,7 @@ export function AddContactDialog({
             </Field>
             <Field>
               <FieldLabel>ZIP</FieldLabel>
-              <Input value={form.zip} onChange={(e) => setForm((f) => ({ ...f, zip: e.target.value }))} />
+              <Input value={form.zip} onChange={(e) => handleZip(e.target.value)} />
             </Field>
           </div>
           <div className="grid grid-cols-2 gap-3">
