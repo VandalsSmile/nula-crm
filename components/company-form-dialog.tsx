@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { createCompany, updateCompany } from "@/app/actions/companies"
+import { lookupZip } from "@/app/actions/geo"
 import type { Company } from "@/lib/crm-types"
 
 type CompanyFormValue = {
@@ -81,6 +82,19 @@ export function CompanyFormDialog({
     }
   }
 
+  // Autofill city/state from a US ZIP without clobbering values already entered.
+  async function handleZip(zip: string) {
+    setForm((f) => ({ ...f, zip }))
+    if (!/^\d{5}$/.test(zip.trim())) return
+    const place = await lookupZip(zip)
+    if (!place) return
+    setForm((f) => ({
+      ...f,
+      city: f.city.trim() ? f.city : place.city,
+      state: f.state.trim() ? f.state : place.state,
+    }))
+  }
+
   async function handleSave() {
     if (!form.name.trim()) {
       toast.error("Company name is required")
@@ -140,7 +154,7 @@ export function CompanyFormDialog({
             </Field>
             <Field>
               <FieldLabel>ZIP</FieldLabel>
-              <Input value={form.zip} onChange={(e) => setForm((f) => ({ ...f, zip: e.target.value }))} />
+              <Input value={form.zip} onChange={(e) => handleZip(e.target.value)} />
             </Field>
           </div>
           <Field>

@@ -26,6 +26,7 @@ import { OwnerSelect } from "@/components/owner-select"
 import { CompanySelect } from "@/components/company-select"
 import { LocationSelect } from "@/components/location-select"
 import { updateContact, type ContactInput } from "@/app/actions/contacts"
+import { lookupZip } from "@/app/actions/geo"
 import { LIFECYCLE_STAGES, type Contact } from "@/lib/crm-types"
 
 export function EditContactDialog({
@@ -85,6 +86,19 @@ export function EditContactDialog({
         notes: contact.notes,
       })
     }
+  }
+
+  // Autofill city/state from a US ZIP without clobbering values already entered.
+  async function handleZip(zip: string) {
+    setForm((f) => ({ ...f, zip }))
+    if (!/^\d{5}$/.test(zip.trim())) return
+    const place = await lookupZip(zip)
+    if (!place) return
+    setForm((f) => ({
+      ...f,
+      city: f.city?.trim() ? f.city : place.city,
+      state: f.state?.trim() ? f.state : place.state,
+    }))
   }
 
   async function handleSave() {
@@ -182,7 +196,7 @@ export function EditContactDialog({
             </Field>
             <Field>
               <FieldLabel>ZIP</FieldLabel>
-              <Input value={form.zip} onChange={(e) => setForm((f) => ({ ...f, zip: e.target.value }))} />
+              <Input value={form.zip} onChange={(e) => handleZip(e.target.value)} />
             </Field>
           </div>
           <Field>

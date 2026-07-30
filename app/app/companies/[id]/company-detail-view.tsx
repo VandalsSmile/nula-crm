@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Building2, Globe, Mail, MapPin, MapPinned, Merge, Pencil, Phone, Plus, Trash2, UserRound } from "lucide-react"
+import { Building2, Globe, Mail, MapPin, MapPinned, Merge, Pencil, Phone, Plus, Trash2, UserPlus, UserRound } from "lucide-react"
 import { toast } from "sonner"
 
 import { PageHeader } from "@/components/page-header"
@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { LifecycleBadge } from "@/components/lifecycle-badge"
+import { AddContactDialog } from "@/components/add-contact-dialog"
 import { CompanyFormDialog } from "@/components/company-form-dialog"
 import { LocationFormDialog } from "@/components/location-form-dialog"
 import { MergeCompanyDialog } from "@/components/merge-company-dialog"
@@ -48,6 +49,7 @@ export function CompanyDetailView({
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [mergeOpen, setMergeOpen] = useState(false)
   const [addLocationOpen, setAddLocationOpen] = useState(false)
+  const [addContactOpen, setAddContactOpen] = useState(false)
   const [editLocation, setEditLocation] = useState<Location | null>(null)
   const [deleteLocationTarget, setDeleteLocationTarget] = useState<Location | null>(null)
   const [, startTransition] = useTransition()
@@ -260,14 +262,24 @@ export function CompanyDetailView({
         </div>
 
         <Card className="lg:col-span-2">
-          <CardHeader>
+          <CardHeader className="flex-row items-center justify-between gap-2">
             <CardTitle className="text-base">Contacts</CardTitle>
+            <Button variant="outline" size="sm" onClick={() => setAddContactOpen(true)}>
+              <UserPlus data-icon="inline-start" />
+              Add contact
+            </Button>
           </CardHeader>
           <CardContent>
             {contacts.length === 0 ? (
-              <p className="py-6 text-center text-sm text-muted-foreground">
-                No contacts linked to this company yet. Set this company on a contact to link it.
-              </p>
+              <div className="flex flex-col items-center gap-3 py-6 text-center">
+                <p className="text-sm text-muted-foreground">
+                  No contacts linked to this company yet.
+                </p>
+                <Button variant="outline" size="sm" onClick={() => setAddContactOpen(true)}>
+                  <UserPlus data-icon="inline-start" />
+                  Add contact
+                </Button>
+              </div>
             ) : (
               <div className="flex flex-col gap-5">
                 {locations.map((loc) => {
@@ -299,6 +311,11 @@ export function CompanyDetailView({
         </Card>
       </div>
 
+      <AddContactDialog
+        open={addContactOpen}
+        onOpenChange={setAddContactOpen}
+        defaultCompany={company}
+      />
       <CompanyFormDialog open={editOpen} onOpenChange={setEditOpen} company={company} />
       <MergeCompanyDialog open={mergeOpen} onOpenChange={setMergeOpen} company={company} />
       <LocationFormDialog open={addLocationOpen} onOpenChange={setAddLocationOpen} companyId={company.id} />
