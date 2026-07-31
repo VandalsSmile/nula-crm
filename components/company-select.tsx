@@ -7,7 +7,9 @@ import { Plus } from "lucide-react"
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectSeparator,
   SelectTrigger,
   SelectValue,
@@ -54,6 +56,26 @@ export function CompanySelect({
     onChange(next, company?.name ?? "", company)
   }
 
+  const all = comps ?? []
+  // Group the newest companies at the top so a just-created one is easy to pick
+  // among many similarly-named ones. Only partition once the list is long.
+  const partition = all.length > 6
+  const recent = partition
+    ? [...all].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 5)
+    : []
+  const recentIds = new Set(recent.map((c) => c.id))
+  const rest = partition ? all.filter((c) => !recentIds.has(c.id)) : all
+
+  function itemContent(c: Company) {
+    const loc = [c.city, c.state].filter(Boolean).join(", ")
+    return (
+      <span className="flex items-center gap-1.5">
+        <span>{c.name}</span>
+        {loc ? <span className="text-xs text-muted-foreground">· {loc}</span> : null}
+      </span>
+    )
+  }
+
   return (
     <>
       <Select value={value || NONE} onValueChange={handleChange}>
@@ -62,11 +84,33 @@ export function CompanySelect({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value={NONE}>No company</SelectItem>
-          {(comps ?? []).map((c) => (
-            <SelectItem key={c.id} value={c.id}>
-              {c.name}
-            </SelectItem>
-          ))}
+          {partition ? (
+            <>
+              <SelectGroup>
+                <SelectLabel>Recently added</SelectLabel>
+                {recent.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {itemContent(c)}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+              <SelectSeparator />
+              <SelectGroup>
+                <SelectLabel>All companies</SelectLabel>
+                {rest.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {itemContent(c)}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </>
+          ) : (
+            rest.map((c) => (
+              <SelectItem key={c.id} value={c.id}>
+                {itemContent(c)}
+              </SelectItem>
+            ))
+          )}
           <SelectSeparator />
           <SelectItem value={CREATE}>
             <Plus />
