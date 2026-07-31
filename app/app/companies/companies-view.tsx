@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Building2, Globe, MapPin, MoreHorizontal, Pencil, Plus, Sparkles, Trash2, Users } from "lucide-react"
+import { Building2, Clock, Globe, MapPin, MoreHorizontal, Pencil, Plus, Sparkles, Trash2, Users } from "lucide-react"
 import { toast } from "sonner"
 
 import { PageHeader } from "@/components/page-header"
@@ -45,6 +45,14 @@ export function CompaniesView({
   const [backfilling, setBackfilling] = useState(false)
   const [view, setView] = useViewMode("companies")
   const [, startTransition] = useTransition()
+
+  // Surface the newest companies up top so it's easy to find the one you just
+  // added among many similarly-named ones. Only worth showing once the list is
+  // long enough to be hard to scan.
+  const recentCompanies = [...companies]
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, 6)
+  const showRecent = companies.length > 4
 
   async function handleBackfill() {
     setBackfilling(true)
@@ -101,6 +109,36 @@ export function CompaniesView({
             <Button onClick={handleBackfill} disabled={backfilling}>
               {backfilling ? "Linking…" : "Create & link companies"}
             </Button>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {showRecent ? (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Clock className="size-4 text-muted-foreground" />
+              Recently added
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
+            {recentCompanies.map((company) => {
+              const loc = [company.city, company.state].filter(Boolean).join(", ")
+              return (
+                <Link
+                  key={company.id}
+                  href={companyPath(company.id)}
+                  className="group flex items-center gap-2 rounded-lg border px-3 py-2 text-sm hover:bg-muted/50"
+                >
+                  <Building2 className="size-4 shrink-0 text-muted-foreground" />
+                  <span className="font-medium group-hover:underline">{company.name}</span>
+                  {loc ? <span className="text-xs text-muted-foreground">· {loc}</span> : null}
+                  <span className="text-xs text-muted-foreground">
+                    · {company.contactCount} {company.contactCount === 1 ? "contact" : "contacts"}
+                  </span>
+                </Link>
+              )
+            })}
           </CardContent>
         </Card>
       ) : null}
