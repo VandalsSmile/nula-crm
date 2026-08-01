@@ -9,9 +9,18 @@ import { toast } from "sonner"
 import { PageHeader } from "@/components/page-header"
 import { GroupFormDialog } from "@/components/group-form-dialog"
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog"
+import { ViewToggle } from "@/components/view-toggle"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +28,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { deleteGroup } from "@/app/actions/groups"
+import { useViewMode } from "@/hooks/use-view-mode"
 import type { Group } from "@/lib/crm-types"
 import { groupPath } from "@/lib/routes"
 
@@ -27,6 +37,7 @@ export function GroupsView({ groups }: { groups: Group[] }) {
   const [createOpen, setCreateOpen] = useState(false)
   const [editGroup, setEditGroup] = useState<Group | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Group | null>(null)
+  const [view, setView] = useViewMode("groups")
   const [, startTransition] = useTransition()
 
   function handleDelete(group: Group) {
@@ -42,16 +53,47 @@ export function GroupsView({ groups }: { groups: Group[] }) {
     })
   }
 
+  function renderActions(group: Group) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button variant="ghost" size="icon-sm">
+              <MoreHorizontal />
+            </Button>
+          }
+        />
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem render={<Link href={groupPath(group.id)} />}>
+            <Users />
+            View members
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setEditGroup(group)}>
+            <Pencil />
+            Edit
+          </DropdownMenuItem>
+          <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(group)}>
+            <Trash2 />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Groups"
         description="Intentional audiences for campaigns and automations. Tags describe facts; groups describe who to reach."
         actions={
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus data-icon="inline-start" />
-            Create group
-          </Button>
+          <div className="flex items-center gap-2">
+            <ViewToggle mode={view} onChange={setView} />
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus data-icon="inline-start" />
+              Create group
+            </Button>
+          </div>
         }
       />
 
@@ -61,7 +103,7 @@ export function GroupsView({ groups }: { groups: Group[] }) {
             No groups yet. Create your first audience group.
           </CardContent>
         </Card>
-      ) : (
+      ) : view === "grid" ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {groups.map((group) => (
             <Card key={group.id}>
@@ -74,29 +116,7 @@ export function GroupsView({ groups }: { groups: Group[] }) {
                   </CardTitle>
                   {group.description ? <CardDescription>{group.description}</CardDescription> : null}
                 </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={
-                      <Button variant="ghost" size="icon-sm">
-                        <MoreHorizontal />
-                      </Button>
-                    }
-                  />
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem render={<Link href={groupPath(group.id)} />}>
-                      <Users />
-                      View members
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setEditGroup(group)}>
-                      <Pencil />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(group)}>
-                      <Trash2 />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                {renderActions(group)}
               </CardHeader>
               <CardContent className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
@@ -108,6 +128,44 @@ export function GroupsView({ groups }: { groups: Group[] }) {
             </Card>
           ))}
         </div>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Group</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Contacts</TableHead>
+                    <TableHead className="w-10" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {groups.map((group) => (
+                    <TableRow key={group.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Link href={groupPath(group.id)} className="font-medium hover:underline">
+                            {group.name}
+                          </Link>
+                          {group.isSystem ? <Badge variant="secondary">Default</Badge> : null}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {group.description || "—"}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {group.memberCount ?? 0} {(group.memberCount ?? 0) === 1 ? "contact" : "contacts"}
+                      </TableCell>
+                      <TableCell>{renderActions(group)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       <GroupFormDialog open={createOpen} onOpenChange={setCreateOpen} />
