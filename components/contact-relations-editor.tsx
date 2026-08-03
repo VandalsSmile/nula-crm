@@ -1,16 +1,18 @@
 "use client"
 
-import { useTransition } from "react"
+import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { X } from "lucide-react"
+import { Plus, X } from "lucide-react"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
 import { TagBadge } from "@/components/tag-badge"
+import { TagFormDialog } from "@/components/tag-form-dialog"
 import {
   Select,
   SelectContent,
   SelectItem,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
@@ -24,6 +26,8 @@ import {
 } from "@/app/actions/tags"
 import type { Contact, Group, Tag } from "@/lib/crm-types"
 
+const CREATE_TAG = "__create_tag__"
+
 export function ContactRelationsEditor({
   contact,
   allTags,
@@ -35,6 +39,10 @@ export function ContactRelationsEditor({
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
+  const [createTagOpen, setCreateTagOpen] = useState(false)
+  // Bumped after each pick to remount the picker so its trigger resets to the
+  // "Add tag" placeholder instead of retaining the chosen value.
+  const [tagPickerKey, setTagPickerKey] = useState(0)
 
   const availableTags = allTags.filter((t) => !contact.tags.some((ct) => ct.id === t.id))
   const availableGroups = allGroups.filter((g) => !contact.groups.some((cg) => cg.id === g.id))
@@ -49,6 +57,16 @@ export function ContactRelationsEditor({
         toast.error(err instanceof Error ? err.message : "Could not add tag")
       }
     })
+  }
+
+  // "New tag…" in the picker opens the create dialog, then applies the new tag.
+  function handleAddTag(value: string | null) {
+    setTagPickerKey((k) => k + 1)
+    if (value === CREATE_TAG) {
+      setCreateTagOpen(true)
+      return
+    }
+    addTag(value)
   }
 
   function removeTag(tagId: string) {
@@ -104,22 +122,25 @@ export function ContactRelationsEditor({
             <span className="text-sm text-muted-foreground">No tags</span>
           )}
         </div>
-        {availableTags.length > 0 ? (
-          <div className="mt-2 flex items-center gap-2">
-            <Select onValueChange={addTag}>
-              <SelectTrigger className="h-8 w-44">
-                <SelectValue placeholder="Add tag" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableTags.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        ) : null}
+        <div className="mt-2 flex items-center gap-2">
+          <Select key={tagPickerKey} onValueChange={handleAddTag}>
+            <SelectTrigger className="h-8 w-44">
+              <SelectValue placeholder="Add tag" />
+            </SelectTrigger>
+            <SelectContent>
+              {availableTags.map((t) => (
+                <SelectItem key={t.id} value={t.id}>
+                  {t.name}
+                </SelectItem>
+              ))}
+              {availableTags.length > 0 ? <SelectSeparator /> : null}
+              <SelectItem value={CREATE_TAG}>
+                <Plus />
+                New tag…
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div>
@@ -161,6 +182,12 @@ export function ContactRelationsEditor({
           </div>
         ) : null}
       </div>
+
+      <TagFormDialog
+        open={createTagOpen}
+        onOpenChange={setCreateTagOpen}
+        onSaved={(tag) => addTag(tag.id)}
+      />
     </div>
   )
 }

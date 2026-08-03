@@ -22,10 +22,13 @@ export function TagFormDialog({
   open,
   onOpenChange,
   tag,
+  onSaved,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   tag?: Tag | null
+  /** Called with the created/updated tag (e.g. to apply it to a contact). */
+  onSaved?: (tag: Tag) => void
 }) {
   const router = useRouter()
   const [saving, setSaving] = useState(false)
@@ -54,14 +57,16 @@ export function TagFormDialog({
     }
     setSaving(true)
     try {
-      if (tag) {
-        await updateTag(tag.id, form)
-        toast.success("Tag updated")
-      } else {
-        await createTag(form)
-        toast.success("Tag created")
-      }
+      const saved = tag ? await updateTag(tag.id, form) : await createTag(form)
+      toast.success(tag ? "Tag updated" : "Tag created")
       onOpenChange(false)
+      onSaved?.({
+        id: saved.id,
+        name: saved.name,
+        slug: saved.slug,
+        color: saved.color,
+        description: saved.description,
+      })
       router.refresh()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not save tag")
