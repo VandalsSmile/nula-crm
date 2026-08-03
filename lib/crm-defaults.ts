@@ -17,32 +17,25 @@ export type BusinessTypeId = (typeof BUSINESS_TYPES)[number]["id"]
 /** Industry-neutral fallback used when no business type is chosen. */
 export const DEFAULT_BUSINESS_TYPE: BusinessTypeId = "general"
 
+/**
+ * Core audience groups that benefit any business in a CRM. Shipped as the
+ * default for the industry-neutral type — and also for IV therapy / wellness,
+ * which previously seeded niche groups (NAD Buyers, Weight Loss Buyers, etc.)
+ * that don't generalize.
+ */
+export const CORE_GROUPS = [
+  "New Leads",
+  "Active Customers",
+  "Repeat Customers",
+  "Past Customers",
+  "VIP / High Value",
+  "Reactivation List",
+  "Do Not Market",
+]
+
 export const DEFAULT_GROUPS: Record<BusinessTypeId, string[]> = {
-  general: [
-    "New Leads",
-    "Active Customers",
-    "Repeat Customers",
-    "Past Customers",
-    "VIP / High Value",
-    "Reactivation List",
-    "Do Not Market",
-  ],
-  "iv-therapy": [
-    "New Leads",
-    "Active Customers",
-    "Members",
-    "Past Customers",
-    "Inactive 60 Days",
-    "Inactive 90 Days",
-    "NAD Buyers",
-    "Weight Loss Buyers",
-    "Beauty Buyers",
-    "Immunity Buyers",
-    "Travel Recovery Buyers",
-    "Referral Partners",
-    "Reactivation List",
-    "Do Not Market",
-  ],
+  general: [...CORE_GROUPS],
+  "iv-therapy": [...CORE_GROUPS],
   "med-spa": ["New Leads", "Active Customers", "Past Customers", "Reactivation List", "Do Not Market"],
   fitness: ["New Leads", "Active Members", "Past Members", "Trial Leads", "Reactivation List"],
   "home-services": ["New Leads", "Active Customers", "Past Customers", "Reactivation List"],
