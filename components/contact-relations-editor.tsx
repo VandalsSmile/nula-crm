@@ -40,6 +40,9 @@ export function ContactRelationsEditor({
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [createTagOpen, setCreateTagOpen] = useState(false)
+  // Bumped after each pick to remount the picker so its trigger resets to the
+  // "Add tag" placeholder instead of retaining the chosen value.
+  const [tagPickerKey, setTagPickerKey] = useState(0)
 
   const availableTags = allTags.filter((t) => !contact.tags.some((ct) => ct.id === t.id))
   const availableGroups = allGroups.filter((g) => !contact.groups.some((cg) => cg.id === g.id))
@@ -58,6 +61,7 @@ export function ContactRelationsEditor({
 
   // "New tag…" in the picker opens the create dialog, then applies the new tag.
   function handleAddTag(value: string | null) {
+    setTagPickerKey((k) => k + 1)
     if (value === CREATE_TAG) {
       setCreateTagOpen(true)
       return
@@ -119,7 +123,7 @@ export function ContactRelationsEditor({
           )}
         </div>
         <div className="mt-2 flex items-center gap-2">
-          <Select onValueChange={handleAddTag}>
+          <Select key={tagPickerKey} onValueChange={handleAddTag}>
             <SelectTrigger className="h-8 w-44">
               <SelectValue placeholder="Add tag" />
             </SelectTrigger>
