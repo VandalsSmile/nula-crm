@@ -22,6 +22,7 @@ import { computeTrialStatus, trialEndDate, type TrialStatus } from "@/lib/trial"
 export type CompanyProfile = {
   businessType: BusinessTypeId
   companyName: string
+  logoUrl: string
   website: string
   phone: string
   supportEmail: string
@@ -225,6 +226,7 @@ export async function getCompanyProfile(): Promise<CompanyProfile> {
   return {
     businessType: (row?.businessType ?? DEFAULT_BUSINESS_TYPE) as BusinessTypeId,
     companyName: row?.companyName ?? "",
+    logoUrl: row?.logoUrl ?? "",
     website: row?.website ?? "",
     phone: row?.phone ?? "",
     supportEmail: row?.supportEmail ?? "",
@@ -277,6 +279,7 @@ export async function updateWorkspaceSettings(input: Partial<CompanyProfile>) {
   const set: Record<string, string | Date> = { updatedAt: new Date() }
   if (input.businessType !== undefined) set.businessType = input.businessType
   if (input.companyName !== undefined) set.companyName = input.companyName.trim()
+  if (input.logoUrl !== undefined) set.logoUrl = input.logoUrl.trim()
   if (input.website !== undefined) set.website = input.website.trim()
   if (input.phone !== undefined) set.phone = input.phone.trim()
   if (input.supportEmail !== undefined) set.supportEmail = input.supportEmail.trim()
@@ -289,6 +292,7 @@ export async function updateWorkspaceSettings(input: Partial<CompanyProfile>) {
       workspaceId,
       businessType: input.businessType ?? DEFAULT_BUSINESS_TYPE,
       companyName: input.companyName?.trim() ?? "",
+      logoUrl: input.logoUrl?.trim() ?? "",
       website: input.website?.trim() ?? "",
       phone: input.phone?.trim() ?? "",
       supportEmail: input.supportEmail?.trim() ?? "",
@@ -308,6 +312,12 @@ export async function updateWorkspaceSettings(input: Partial<CompanyProfile>) {
     await seedGroupsAndTags(workspaceId, scopeIds, input.businessType)
     revalidatePath(APP_ROUTES.groups)
     revalidatePath(APP_ROUTES.tags)
+  }
+
+  // The sidebar header (rendered in the app layout) shows the workspace logo and
+  // company name — refresh it when either changes.
+  if (input.logoUrl !== undefined || input.companyName !== undefined) {
+    revalidatePath("/app", "layout")
   }
 
   revalidatePath(APP_ROUTES.settings)

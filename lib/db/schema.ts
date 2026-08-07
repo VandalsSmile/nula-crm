@@ -313,6 +313,7 @@ export const workspaceSettings = pgTable("workspace_settings", {
   workspaceId: text("workspaceId").primaryKey(),
   businessType: text("businessType").notNull().default("general"),
   companyName: text("companyName").notNull().default(""),
+  logoUrl: text("logoUrl").notNull().default(""),
   website: text("website").notNull().default(""),
   phone: text("phone").notNull().default(""),
   supportEmail: text("supportEmail").notNull().default(""),

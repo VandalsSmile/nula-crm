@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import useSWR from "swr"
 import { useRouter } from "next/navigation"
-import { Loader2, RotateCcw, Save } from "lucide-react"
+import { Building2, Loader2, RotateCcw, Save, Trash2, Upload } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -38,6 +38,45 @@ export function WorkspaceSettings() {
   const [saving, setSaving] = useState(false)
   const [resetTagsOpen, setResetTagsOpen] = useState(false)
   const [resetGroupsOpen, setResetGroupsOpen] = useState(false)
+  const logoInputRef = useRef<HTMLInputElement>(null)
+  const [logoBusy, setLogoBusy] = useState(false)
+  const logoUrl = (data?.logoUrl ?? "") as string
+
+  async function handleLogoFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = "" // allow re-selecting the same file later
+    if (!file) return
+    setLogoBusy(true)
+    try {
+      const body = new FormData()
+      body.append("file", file)
+      const res = await fetch("/api/workspace/logo", { method: "POST", body })
+      const d = (await res.json()) as { url?: string; error?: string }
+      if (!res.ok || !d.url) throw new Error(d.error ?? "Upload failed")
+      await updateWorkspaceSettings({ logoUrl: d.url })
+      toast.success("Logo updated")
+      await mutate()
+      router.refresh()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not upload logo")
+    } finally {
+      setLogoBusy(false)
+    }
+  }
+
+  async function handleRemoveLogo() {
+    setLogoBusy(true)
+    try {
+      await updateWorkspaceSettings({ logoUrl: "" })
+      toast.success("Logo removed")
+      await mutate()
+      router.refresh()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not remove logo")
+    } finally {
+      setLogoBusy(false)
+    }
+  }
 
   async function handleResetTags() {
     try {
@@ -95,6 +134,52 @@ export function WorkspaceSettings() {
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
+          <p className="text-sm font-medium">Company logo</p>
+          <div className="flex items-center gap-4">
+            <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-muted">
+              {logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={logoUrl} alt="Company logo" className="size-full object-contain" />
+              ) : (
+                <Building2 className="size-6 text-muted-foreground" />
+              )}
+            </div>
+            {isAdmin ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  ref={logoInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+                  className="hidden"
+                  onChange={handleLogoFile}
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => logoInputRef.current?.click()}
+                  disabled={logoBusy || isLoading}
+                >
+                  {logoBusy ? (
+                    <Loader2 className="animate-spin" data-icon="inline-start" />
+                  ) : (
+                    <Upload data-icon="inline-start" />
+                  )}
+                  {logoUrl ? "Change logo" : "Upload logo"}
+                </Button>
+                {logoUrl ? (
+                  <Button variant="ghost" onClick={handleRemoveLogo} disabled={logoBusy}>
+                    <Trash2 data-icon="inline-start" />
+                    Remove
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+          <FieldDescription>
+            Shown above your workspace in the sidebar. PNG, JPG, WEBP, GIF, or SVG up to 4MB.
+          </FieldDescription>
+        </div>
+
         <FieldGroup>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field>
