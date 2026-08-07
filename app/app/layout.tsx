@@ -32,7 +32,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Block access to suspended accounts (super-admins manage via /dashboard).
   const workspaceId = await resolveActingWorkspaceId(session.user.id)
   const [ws] = await db
-    .select({ suspended: workspaceSettings.suspended })
+    .select({
+      suspended: workspaceSettings.suspended,
+      logoUrl: workspaceSettings.logoUrl,
+      companyName: workspaceSettings.companyName,
+    })
     .from(workspaceSettings)
     .where(eq(workspaceSettings.workspaceId, workspaceId))
     .limit(1)
@@ -55,7 +59,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <SessionUserProvider user={user}>
       <SidebarProvider>
         <LastRouteTracker />
-        <AppSidebar />
+        <AppSidebar logoUrl={ws?.logoUrl ?? ""} companyName={ws?.companyName ?? ""} />
         <SidebarInset>
           <TrialBanner status={trial} />
           <TopBar />

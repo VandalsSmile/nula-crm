@@ -67,7 +67,14 @@ const mainNav = [
   { title: "Settings", href: APP_ROUTES.settings, icon: Settings },
 ]
 
-export function AppSidebar() {
+export function AppSidebar({
+  logoUrl = "",
+  companyName = "",
+}: {
+  /** Workspace company logo (Blob URL) shown in the sidebar header when set. */
+  logoUrl?: string
+  companyName?: string
+}) {
   const pathname = usePathname()
   const router = useRouter()
   const user = useSessionUser()
@@ -85,10 +92,21 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader>
         <Link href={APP_ROUTES.dashboard} className="flex items-center gap-2.5 px-2 py-1.5">
-          <Logo className="size-9 shrink-0" />
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={logoUrl}
+              alt={companyName || "Company logo"}
+              className="size-9 shrink-0 rounded-md object-contain"
+            />
+          ) : (
+            <Logo className="size-9 shrink-0" />
+          )}
           <div className="flex min-w-0 flex-col leading-tight">
             <span className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-semibold tracking-tight text-nula-ink dark:text-nula-paper">Nula CRM</span>
+              <span className="truncate text-sm font-semibold tracking-tight text-nula-ink dark:text-nula-paper">
+                {companyName || "Nula CRM"}
+              </span>
               <VersionBadge />
             </span>
             <span className="text-xs text-muted-foreground">AI-first small business CRM</span>
