@@ -6,6 +6,7 @@ import {
   Briefcase,
   Inbox,
   Layers,
+  Mail,
   Plug,
   Megaphone,
   Rocket,
@@ -141,6 +142,20 @@ const GUIDES: Guide[] = [
     ],
     href: APP_ROUTES.inbox,
     linkLabel: "Go to Inbox",
+  },
+  {
+    icon: Mail,
+    title: "Log emails to the CRM (BCC)",
+    blurb: "Keep your inbox in sync — BCC your private Nula address and the email lands on the contact\u2019s timeline.",
+    steps: [
+      "Open Settings \u2192 Lead sources and turn on \u201cLog your email into the CRM.\u201d",
+      "Copy the private logging address it shows (e.g. me+xxxx@reply.nulacrm.ai). Keep it secret \u2014 anyone with it can add mail to your CRM.",
+      "Add your own sending addresses in \u201cYour email addresses\u201d so Nula can tell your sent mail from received mail.",
+      "When you email a contact, put that address in the BCC field \u2014 or set an auto-BCC/forward rule in Gmail or Outlook so every email is captured automatically.",
+      "Nula logs the message on the matching contact\u2019s timeline (and Inbox). By default only emails to/from existing contacts are logged; switch \u201cWhat to log\u201d to \u201cLog all emails\u201d to also create new contacts.",
+    ],
+    href: `${APP_ROUTES.settings}?tab=leads`,
+    linkLabel: "Set up email logging",
   },
   {
     icon: Zap,
