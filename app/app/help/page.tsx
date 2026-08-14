@@ -13,6 +13,7 @@ import {
   Settings,
   Sparkles,
   Users,
+  Webhook,
   Zap,
 } from "lucide-react"
 
@@ -50,6 +51,21 @@ const GUIDES: Guide[] = [
     ],
     href: APP_ROUTES.settings,
     linkLabel: "Open settings",
+  },
+  {
+    icon: Webhook,
+    title: "Get leads into Nula",
+    blurb: "Capture leads from anywhere \u2014 a spreadsheet, your website, email, phone, or other tools.",
+    steps: [
+      "CSV import: on Contacts, click \u201cImport CSV\u201d to bulk\u2011add leads you already have.",
+      "Web form: in Settings \u2192 Lead sources, add a \u201cWeb form\u201d source to get an embeddable form (with spam protection) to drop on your site.",
+      "Webhook: add a \u201cWebhook\u201d source for a signed POST endpoint your website or other tools can send leads to.",
+      "Inbound email: add an \u201cEmail\u201d source and forward or auto\u2011route leads to its dedicated leads+\u2026@ address \u2014 each one becomes a contact.",
+      "Phone calls: add a \u201cPhone call\u201d source (Twilio/CallRail) so missed calls and voicemails create a lead with the recording/transcript.",
+      "However they arrive, leads are auto\u2011deduped, scored, tagged, and routed by your rules, so they land clean and segmented.",
+    ],
+    href: `${APP_ROUTES.settings}?tab=leads`,
+    linkLabel: "Manage lead sources",
   },
   {
     icon: Plug,
