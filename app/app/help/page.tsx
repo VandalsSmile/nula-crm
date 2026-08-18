@@ -6,6 +6,7 @@ import {
   Briefcase,
   Inbox,
   Layers,
+  Plug,
   Megaphone,
   Rocket,
   Settings,
@@ -48,6 +49,20 @@ const GUIDES: Guide[] = [
     ],
     href: APP_ROUTES.settings,
     linkLabel: "Open settings",
+  },
+  {
+    icon: Plug,
+    title: "Send leads via API / Zapier",
+    blurb: "Push leads in from Zapier, Make, or any tool using your account\u2019s API endpoint.",
+    steps: [
+      "Open Settings \u2192 Lead sources \u2192 \u201cAPI access\u201d and copy your Endpoint URL.",
+      "In Zapier, add a \u201cWebhooks by Zapier \u2192 POST\u201d step; paste the URL and set payload type to JSON.",
+      "Map name, email, phone, and message from your trigger.",
+      "Optional security: turn on \u201cRequire API key,\u201d then add an \u201cAuthorization: Bearer <your key>\u201d header in Zapier.",
+      "Test it \u2014 new leads land in Contacts, auto\u2011deduped, scored, tagged, and routed by your rules.",
+    ],
+    href: `${APP_ROUTES.settings}?tab=leads`,
+    linkLabel: "Open API access",
   },
   {
     icon: Sparkles,
