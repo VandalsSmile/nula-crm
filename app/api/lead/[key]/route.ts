@@ -34,7 +34,14 @@ function verifySignature(secret: string, rawBody: string, signature: string): bo
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, x-api-key",
+}
+
+/** Constant-time string comparison. */
+function safeEqual(a: string, b: string): boolean {
+  const ab = Buffer.from(a)
+  const bb = Buffer.from(b)
+  return ab.length === bb.length && timingSafeEqual(ab, bb)
 }
 
 function str(value: unknown): string {
@@ -79,6 +86,25 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       { ok: false, error: "Too many requests" },
       { status: 429, headers: CORS_HEADERS },
     )
+  }
+
+  // Optional API key: when this source requires a key, every POST must present
+  // it (Authorization: Bearer <key>, x-api-key header, or ?api_key=). Off by
+  // default so the endpoint works with just its URL (quick setup).
+  if (source.requireKey) {
+    const auth = request.headers.get("authorization") ?? ""
+    const bearer = /^bearer\s+/i.test(auth) ? auth.replace(/^bearer\s+/i, "").trim() : ""
+    const provided =
+      bearer ||
+      request.headers.get("x-api-key")?.trim() ||
+      new URL(request.url).searchParams.get("api_key")?.trim() ||
+      ""
+    if (!source.apiKey || !safeEqual(provided, source.apiKey)) {
+      return NextResponse.json(
+        { ok: false, error: "Missing or invalid API key" },
+        { status: 401, headers: CORS_HEADERS },
+      )
+    }
   }
 
   const contentType = request.headers.get("content-type") ?? ""

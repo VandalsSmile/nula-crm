@@ -1,10 +1,54 @@
 import "server-only"
 
+import { randomBytes } from "node:crypto"
+
 import { and, desc, eq, sql } from "drizzle-orm"
 
 import { db } from "@/lib/db"
 import { leadEvents, leadSources } from "@/lib/db/schema"
 import { randomId } from "@/lib/library-helpers"
+
+/** A fresh, human-copyable API key for posting leads. */
+export function newApiKey(): string {
+  return `nula_${randomBytes(24).toString("hex")}`
+}
+
+/** The dedicated per-workspace "API" lead source used for API/Zapier posts.
+ * Get-or-create, and backfill an api key if one isn't set yet. */
+export async function getOrCreateApiSource(workspaceId: string): Promise<LeadSourceRow> {
+  const [existing] = await db
+    .select()
+    .from(leadSources)
+    .where(and(eq(leadSources.userId, workspaceId), eq(leadSources.key, "api")))
+    .limit(1)
+  if (existing) {
+    if (!existing.apiKey) {
+      const [updated] = await db
+        .update(leadSources)
+        .set({ apiKey: newApiKey() })
+        .where(eq(leadSources.id, existing.id))
+        .returning()
+      return updated
+    }
+    return existing
+  }
+
+  const [row] = await db
+    .insert(leadSources)
+    .values({
+      id: randomId("src"),
+      userId: workspaceId,
+      key: "api",
+      name: "API / Zapier",
+      channel: "api",
+      publicKey: randomId("lf") + randomId("k"),
+      apiKey: newApiKey(),
+      requireKey: false,
+      defaults: { tagSlug: "source-api", groupName: "New Leads" },
+    })
+    .returning()
+  return row
+}
 
 export type LeadChannel = "web_form" | "email" | "call" | "webhook" | "csv" | "api"
 
@@ -180,6 +224,31 @@ export async function createLeadSource(
       fieldMapping: input.fieldMapping ?? {},
       defaults: { tagSlug: `source-${key}`, groupName: "New Leads" },
     })
+    .returning()
+  return row
+}
+
+/** Rotate the API source's key. */
+export async function regenerateApiKey(workspaceId: string): Promise<LeadSourceRow> {
+  const src = await getOrCreateApiSource(workspaceId)
+  const [row] = await db
+    .update(leadSources)
+    .set({ apiKey: newApiKey() })
+    .where(and(eq(leadSources.id, src.id), eq(leadSources.userId, workspaceId)))
+    .returning()
+  return row
+}
+
+/** Toggle whether the API source requires the key (optional security). */
+export async function setApiSourceRequireKey(
+  workspaceId: string,
+  require: boolean,
+): Promise<LeadSourceRow> {
+  const src = await getOrCreateApiSource(workspaceId)
+  const [row] = await db
+    .update(leadSources)
+    .set({ requireKey: require })
+    .where(and(eq(leadSources.id, src.id), eq(leadSources.userId, workspaceId)))
     .returning()
   return row
 }

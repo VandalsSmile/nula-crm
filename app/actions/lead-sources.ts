@@ -10,9 +10,12 @@ import {
   getLeadEventById,
   getLeadSourceById,
   getLeadSourcesForWorkspace,
+  getOrCreateApiSource,
   getRecentLeadEvents,
   getSourceMetrics,
   markLeadEvent,
+  regenerateApiKey,
+  setApiSourceRequireKey,
   type LeadChannel,
   type SourceMetric,
 } from "@/lib/leads/sources"
@@ -52,6 +55,8 @@ export type LeadSourceInfo = {
   inboundAddress: string
   callWebhookUrl: string
   secret: string
+  apiKey: string
+  requireKey: boolean
   successMessage: string
   createdAt: string
 }
@@ -76,9 +81,32 @@ function toInfo(r: Awaited<ReturnType<typeof getLeadSourcesForWorkspace>>[number
     inboundAddress: inboundAddressFor(r.publicKey),
     callWebhookUrl: callWebhookFor(r.publicKey),
     secret: r.secret,
+    apiKey: r.apiKey,
+    requireKey: r.requireKey,
     successMessage: r.successMessage,
     createdAt: r.createdAt.toISOString(),
   }
+}
+
+/** Get (or lazily create) the per-account API/Zapier source with its key. */
+export async function getApiAccess(): Promise<LeadSourceInfo> {
+  const { workspaceId } = await requireRole("Admin")
+  const row = await getOrCreateApiSource(workspaceId)
+  return toInfo(row)
+}
+
+export async function rotateApiKey(): Promise<LeadSourceInfo> {
+  const { workspaceId } = await requireRole("Admin")
+  const row = await regenerateApiKey(workspaceId)
+  revalidatePath("/app/settings")
+  return toInfo(row)
+}
+
+export async function setApiRequireKey(require: boolean): Promise<LeadSourceInfo> {
+  const { workspaceId } = await requireRole("Admin")
+  const row = await setApiSourceRequireKey(workspaceId, require)
+  revalidatePath("/app/settings")
+  return toInfo(row)
 }
 
 export async function getLeadSources(): Promise<LeadSourceInfo[]> {

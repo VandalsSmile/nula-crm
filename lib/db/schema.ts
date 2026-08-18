@@ -249,6 +249,10 @@ export const leadSources = pgTable("lead_sources", {
   enabled: boolean("enabled").notNull().default(true),
   publicKey: text("publicKey").notNull().default(""),
   secret: text("secret").notNull().default(""),
+  // Simple bearer API key (optional). When requireKey is on, POSTs to this
+  // source must present this key; otherwise the endpoint is open (URL-only).
+  apiKey: text("apiKey").notNull().default(""),
+  requireKey: boolean("requireKey").notNull().default(false),
   fieldMapping: jsonb("fieldMapping").$type<Record<string, string>>().notNull().default({}),
   successMessage: text("successMessage").notNull().default(""),
   redirectUrl: text("redirectUrl").notNull().default(""),
