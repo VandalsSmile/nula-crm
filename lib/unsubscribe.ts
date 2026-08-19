@@ -14,8 +14,14 @@ export function appBaseUrl(): string {
   )
 }
 
+/** Human-facing confirm page. */
 export function unsubscribeUrl(token: string): string {
   return token ? `${appBaseUrl()}/unsubscribe/${token}` : ""
+}
+
+/** RFC 8058 one-click endpoint used in the List-Unsubscribe header (POST). */
+export function unsubscribeApiUrl(token: string): string {
+  return token ? `${appBaseUrl()}/api/unsubscribe/${token}` : ""
 }
 
 /**

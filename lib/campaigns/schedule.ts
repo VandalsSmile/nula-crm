@@ -13,7 +13,7 @@ import {
 } from "@/lib/email/sender"
 import { renderCampaignEmail } from "@/lib/email/template"
 import { randomId } from "@/lib/library-helpers"
-import { ensureUnsubscribeToken, unsubscribeUrl } from "@/lib/unsubscribe"
+import { ensureUnsubscribeToken, unsubscribeApiUrl, unsubscribeUrl } from "@/lib/unsubscribe"
 
 type CampaignRow = typeof campaigns.$inferSelect
 type ContactRow = typeof contacts.$inferSelect
@@ -81,7 +81,10 @@ async function sendEmailStep(
     subject: string
     body: string
     featuredImageUrl?: string
+    /** Human confirm page (footer link). */
     unsubscribeUrl?: string
+    /** RFC 8058 one-click POST endpoint (List-Unsubscribe header). */
+    unsubscribeApiUrl?: string
   },
 ): Promise<{ ok: boolean; error?: string }> {
   // Bodies authored before the rich editor are plain text; wrap those in a
@@ -96,15 +99,20 @@ async function sendEmailStep(
     featuredImageUrl: params.featuredImageUrl,
     unsubscribeUrl: params.unsubscribeUrl,
   })
+  // RFC 8058 one-click unsubscribe: providers show a native "Unsubscribe" button
+  // and POST `List-Unsubscribe=One-Click` to the URL. Improves deliverability too.
+  const headers = params.unsubscribeApiUrl
+    ? {
+        "List-Unsubscribe": `<${params.unsubscribeApiUrl}>`,
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      }
+    : undefined
   return sendEmailViaResend(config, {
     to: params.to,
     subject: params.subject,
     html: rendered.html,
     text: rendered.text,
-    // List-Unsubscribe improves deliverability and enables inbox "unsubscribe".
-    headers: params.unsubscribeUrl
-      ? { "List-Unsubscribe": `<${params.unsubscribeUrl}>` }
-      : undefined,
+    headers,
   })
 }
 
@@ -193,6 +201,7 @@ export async function processDueCampaignSends(
       body: step?.body || "",
       featuredImageUrl: step?.featuredImageUrl,
       unsubscribeUrl: unsubscribeUrl(unsubToken),
+      unsubscribeApiUrl: unsubscribeApiUrl(unsubToken),
     })
 
     if (result.ok) {
