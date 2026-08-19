@@ -177,8 +177,12 @@ export async function interpretAiCommand(command: string) {
 }
 
 export async function approveAiAction(actionId: string) {
-  await getActingUser()
-  const [action] = await db.select().from(aiActions).where(eq(aiActions.id, actionId)).limit(1)
+  const { workspaceId } = await getActingUser()
+  const [action] = await db
+    .select()
+    .from(aiActions)
+    .where(and(eq(aiActions.id, actionId), eq(aiActions.userId, workspaceId)))
+    .limit(1)
   if (!action) throw new Error("Action not found")
   if (action.status !== "pending") throw new Error("Action is not pending approval")
 
@@ -506,7 +510,10 @@ export async function listAiActions(limit = 20) {
 }
 
 export async function cancelAiAction(actionId: string) {
-  await getActingUser()
-  await db.update(aiActions).set({ status: "cancelled" }).where(eq(aiActions.id, actionId))
+  const { workspaceId } = await getActingUser()
+  await db
+    .update(aiActions)
+    .set({ status: "cancelled" })
+    .where(and(eq(aiActions.id, actionId), eq(aiActions.userId, workspaceId)))
   revalidatePath(APP_ROUTES.ai)
 }
