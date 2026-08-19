@@ -40,12 +40,14 @@ export type CampaignUpdateInput = {
 }
 
 function normalizeSequence(steps: CampaignStep[]): CampaignStep[] {
+  // Email-only for now (SMS is hidden until we ship a provider). Every step is
+  // coerced to email so no SMS step can be created or persisted from the UI.
   return steps
-    .filter((s) => (s.channel === "email" ? Boolean(s.subject?.trim() || s.body?.trim()) : Boolean(s.body?.trim())))
+    .filter((s) => Boolean(s.subject?.trim() || s.body?.trim()))
     .map((s, index) => ({
       step: index + 1,
-      channel: s.channel === "sms" ? "sms" : "email",
-      subject: s.channel === "sms" ? "" : (s.subject ?? "").trim(),
+      channel: "email",
+      subject: (s.subject ?? "").trim(),
       body: (s.body ?? "").trim(),
       delayDays: Math.max(0, Math.round(Number(s.delayDays ?? 0))),
     }))

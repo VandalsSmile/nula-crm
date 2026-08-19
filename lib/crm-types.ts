@@ -64,7 +64,6 @@ export type DealStage = (typeof DEAL_STAGES)[number]
 
 export const CAMPAIGN_TYPES = [
   "email",
-  "sms",
   "sequence",
   "reactivation",
   "new-lead-nurture",

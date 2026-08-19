@@ -85,7 +85,7 @@ export function CampaignsView({
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Campaigns"
-        description="Email, SMS, and sequences — built from templates and AI drafts."
+        description="Email campaigns and sequences — built from templates and AI drafts."
       />
 
       <div>
