@@ -6,6 +6,13 @@ import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
 import { activities, contactGroups, contactTags, contacts, deals } from "@/lib/db/schema"
 import { workspaceUserIdMatches } from "@/lib/auth-helpers"
+import { pickEditableContactFields } from "@/lib/contact-fields"
+import {
+  sanitizeCompanyId,
+  sanitizeLocationId,
+  sanitizeOwnerId,
+  sanitizeTagIds,
+} from "@/lib/contact-refs"
 import { getActingWriter } from "@/lib/entitlements"
 import { randomId } from "@/lib/library-helpers"
 import { mapContact } from "@/lib/mappers"
@@ -38,7 +45,7 @@ export type ContactInput = {
 }
 
 export async function createContact(input: ContactInput): Promise<Contact> {
-  const { user, workspaceId } = await getActingWriter()
+  const { user, workspaceId, scopeIds } = await getActingWriter()
   const firstName = input.firstName?.trim() ?? ""
   const lastName = input.lastName?.trim() ?? ""
   const companyName = input.companyName?.trim() ?? ""
@@ -47,6 +54,12 @@ export async function createContact(input: ContactInput): Promise<Contact> {
   if (!firstName && !companyName) {
     throw new Error("Enter a first name or a company name")
   }
+
+  // Validate all workspace references so we can't link to another tenant's rows.
+  const companyId = await sanitizeCompanyId(input.companyId, scopeIds)
+  const locationId = await sanitizeLocationId(input.locationId, scopeIds)
+  const ownerId = sanitizeOwnerId(input.ownerId, scopeIds, user.id)
+  const tagIds = await sanitizeTagIds(input.tagIds, scopeIds)
 
   const [row] = await db
     .insert(contacts)
@@ -57,10 +70,10 @@ export async function createContact(input: ContactInput): Promise<Contact> {
       lastName,
       name: [firstName, lastName].filter(Boolean).join(" "),
       companyName,
-      companyId: input.companyId?.trim() ?? "",
-      locationId: input.locationId?.trim() ?? "",
+      companyId,
+      locationId,
       // Default the owner to whoever created the contact; can be reassigned later.
-      ownerId: input.ownerId?.trim() || user.id,
+      ownerId,
       email: input.email ?? "",
       phone: input.phone ?? "",
       websiteUrl: input.websiteUrl ?? "",
@@ -77,10 +90,10 @@ export async function createContact(input: ContactInput): Promise<Contact> {
     })
     .returning()
 
-  if (input.tagIds?.length) {
+  if (tagIds.length) {
     await db
       .insert(contactTags)
-      .values(input.tagIds.map((tagId) => ({ contactId: row.id, tagId, addedBy: user.id })))
+      .values(tagIds.map((tagId) => ({ contactId: row.id, tagId, addedBy: user.id })))
       .onConflictDoNothing()
   }
 
@@ -102,9 +115,17 @@ export async function createContact(input: ContactInput): Promise<Contact> {
 export async function updateContact(id: string, input: Partial<ContactInput>): Promise<Contact> {
   const { user, workspaceId, scopeIds } = await getActingWriter()
 
-  const patch: Record<string, string | number | Date | null> = {}
-  for (const [key, value] of Object.entries(input)) {
-    if (value !== undefined) patch[key] = value as string | number
+  // Whitelist client-editable columns only (blocks mass-assignment of userId,
+  // revenue, timestamps, etc. from a crafted request).
+  const patch: Record<string, string | number | Date | null> = pickEditableContactFields(
+    input as Record<string, unknown>,
+  )
+  // Validated foreign keys — never persist a reference to another workspace.
+  if (input.companyId !== undefined) patch.companyId = await sanitizeCompanyId(input.companyId, scopeIds)
+  if (input.locationId !== undefined) patch.locationId = await sanitizeLocationId(input.locationId, scopeIds)
+  if (input.ownerId !== undefined) {
+    const ownerId = sanitizeOwnerId(input.ownerId, scopeIds, "")
+    if (ownerId) patch.ownerId = ownerId
   }
   // Recompute the denormalized `name` whenever either name field is provided —
   // including when it's cleared to "" — so a stale name is never left behind.

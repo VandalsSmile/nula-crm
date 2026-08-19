@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
 import { db } from "@/lib/db"
-import { activities, contactTags, tags } from "@/lib/db/schema"
+import { activities, contactTags, contacts, tags } from "@/lib/db/schema"
 import { workspaceUserIdMatches } from "@/lib/auth-helpers"
 import { getActingWriter } from "@/lib/entitlements"
 import { slugifyTag } from "@/lib/crm-defaults"
@@ -32,6 +32,16 @@ async function assertTagAccess(tagId: string, scopeIds: string[]) {
     .limit(1)
   if (!row) throw new Error("Tag not found")
   return row
+}
+
+/** Ensure the contact belongs to the acting workspace before linking a tag. */
+async function assertContactAccess(contactId: string, scopeIds: string[]) {
+  const [row] = await db
+    .select({ id: contacts.id })
+    .from(contacts)
+    .where(and(eq(contacts.id, contactId), workspaceUserIdMatches(contacts.userId, scopeIds)))
+    .limit(1)
+  if (!row) throw new Error("Contact not found")
 }
 
 export async function createTag(input: TagInput) {
@@ -92,6 +102,7 @@ export async function deleteTag(tagId: string) {
 export async function addTagToContact(contactId: string, tagId: string) {
   const { user, workspaceId, scopeIds } = await getActingWriter()
   await assertTagAccess(tagId, scopeIds)
+  await assertContactAccess(contactId, scopeIds)
 
   await db
     .insert(contactTags)
@@ -114,6 +125,7 @@ export async function addTagToContact(contactId: string, tagId: string) {
 export async function removeTagFromContact(contactId: string, tagId: string) {
   const { user, workspaceId, scopeIds } = await getActingWriter()
   await assertTagAccess(tagId, scopeIds)
+  await assertContactAccess(contactId, scopeIds)
 
   await db
     .delete(contactTags)
