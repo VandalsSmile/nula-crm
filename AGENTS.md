@@ -43,6 +43,7 @@ AI-first small business CRM. Core objects: **Contacts**, **Tags**, **Groups**, *
 - Workspace scoping: `getActingUser()` / `workspaceUserIdMatches()`
 - Types: `lib/crm-types.ts`
 - Defaults (IV therapy): `lib/crm-defaults.ts`, seeded via `seedWorkspaceDefaults()`
+- **Entitlement gate** (`lib/entitlements.ts`): mutating server actions call `getActingWriter()` / `requireActiveWorkspace()`, which block writes once a workspace's trial has ended and it isn't `active` (paid) or `free` (comped). Reads and billing/account/settings stay open. Gotcha: local dev resolves everyone to `NULA_SHARED_WORKSPACE_ID`; if that workspace's `workspace_settings.trialEndsAt` is in the past, all writes fail with "trial has ended" — set its `plan='free'` or a future `trialEndsAt` in the DB to develop/test.
 
 ## Key routes
 
