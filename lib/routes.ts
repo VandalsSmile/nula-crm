@@ -5,6 +5,8 @@ export const APP_ROUTES = {
   dashboard: `${APP_BASE}/dashboard`,
   contacts: `${APP_BASE}/contacts`,
   companies: `${APP_BASE}/companies`,
+  tasks: `${APP_BASE}/tasks`,
+  calendar: `${APP_BASE}/calendar`,
   deals: `${APP_BASE}/deals`,
   groups: `${APP_BASE}/groups`,
   tags: `${APP_BASE}/tags`,

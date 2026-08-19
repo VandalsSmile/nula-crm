@@ -175,6 +175,23 @@ export const deals = pgTable("deals", {
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 })
 
+export const tasks = pgTable("tasks", {
+  id: text("id").primaryKey(),
+  userId: text("userId").notNull(),
+  title: text("title").notNull(),
+  notes: text("notes").notNull().default(""),
+  status: text("status").notNull().default("open"),
+  priority: text("priority").notNull().default("normal"),
+  dueAt: timestamp("dueAt"),
+  contactId: text("contactId").notNull().default(""),
+  assigneeId: text("assigneeId").notNull().default(""),
+  createdBy: text("createdBy").notNull().default(""),
+  completedAt: timestamp("completedAt"),
+  remindedAt: timestamp("remindedAt"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+})
+
 export const campaigns = pgTable("campaigns", {
   id: text("id").primaryKey(),
   userId: text("userId").notNull(),

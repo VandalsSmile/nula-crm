@@ -13,7 +13,7 @@ import {
   deals,
   messages,
 } from "@/lib/db/schema"
-import { workspaceUserIdMatches } from "@/lib/auth-helpers"
+import { getActingUser, workspaceUserIdMatches } from "@/lib/auth-helpers"
 import { pickEditableContactFields } from "@/lib/contact-fields"
 import {
   sanitizeCompanyId,
@@ -362,4 +362,26 @@ export async function importContactsFromCsv(csvText: string): Promise<CsvImportR
   revalidatePath(APP_ROUTES.contacts)
   revalidatePath(APP_ROUTES.dashboard)
   return { created, skipped, errors }
+}
+
+/** Minimal contact list for pickers (linking tasks/bookings). Read-only. */
+export async function listContactOptions(): Promise<{ id: string; name: string; email: string }[]> {
+  const { scopeIds } = await getActingUser()
+  const rows = await db
+    .select({
+      id: contacts.id,
+      firstName: contacts.firstName,
+      lastName: contacts.lastName,
+      name: contacts.name,
+      email: contacts.email,
+    })
+    .from(contacts)
+    .where(workspaceUserIdMatches(contacts.userId, scopeIds))
+    .orderBy(contacts.name)
+    .limit(2000)
+  return rows.map((r) => ({
+    id: r.id,
+    name: [r.firstName, r.lastName].filter(Boolean).join(" ") || r.name || r.email || "Unnamed",
+    email: r.email,
+  }))
 }

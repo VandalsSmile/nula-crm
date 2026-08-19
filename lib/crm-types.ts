@@ -196,6 +196,27 @@ export type Deal = {
   closeDate: string | null
 }
 
+export const TASK_STATUSES = ["open", "done"] as const
+export type TaskStatus = (typeof TASK_STATUSES)[number]
+
+export const TASK_PRIORITIES = ["low", "normal", "high"] as const
+export type TaskPriority = (typeof TASK_PRIORITIES)[number]
+
+export type Task = {
+  id: string
+  title: string
+  notes: string
+  status: TaskStatus
+  priority: TaskPriority
+  dueAt: string | null
+  contactId: string
+  contactName: string
+  assigneeId: string
+  assigneeName: string
+  completedAt: string | null
+  createdAt: string
+}
+
 export type CampaignStep = {
   step: number
   channel: "email" | "sms" | string

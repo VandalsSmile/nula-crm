@@ -12,6 +12,10 @@ import { APP_ROUTES } from "@/lib/routes"
 const titles: Record<string, string> = {
   [APP_ROUTES.dashboard]: "Dashboard",
   [APP_ROUTES.contacts]: "Contacts",
+  [APP_ROUTES.companies]: "Companies",
+  [APP_ROUTES.tasks]: "Tasks",
+  [APP_ROUTES.calendar]: "Calendar",
+  [APP_ROUTES.deals]: "Deals",
   [APP_ROUTES.groups]: "Groups",
   [APP_ROUTES.tags]: "Tags",
   [APP_ROUTES.campaigns]: "Campaigns",
