@@ -16,10 +16,12 @@ import type {
   Task,
   TaskPriority,
   TaskStatus,
+  Booking,
 } from "@/lib/crm-types"
 import { contactFullName } from "@/lib/crm-types"
 import type {
   activities,
+  bookings,
   campaigns,
   companies,
   contacts,
@@ -193,6 +195,27 @@ export function mapTask(
     assigneeId: row.assigneeId,
     assigneeName: row.assigneeId ? labelForUserId(opts?.users, row.assigneeId) : "",
     completedAt: iso(row.completedAt),
+    createdAt: iso(row.createdAt) ?? "",
+  }
+}
+
+type BookingRow = typeof bookings.$inferSelect
+
+export function mapBooking(row: BookingRow, contactName?: string): Booking {
+  return {
+    id: row.id,
+    contactId: row.contactId,
+    contactName: contactName ?? "",
+    title: row.title,
+    status: row.status,
+    startAt: iso(row.startAt),
+    endAt: iso(row.endAt),
+    location: row.location,
+    notes: row.notes,
+    attendeeName: row.attendeeName,
+    attendeeEmail: row.attendeeEmail,
+    attendeePhone: row.attendeePhone,
+    source: row.source,
     createdAt: iso(row.createdAt) ?? "",
   }
 }

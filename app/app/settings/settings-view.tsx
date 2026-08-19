@@ -8,6 +8,7 @@ import { TeamSettings } from "@/components/settings/team-settings"
 import { WorkspaceSettings } from "@/components/settings/workspace-settings"
 import { LeadSourcesSettings } from "@/components/settings/lead-sources-settings"
 import { ApiAccessSettings } from "@/components/settings/api-access-settings"
+import { BookingsWebhookSettings } from "@/components/settings/bookings-webhook-settings"
 import { EmailSettings } from "@/components/settings/email-settings"
 import { EmailConnectionSettings } from "@/components/settings/email-connection-settings"
 import { RoutingRulesSettings } from "@/components/settings/routing-rules-settings"
@@ -59,6 +60,7 @@ export function SettingsView() {
 
         <TabsContent value="leads" className="mt-6 flex flex-col gap-6" keepMounted>
           <ApiAccessSettings />
+          <BookingsWebhookSettings />
           <EmailConnectionSettings />
           <RoutingRulesSettings />
           <LeadSourcesSettings />

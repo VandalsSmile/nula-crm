@@ -8,6 +8,7 @@ import {
   contactTags,
   deals,
   groups,
+  bookings,
   locations,
   messages,
   tags,
@@ -26,8 +27,9 @@ import {
   mapLocation,
   mapTag,
   mapTask,
+  mapBooking,
 } from "@/lib/mappers"
-import type { Company, Contact, DashboardStats, Deal, InboxConversation, Location, Message, ReportData, Task } from "@/lib/crm-types"
+import type { Booking, Company, Contact, DashboardStats, Deal, InboxConversation, Location, Message, ReportData, Task } from "@/lib/crm-types"
 import { LIFECYCLE_STAGES } from "@/lib/crm-types"
 import { getWorkspaceUserLabels, labelForUserId } from "@/lib/workspace-users"
 
@@ -522,6 +524,27 @@ export async function getDueTasks(limit = 6): Promise<Task[]> {
   return rows.map(({ task, contact }) =>
     mapTask(task, { contactName: contactDisplayName(contact), users }),
   )
+}
+
+export async function getBookings(): Promise<Booking[]> {
+  const { scopeIds } = await getWorkspaceScope()
+  const rows = await db
+    .select({ booking: bookings, contact: contacts })
+    .from(bookings)
+    .leftJoin(contacts, eq(contacts.id, bookings.contactId))
+    .where(workspaceUserIdMatches(bookings.userId, scopeIds))
+    .orderBy(sql`${bookings.startAt} asc nulls last`)
+  return rows.map(({ booking, contact }) => mapBooking(booking, contactDisplayName(contact)))
+}
+
+export async function getBookingsForContact(contactId: string): Promise<Booking[]> {
+  const { scopeIds } = await getWorkspaceScope()
+  const rows = await db
+    .select()
+    .from(bookings)
+    .where(and(eq(bookings.contactId, contactId), workspaceUserIdMatches(bookings.userId, scopeIds)))
+    .orderBy(desc(bookings.startAt))
+  return rows.map((b) => mapBooking(b))
 }
 
 export async function getReportData(): Promise<ReportData> {
