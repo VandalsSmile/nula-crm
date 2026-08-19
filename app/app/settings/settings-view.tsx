@@ -8,12 +8,13 @@ import { TeamSettings } from "@/components/settings/team-settings"
 import { WorkspaceSettings } from "@/components/settings/workspace-settings"
 import { LeadSourcesSettings } from "@/components/settings/lead-sources-settings"
 import { ApiAccessSettings } from "@/components/settings/api-access-settings"
+import { EmailSettings } from "@/components/settings/email-settings"
 import { EmailConnectionSettings } from "@/components/settings/email-connection-settings"
 import { RoutingRulesSettings } from "@/components/settings/routing-rules-settings"
 import { PlanSettings } from "@/components/settings/plan-settings"
 import { useUrlTab } from "@/hooks/use-url-tab"
 
-const SETTINGS_TABS = ["profile", "security", "team", "workspace", "leads", "plan"] as const
+const SETTINGS_TABS = ["profile", "security", "team", "workspace", "email", "leads", "plan"] as const
 type SettingsTab = (typeof SETTINGS_TABS)[number]
 
 export function SettingsView() {
@@ -29,6 +30,7 @@ export function SettingsView() {
           <TabsTrigger value="security">Security</TabsTrigger>
           <TabsTrigger value="team">Team</TabsTrigger>
           <TabsTrigger value="workspace">Company</TabsTrigger>
+          <TabsTrigger value="email">Email</TabsTrigger>
           <TabsTrigger value="leads">Lead sources</TabsTrigger>
           <TabsTrigger value="plan">Plan</TabsTrigger>
         </TabsList>
@@ -49,6 +51,10 @@ export function SettingsView() {
 
         <TabsContent value="workspace" className="mt-6" keepMounted>
           <WorkspaceSettings />
+        </TabsContent>
+
+        <TabsContent value="email" className="mt-6" keepMounted>
+          <EmailSettings />
         </TabsContent>
 
         <TabsContent value="leads" className="mt-6 flex flex-col gap-6" keepMounted>
