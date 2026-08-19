@@ -5,7 +5,7 @@ import { APP_ROUTES } from "@/lib/routes"
 
 export const metadata = appPageMetadata(
   "Inbox",
-  "Unified customer conversations in Nula CRM — email and SMS replies in one inbox for your team.",
+  "Unified customer conversations in Nula CRM — email replies in one inbox for your team.",
   APP_ROUTES.inbox,
 )
 

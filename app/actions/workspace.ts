@@ -349,8 +349,8 @@ export async function createCampaignDraft(input: {
       groupId: input.groupId ?? null,
       status: "draft",
       sequence: [
-        { step: 1, channel: "email", subject: "We haven't seen you in a while", delayDays: 0 },
-        { step: 2, channel: "sms", body: "Quick reminder — we'd love to see you again.", delayDays: 3 },
+        { step: 1, channel: "email", subject: "We haven't seen you in a while", body: "We'd love to welcome you back — here's a little something to say hello.", delayDays: 0 },
+        { step: 2, channel: "email", subject: "Still here for you", body: "Quick reminder — we'd love to see you again.", delayDays: 3 },
       ],
     })
     .returning()

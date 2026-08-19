@@ -17,16 +17,17 @@ type CampaignDraftInput = {
   groupId?: string
 }
 
+// Email-only default sequences (SMS is hidden until we ship a provider).
 const REACTIVATION_SEQUENCE = [
   { step: 1, channel: "email", subject: "We haven't seen you in a while", body: "We miss you! Here's a special offer to welcome you back.", delayDays: 0 },
-  { step: 2, channel: "sms", body: "Quick reminder — we'd love to see you again. Reply STOP to opt out.", delayDays: 3 },
+  { step: 2, channel: "email", subject: "We'd love to see you again", body: "Quick reminder — we'd love to see you again. Here's that welcome-back offer.", delayDays: 3 },
   { step: 3, channel: "email", subject: "Still thinking about it?", body: "Here's what our customers love most about coming back.", delayDays: 7 },
   { step: 4, channel: "email", subject: "Last call — your offer expires soon", body: "Don't miss this limited-time welcome-back offer.", delayDays: 14 },
 ]
 
 const NEW_LEAD_SEQUENCE = [
   { step: 1, channel: "email", subject: "Thanks for reaching out!", body: "We're excited to help. Here's what to expect next.", delayDays: 0 },
-  { step: 2, channel: "sms", body: "Hi! Just checking in — any questions we can answer?", delayDays: 1 },
+  { step: 2, channel: "email", subject: "Any questions?", body: "Hi! Just checking in — any questions we can answer?", delayDays: 1 },
   { step: 3, channel: "email", subject: "Ready to book?", body: "Pick a time that works for you.", delayDays: 3 },
 ]
 

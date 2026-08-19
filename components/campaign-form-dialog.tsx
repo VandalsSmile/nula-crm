@@ -144,60 +144,53 @@ export function CampaignFormDialog({
           </Field>
 
           <Field>
-            <FieldLabel>Message sequence</FieldLabel>
+            <FieldLabel>Emails</FieldLabel>
             <div className="flex flex-col gap-3">
               {steps.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  No steps yet. Add one to build a multi-step email/SMS sequence.
+                  No steps yet. Add one email now. A single step sends one email; add more steps
+                  (each with a delay) to build a drip sequence.
                 </p>
               ) : null}
               {steps.map((s, i) => (
                 <div key={i} className="flex flex-col gap-2 rounded-lg border p-3">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-medium text-muted-foreground">Step {i + 1}</span>
-                    <Select
-                      value={s.channel}
-                      onValueChange={(v) => updateStep(i, { channel: v === "sms" ? "sms" : "email" })}
-                    >
-                      <SelectTrigger className="h-8 w-28">
-                        <SelectValue>{(value) => (value === "sms" ? "SMS" : "Email")}</SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="email">Email</SelectItem>
-                        <SelectItem value="sms">SMS</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <div className="flex items-center gap-1.5">
-                      <Input
-                        type="number"
-                        min="0"
-                        value={String(s.delayDays ?? 0)}
-                        onChange={(e) => updateStep(i, { delayDays: Number(e.target.value) })}
-                        className="h-8 w-16"
-                        aria-label={`Step ${i + 1} delay in days`}
-                      />
-                      <span className="text-xs text-muted-foreground">days after launch</span>
-                    </div>
+                    <span className="text-xs font-medium text-muted-foreground">
+                      Email {i + 1}
+                    </span>
+                    {i === 0 ? (
+                      <span className="text-xs text-muted-foreground">sends on launch</span>
+                    ) : (
+                      <div className="flex items-center gap-1.5">
+                        <Input
+                          type="number"
+                          min="0"
+                          value={String(s.delayDays ?? 0)}
+                          onChange={(e) => updateStep(i, { delayDays: Number(e.target.value) })}
+                          className="h-8 w-16"
+                          aria-label={`Email ${i + 1} delay in days`}
+                        />
+                        <span className="text-xs text-muted-foreground">days after launch</span>
+                      </div>
+                    )}
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon-sm"
                       className="ml-auto"
                       onClick={() => removeStep(i)}
-                      aria-label={`Remove step ${i + 1}`}
+                      aria-label={`Remove email ${i + 1}`}
                     >
                       <Trash2 />
                     </Button>
                   </div>
-                  {s.channel === "email" ? (
-                    <Input
-                      placeholder="Subject"
-                      value={s.subject ?? ""}
-                      onChange={(e) => updateStep(i, { subject: e.target.value })}
-                    />
-                  ) : null}
+                  <Input
+                    placeholder="Subject"
+                    value={s.subject ?? ""}
+                    onChange={(e) => updateStep(i, { subject: e.target.value })}
+                  />
                   <Textarea
-                    placeholder="Message body"
+                    placeholder="Email body"
                     rows={2}
                     value={s.body ?? ""}
                     onChange={(e) => updateStep(i, { body: e.target.value })}
@@ -206,7 +199,7 @@ export function CampaignFormDialog({
               ))}
               <Button type="button" variant="outline" size="sm" className="w-fit" onClick={addStep}>
                 <Plus data-icon="inline-start" />
-                Add step
+                Add another email (sequence)
               </Button>
             </div>
           </Field>

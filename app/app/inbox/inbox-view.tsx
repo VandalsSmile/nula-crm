@@ -51,7 +51,8 @@ export function InboxView({ conversations }: { conversations: InboxConversation[
 
   function handleSend() {
     if (!reply.trim() || !selected) return
-    const channel = activeConv?.lastChannel === "sms" ? "sms" : "email"
+    // Email-only for now (SMS is hidden until we ship a provider).
+    const channel = "email" as const
     startSending(async () => {
       try {
         const res = await sendMessage({ contactId: selected, channel, body: reply })
@@ -67,7 +68,7 @@ export function InboxView({ conversations }: { conversations: InboxConversation[
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Inbox" description="Customer email and SMS conversations in one place." />
+      <PageHeader title="Inbox" description="Customer email conversations in one place." />
 
       {conversations.length === 0 ? (
         <Card>

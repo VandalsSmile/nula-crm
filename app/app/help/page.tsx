@@ -136,12 +136,12 @@ const GUIDES: Guide[] = [
   {
     icon: Megaphone,
     title: "Campaigns",
-    blurb: "Multi-step email/SMS sequences, sent on your schedule.",
+    blurb: "One-time email campaigns and multi-step email sequences, sent on your schedule.",
     steps: [
       "Start from a template or an AI suggestion to create a draft.",
-      "Edit the campaign: pick the target group and build the message sequence.",
-      "Add steps with a channel (email/SMS), message, and a delay in days.",
-      "Submit for approval, then Launch — steps go out over time automatically.",
+      "Edit the campaign: pick the target group and write your email.",
+      "Send one email, or add more emails (each with a delay in days) to build a sequence.",
+      "Submit for approval, then Launch — emails go out over time automatically.",
     ],
     href: APP_ROUTES.campaigns,
     linkLabel: "Go to Campaigns",
@@ -149,7 +149,7 @@ const GUIDES: Guide[] = [
   {
     icon: Inbox,
     title: "Inbox",
-    blurb: "Email and SMS conversations in one place.",
+    blurb: "Email conversations in one place.",
     steps: [
       "Pick a conversation from the list on the left.",
       "Read the full thread of inbound and outbound messages.",
