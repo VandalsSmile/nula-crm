@@ -1,10 +1,10 @@
 "use server"
 
-import { and, eq, notInArray } from "drizzle-orm"
+import { and, desc, eq, notInArray } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
 import { db } from "@/lib/db"
-import { activities, campaigns, contactGroups, contacts } from "@/lib/db/schema"
+import { activities, campaignSends, campaigns, contactGroups, contacts } from "@/lib/db/schema"
 import { getActingUser, workspaceUserIdMatches } from "@/lib/auth-helpers"
 import { getActingWriter } from "@/lib/entitlements"
 import { getWorkspaceBrand } from "@/lib/email/sender"
@@ -38,6 +38,78 @@ export async function createCampaign(input: {
     .returning()
   revalidatePath(APP_ROUTES.campaigns)
   return { id: row.id }
+}
+
+export type CampaignSendRow = {
+  contactId: string
+  name: string
+  email: string
+  step: number
+  status: string
+  scheduledFor: string | null
+  sentAt: string | null
+  error: string
+}
+
+export type CampaignSendHistory = {
+  counts: {
+    total: number
+    scheduled: number
+    sending: number
+    sent: number
+    skipped: number
+    failed: number
+  }
+  recipients: CampaignSendRow[]
+}
+
+/** Per-campaign email send history (bulk send report). Read-only, scoped. */
+export async function getCampaignSendHistory(campaignId: string): Promise<CampaignSendHistory> {
+  const { scopeIds } = await getActingUser()
+  const rows = await db
+    .select({
+      contactId: campaignSends.contactId,
+      step: campaignSends.step,
+      status: campaignSends.status,
+      scheduledFor: campaignSends.scheduledFor,
+      sentAt: campaignSends.sentAt,
+      error: campaignSends.error,
+      name: contacts.name,
+      email: contacts.email,
+    })
+    .from(campaignSends)
+    .innerJoin(contacts, eq(contacts.id, campaignSends.contactId))
+    .where(
+      and(
+        eq(campaignSends.campaignId, campaignId),
+        workspaceUserIdMatches(campaignSends.userId, scopeIds),
+      ),
+    )
+    .orderBy(desc(campaignSends.scheduledFor))
+    .limit(500)
+
+  const counts = { total: rows.length, scheduled: 0, sending: 0, sent: 0, skipped: 0, failed: 0 }
+  for (const r of rows) {
+    if (r.status === "scheduled") counts.scheduled++
+    else if (r.status === "sending") counts.sending++
+    else if (r.status === "sent") counts.sent++
+    else if (r.status === "skipped") counts.skipped++
+    else if (r.status === "failed") counts.failed++
+  }
+
+  return {
+    counts,
+    recipients: rows.map((r) => ({
+      contactId: r.contactId,
+      name: r.name || r.email || "Unknown",
+      email: r.email || "",
+      step: r.step,
+      status: r.status,
+      scheduledFor: r.scheduledFor ? r.scheduledFor.toISOString() : null,
+      sentAt: r.sentAt ? r.sentAt.toISOString() : null,
+      error: r.error || "",
+    })),
+  }
 }
 
 /** Render a live preview of one email using the workspace's brand. Read-only. */
