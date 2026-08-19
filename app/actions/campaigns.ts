@@ -170,7 +170,9 @@ export async function launchCampaign(campaignId: string) {
   const remaining = Math.max(0, enrollment.scheduled - processed.sent)
   const message = launched
     ? `Enrolled ${enrollment.recipients} recipient(s). Sent ${processed.sent} now; ${remaining} step(s) scheduled for later.${
-        processed.pending > 0 ? " Add RESEND_API_KEY to deliver email steps." : ""
+        processed.pending > 0
+          ? " Connect Resend in Settings → Email to deliver these email steps."
+          : ""
       }`
     : "No eligible recipients in the selected audience. Add contacts to the group and launch again."
 

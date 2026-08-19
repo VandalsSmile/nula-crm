@@ -4,6 +4,7 @@ import { and, eq, lte } from "drizzle-orm"
 
 import { db } from "@/lib/db"
 import { campaignSends, campaigns, contacts } from "@/lib/db/schema"
+import { getWorkspaceEmailConfig, sendEmailViaResend, type EmailConfig } from "@/lib/email/sender"
 import { randomId } from "@/lib/library-helpers"
 
 type CampaignRow = typeof campaigns.$inferSelect
@@ -63,35 +64,16 @@ export async function enrollCampaign(
   return { recipients: recipients.length, scheduled }
 }
 
-async function sendEmailStep(params: {
-  to: string
-  subject: string
-  body: string
-}): Promise<{ ok: boolean; error?: string }> {
-  const resendKey = process.env.RESEND_API_KEY?.trim()
-  const from = process.env.RESEND_FROM_EMAIL?.trim() || "Nula CRM <info@nulacrm.ai>"
-  if (!resendKey) return { ok: false, error: "no_api_key" }
-
-  try {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from,
-        to: params.to,
-        subject: params.subject,
-        html: `<p>${params.body.replace(/\n/g, "<br>")}</p>`,
-        text: params.body,
-      }),
-    })
-    if (!response.ok) {
-      const detail = await response.text().catch(() => "")
-      return { ok: false, error: `resend_${response.status}:${detail.slice(0, 200)}` }
-    }
-    return { ok: true }
-  } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : "send_failed" }
-  }
+async function sendEmailStep(
+  config: EmailConfig,
+  params: { to: string; subject: string; body: string },
+): Promise<{ ok: boolean; error?: string }> {
+  return sendEmailViaResend(config, {
+    to: params.to,
+    subject: params.subject,
+    html: `<p>${params.body.replace(/\n/g, "<br>")}</p>`,
+    text: params.body,
+  })
 }
 
 /**
@@ -125,7 +107,8 @@ export async function processDueCampaignSends(
     .where(and(...conditions))
     .limit(limit)
 
-  const hasResendKey = Boolean(process.env.RESEND_API_KEY?.trim())
+  const emailConfig = await getWorkspaceEmailConfig(workspaceId)
+  const hasResendKey = Boolean(emailConfig.apiKey)
   let sent = 0
   let skipped = 0
   let failed = 0
@@ -170,7 +153,7 @@ export async function processDueCampaignSends(
       continue
     }
 
-    const result = await sendEmailStep({
+    const result = await sendEmailStep(emailConfig, {
       to: contact.email,
       subject: step?.subject || campaign.name,
       body: step?.body || "",

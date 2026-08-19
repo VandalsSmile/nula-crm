@@ -323,6 +323,10 @@ export const workspaceSettings = pgTable("workspace_settings", {
   supportEmail: text("supportEmail").notNull().default(""),
   address: text("address").notNull().default(""),
   timezone: text("timezone").notNull().default("America/New_York"),
+  // Per-account Resend email sending (campaigns). Empty = use platform default.
+  resendApiKey: text("resendApiKey").notNull().default(""),
+  resendFromEmail: text("resendFromEmail").notNull().default(""),
+  resendFromName: text("resendFromName").notNull().default(""),
   onboardingComplete: boolean("onboardingComplete").notNull().default(false),
   suspended: boolean("suspended").notNull().default(false),
   plan: text("plan").notNull().default("trial"),
