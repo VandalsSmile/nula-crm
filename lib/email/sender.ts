@@ -79,7 +79,14 @@ export async function getWorkspaceEmailConfig(workspaceId: string): Promise<Emai
 /** Low-level Resend send used by campaigns and the "send test email" action. */
 export async function sendEmailViaResend(
   config: EmailConfig,
-  params: { to: string; subject: string; html: string; text?: string; replyTo?: string },
+  params: {
+    to: string
+    subject: string
+    html: string
+    text?: string
+    replyTo?: string
+    headers?: Record<string, string>
+  },
 ): Promise<{ ok: boolean; error?: string }> {
   if (!config.apiKey) return { ok: false, error: "no_api_key" }
   try {
@@ -96,6 +103,7 @@ export async function sendEmailViaResend(
         html: params.html,
         text: params.text ?? "",
         ...(params.replyTo ? { reply_to: params.replyTo } : {}),
+        ...(params.headers ? { headers: params.headers } : {}),
       }),
     })
     if (!response.ok) {

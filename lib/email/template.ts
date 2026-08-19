@@ -27,6 +27,8 @@ export function renderCampaignEmail(opts: {
   bodyHtml: string
   featuredImageUrl?: string
   previewText?: string
+  /** Per-recipient one-click unsubscribe URL. Falls back to a mailto opt-out. */
+  unsubscribeUrl?: string
 }): { html: string; text: string } {
   const { brand } = opts
   const company = brand.companyName?.trim() || "Our team"
@@ -36,6 +38,7 @@ export function renderCampaignEmail(opts: {
   const support = brand.supportEmail?.trim() || ""
   const address = brand.address?.trim() || ""
   const website = brand.website?.trim() || ""
+  const unsubUrl = opts.unsubscribeUrl?.trim() || ""
   const preview = (opts.previewText || htmlToPlainText(body)).slice(0, 140)
 
   const header = logo
@@ -46,9 +49,11 @@ export function renderCampaignEmail(opts: {
     ? `<tr><td style="padding:0 0 20px 0;"><img src="${escapeHtml(featured)}" alt="" width="600" style="display:block;width:100%;max-width:600px;height:auto;border-radius:8px;border:0;" /></td></tr>`
     : ""
 
-  const unsubscribe = support
-    ? `<a href="mailto:${escapeHtml(support)}?subject=Unsubscribe" style="color:#6b7280;text-decoration:underline;">Unsubscribe</a>`
-    : "Reply with &ldquo;unsubscribe&rdquo; to opt out."
+  const unsubscribe = unsubUrl
+    ? `<a href="${escapeHtml(unsubUrl)}" style="color:#6b7280;text-decoration:underline;">Unsubscribe</a>`
+    : support
+      ? `<a href="mailto:${escapeHtml(support)}?subject=Unsubscribe" style="color:#6b7280;text-decoration:underline;">Unsubscribe</a>`
+      : "Reply with &ldquo;unsubscribe&rdquo; to opt out."
 
   const footerBits = [
     `<strong>${escapeHtml(company)}</strong>`,
@@ -93,7 +98,11 @@ export function renderCampaignEmail(opts: {
     company,
     address,
     website,
-    support ? `Unsubscribe: email ${support} with subject "Unsubscribe".` : "",
+    unsubUrl
+      ? `Unsubscribe: ${unsubUrl}`
+      : support
+        ? `Unsubscribe: email ${support} with subject "Unsubscribe".`
+        : "",
   ]
     .filter(Boolean)
     .join("\n")

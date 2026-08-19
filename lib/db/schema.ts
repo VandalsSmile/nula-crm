@@ -87,6 +87,7 @@ export const contacts = pgTable("contacts", {
   productsPurchased: text("productsPurchased").notNull().default(""),
   communicationPreference: text("communicationPreference").notNull().default("email"),
   optInStatus: text("optInStatus").notNull().default("unknown"),
+  unsubscribeToken: text("unsubscribeToken").notNull().default(""),
   leadScore: integer("leadScore").notNull().default(0),
   aiSummary: text("aiSummary").notNull().default(""),
   recommendedNextAction: text("recommendedNextAction").notNull().default(""),
