@@ -45,12 +45,16 @@ type FormState = {
   assigneeId: string
 }
 
-function makeForm(task: Task | null | undefined, defaultContactId: string): FormState {
+function makeForm(
+  task: Task | null | undefined,
+  defaultContactId: string,
+  defaultDueAt?: string | null,
+): FormState {
   return {
     title: task?.title ?? "",
     notes: task?.notes ?? "",
     priority: task?.priority ?? "normal",
-    due: toLocalInput(task?.dueAt ?? null),
+    due: toLocalInput(task?.dueAt ?? defaultDueAt ?? null),
     contactId: task?.contactId ?? defaultContactId ?? "",
     assigneeId: task?.assigneeId ?? "",
   }
@@ -61,24 +65,27 @@ export function TaskFormDialog({
   onOpenChange,
   task,
   defaultContactId = "",
+  defaultDueAt = null,
   onSaved,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   task?: Task | null
   defaultContactId?: string
+  /** Pre-fill the due date when creating (e.g. clicking a calendar day). ISO. */
+  defaultDueAt?: string | null
   onSaved?: () => void
 }) {
   const router = useRouter()
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState<FormState>(() => makeForm(task, defaultContactId))
+  const [form, setForm] = useState<FormState>(() => makeForm(task, defaultContactId, defaultDueAt))
 
-  // Re-populate whenever the dialog opens or targets a different task.
-  const resetKey = open ? (task?.id ?? "new") : null
+  // Re-populate whenever the dialog opens or targets a different task/day.
+  const resetKey = open ? (task?.id ?? `new:${defaultContactId}:${defaultDueAt ?? ""}`) : null
   const [appliedKey, setAppliedKey] = useState<string | null>(null)
   if (resetKey !== appliedKey) {
     setAppliedKey(resetKey)
-    if (open) setForm(makeForm(task, defaultContactId))
+    if (open) setForm(makeForm(task, defaultContactId, defaultDueAt))
   }
 
   async function handleSave() {
