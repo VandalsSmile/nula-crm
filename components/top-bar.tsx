@@ -7,6 +7,7 @@ import { useTheme } from "next-themes"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
+import { TaskAlertBell } from "@/components/task-alert-bell"
 import { APP_ROUTES } from "@/lib/routes"
 
 const titles: Record<string, string> = {
@@ -45,7 +46,8 @@ export function TopBar() {
       <SidebarTrigger className="-ml-1" />
       <Separator orientation="vertical" className="mr-1 h-6" />
       <h1 className="min-w-0 truncate text-base font-semibold tracking-tight sm:text-lg">{title}</h1>
-      <div className="ml-auto">
+      <div className="ml-auto flex items-center gap-1">
+        <TaskAlertBell />
         <Button
           variant="ghost"
           size="icon"

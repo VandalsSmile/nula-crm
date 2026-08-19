@@ -8,8 +8,15 @@ import { tasks } from "@/lib/db/schema"
 import { workspaceUserIdMatches } from "@/lib/auth-helpers"
 import { getActingWriter } from "@/lib/entitlements"
 import { randomId } from "@/lib/library-helpers"
+import { getTaskStats } from "@/lib/queries"
 import { APP_ROUTES } from "@/lib/routes"
 import type { TaskPriority } from "@/lib/crm-types"
+
+/** Overdue + due-today counts for the header alert indicator. Read-only. */
+export async function getTaskAlerts(): Promise<{ overdue: number; dueToday: number }> {
+  const stats = await getTaskStats()
+  return { overdue: stats.overdue, dueToday: stats.dueToday }
+}
 
 export type TaskInput = {
   title: string
