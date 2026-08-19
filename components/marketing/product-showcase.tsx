@@ -54,11 +54,11 @@ const SHOTS: Shot[] = [
   },
   {
     src: "/screenshots/inbox.webp",
-    alt: "Nula CRM unified inbox of email and SMS conversations",
+    alt: "Nula CRM unified inbox of email conversations and web leads",
     caption: (
       <>
-        <span className="font-medium text-nula-ink">Inbox</span> — email and SMS conversations in one
-        place.
+        <span className="font-medium text-nula-ink">Inbox</span> — email conversations and web leads in
+        one place.
       </>
     ),
   },

@@ -45,7 +45,7 @@ const AI_EXAMPLES: { prompt: string; result: string }[] = [
     result: "A personalized draft, written in your voice, waiting for your approval.",
   },
   {
-    prompt: "Find and merge duplicate contacts",
+    prompt: "Find duplicate contacts",
     result: "Matched on email & phone, merged cleanly — with one-click undo.",
   },
   {
@@ -58,7 +58,7 @@ const AI_EXAMPLES: { prompt: string; result: string }[] = [
   },
   {
     prompt: "Build a win-back campaign for lapsed customers",
-    result: "A multi-step email + SMS sequence, drafted in seconds. Launch when ready.",
+    result: "A multi-step email sequence, drafted in seconds. Launch when ready.",
   },
 ]
 
@@ -231,7 +231,7 @@ export function MarketingHome() {
               {
                 icon: MessageCircle,
                 title: "Say what you need",
-                body: "Just type or speak in everyday language. No filters to build, no manual to read.",
+                body: "Just type in everyday language. No filters to build, no manual to read.",
                 tint: "bg-nula-violet/10 text-nula-violet",
               },
               {

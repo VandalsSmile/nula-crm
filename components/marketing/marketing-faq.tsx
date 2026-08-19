@@ -48,7 +48,7 @@ const FAQS: Faq[] = [
   },
   {
     q: "Marketing and campaigns feel overwhelming.",
-    a: "Nula drafts reactivation, nurture, review-request, and win-back campaigns for you, complete with a multi-step email/SMS sequence. Pick your audience, approve it, and it sends on schedule automatically.",
+    a: "Nula drafts reactivation, nurture, review-request, and win-back campaigns for you, complete with a multi-step email sequence. Pick your audience and launch it — Nula then sends each step on schedule.",
   },
   {
     q: "I can\u2019t tell what\u2019s actually working in my sales.",

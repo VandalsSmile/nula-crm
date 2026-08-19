@@ -12,7 +12,7 @@ const INCLUDED = [
   "Unlimited contacts, companies, and pipelines",
   "Unlimited tags, groups, and custom segments",
   "Deals, campaigns, and automations",
-  "Unified inbox — email, SMS, and web leads",
+  "Unified inbox — email and web leads",
   "All lead sources: web forms, email, phone, webhooks",
   "Reports and dashboards",
   "Team access with roles (Owner, Admin, Member)",
@@ -38,7 +38,7 @@ const FAQ = [
   },
   {
     q: "What about AI usage and costs?",
-    a: "AI is included in your subscription with a generous monthly allowance pooled across your whole team. In the rare case you run past it, Nula quietly falls back to its non-AI mode — you'll never get a surprise bill.",
+    a: "AI is included in your subscription — no metering and no per-message add-ons, so you'll never get a surprise bill. If AI is ever unavailable, Nula quietly falls back to its built-in non-AI mode.",
   },
   {
     q: "Can I add teammates?",
@@ -153,8 +153,8 @@ export function MarketingPricing() {
           </div>
 
           <p className="mx-auto mt-6 max-w-md text-center text-xs leading-relaxed text-nula-ink/50">
-            AI is included with a generous monthly allowance pooled across your team. If you ever
-            exceed it, Nula falls back to its non-AI mode — never a surprise bill.
+            AI is included — no metering and no per-message add-ons. If AI is ever unavailable, Nula
+            falls back to its non-AI mode. Never a surprise bill.
           </p>
         </div>
       </section>
