@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache"
 
 import { db } from "@/lib/db"
 import { activities, contactGroups, contactTags, contacts, deals } from "@/lib/db/schema"
-import { getActingUser, workspaceUserIdMatches } from "@/lib/auth-helpers"
+import { workspaceUserIdMatches } from "@/lib/auth-helpers"
+import { getActingWriter } from "@/lib/entitlements"
 import { randomId } from "@/lib/library-helpers"
 import { mapContact } from "@/lib/mappers"
 import type { Contact, LifecycleStage } from "@/lib/crm-types"
@@ -37,7 +38,7 @@ export type ContactInput = {
 }
 
 export async function createContact(input: ContactInput): Promise<Contact> {
-  const { user, workspaceId } = await getActingUser()
+  const { user, workspaceId } = await getActingWriter()
   const firstName = input.firstName?.trim() ?? ""
   const lastName = input.lastName?.trim() ?? ""
   const companyName = input.companyName?.trim() ?? ""
@@ -99,7 +100,7 @@ export async function createContact(input: ContactInput): Promise<Contact> {
 }
 
 export async function updateContact(id: string, input: Partial<ContactInput>): Promise<Contact> {
-  const { user, workspaceId, scopeIds } = await getActingUser()
+  const { user, workspaceId, scopeIds } = await getActingWriter()
 
   const patch: Record<string, string | number | Date | null> = {}
   for (const [key, value] of Object.entries(input)) {
@@ -140,7 +141,7 @@ export async function recordPurchase(input: {
   product: string
   amountCents?: number
 }): Promise<Contact> {
-  const { user, workspaceId, scopeIds } = await getActingUser()
+  const { user, workspaceId, scopeIds } = await getActingWriter()
   const product = input.product?.trim()
   if (!product) throw new Error("Product is required")
   const amountCents = Math.max(0, Math.round(input.amountCents ?? 0))
@@ -193,7 +194,7 @@ export async function recordPurchase(input: {
 }
 
 export async function deleteContact(id: string): Promise<void> {
-  const { scopeIds } = await getActingUser()
+  const { scopeIds } = await getActingWriter()
 
   await db.delete(contactTags).where(eq(contactTags.contactId, id))
   await db.delete(contactGroups).where(eq(contactGroups.contactId, id))
@@ -244,7 +245,7 @@ export type CsvImportResult = {
 }
 
 export async function importContactsFromCsv(csvText: string): Promise<CsvImportResult> {
-  const { user, workspaceId } = await getActingUser()
+  const { user, workspaceId } = await getActingWriter()
   const lines = csvText.trim().split(/\r?\n/).filter(Boolean)
   if (lines.length < 2) throw new Error("CSV must include a header row and at least one contact")
 

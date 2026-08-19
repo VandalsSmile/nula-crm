@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache"
 
 import { db } from "@/lib/db"
 import { activities, campaigns, contactGroups, contacts, groups } from "@/lib/db/schema"
-import { getActingUser, workspaceUserIdMatches } from "@/lib/auth-helpers"
+import { workspaceUserIdMatches } from "@/lib/auth-helpers"
+import { getActingWriter } from "@/lib/entitlements"
 import { slugifyTag } from "@/lib/crm-defaults"
 import { randomId } from "@/lib/library-helpers"
 import { APP_ROUTES, groupPath } from "@/lib/routes"
@@ -27,7 +28,7 @@ async function assertGroupAccess(groupId: string, scopeIds: string[]) {
 }
 
 export async function createGroup(input: GroupInput) {
-  const { workspaceId } = await getActingUser()
+  const { workspaceId } = await getActingWriter()
   const name = input.name.trim()
   if (!name) throw new Error("Group name is required")
 
@@ -48,7 +49,7 @@ export async function createGroup(input: GroupInput) {
 }
 
 export async function updateGroup(groupId: string, input: Partial<GroupInput>) {
-  const { scopeIds } = await getActingUser()
+  const { scopeIds } = await getActingWriter()
   await assertGroupAccess(groupId, scopeIds)
 
   const patch: Record<string, string> = {}
@@ -69,7 +70,7 @@ export async function updateGroup(groupId: string, input: Partial<GroupInput>) {
 }
 
 export async function deleteGroup(groupId: string) {
-  const { scopeIds } = await getActingUser()
+  const { scopeIds } = await getActingWriter()
   const row = await assertGroupAccess(groupId, scopeIds)
 
   await db.delete(contactGroups).where(eq(contactGroups.groupId, groupId))
@@ -85,7 +86,7 @@ export async function deleteGroup(groupId: string) {
 }
 
 export async function addContactToGroup(contactId: string, groupId: string) {
-  const { user, workspaceId, scopeIds } = await getActingUser()
+  const { user, workspaceId, scopeIds } = await getActingWriter()
   await assertGroupAccess(groupId, scopeIds)
 
   const [contact] = await db
@@ -115,7 +116,7 @@ export async function addContactToGroup(contactId: string, groupId: string) {
 }
 
 export async function removeContactFromGroup(contactId: string, groupId: string) {
-  const { user, workspaceId, scopeIds } = await getActingUser()
+  const { user, workspaceId, scopeIds } = await getActingWriter()
   await assertGroupAccess(groupId, scopeIds)
 
   await db

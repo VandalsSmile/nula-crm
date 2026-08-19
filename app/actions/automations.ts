@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
 import { automations } from "@/lib/db/schema"
 import { getActingUser, workspaceUserIdMatches } from "@/lib/auth-helpers"
+import { requireActiveWorkspace } from "@/lib/entitlements"
 import { APP_ROUTES } from "@/lib/routes"
 import { randomId } from "@/lib/library-helpers"
 import {
@@ -36,6 +37,7 @@ export async function listAutomations() {
 
 export async function toggleAutomation(automationId: string, enabled: boolean) {
   const { scopeIds } = await getActingUser()
+  await requireActiveWorkspace()
   await db
     .update(automations)
     .set({ enabled })
@@ -54,6 +56,7 @@ export type AutomationInput = {
 
 export async function createAutomation(input: AutomationInput) {
   const { workspaceId } = await getActingUser()
+  await requireActiveWorkspace(workspaceId)
   const name = input.name.trim()
   if (!name) throw new Error("Automation name is required")
 
@@ -76,6 +79,7 @@ export async function createAutomation(input: AutomationInput) {
 
 export async function updateAutomation(automationId: string, input: Partial<AutomationInput>) {
   const { scopeIds } = await getActingUser()
+  await requireActiveWorkspace()
   const patch: Record<string, string | boolean | Record<string, unknown>> = {}
   if (input.name !== undefined) patch.name = input.name.trim()
   if (input.trigger !== undefined) patch.trigger = input.trigger
@@ -96,6 +100,7 @@ export async function updateAutomation(automationId: string, input: Partial<Auto
 
 export async function deleteAutomation(automationId: string) {
   const { scopeIds } = await getActingUser()
+  await requireActiveWorkspace()
   const [row] = await db
     .select()
     .from(automations)
@@ -110,6 +115,7 @@ export async function deleteAutomation(automationId: string) {
 
 export async function runInactiveDetectionNow() {
   const { workspaceId } = await getActingUser()
+  await requireActiveWorkspace(workspaceId)
   const result = await runInactiveCustomerAutomation(workspaceId)
   revalidatePath(APP_ROUTES.automations)
   revalidatePath(APP_ROUTES.dashboard)

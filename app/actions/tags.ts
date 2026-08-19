@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache"
 
 import { db } from "@/lib/db"
 import { activities, contactTags, tags } from "@/lib/db/schema"
-import { getActingUser, workspaceUserIdMatches } from "@/lib/auth-helpers"
+import { workspaceUserIdMatches } from "@/lib/auth-helpers"
+import { getActingWriter } from "@/lib/entitlements"
 import { slugifyTag } from "@/lib/crm-defaults"
 import { randomId } from "@/lib/library-helpers"
 import { getTags } from "@/lib/queries"
@@ -34,7 +35,7 @@ async function assertTagAccess(tagId: string, scopeIds: string[]) {
 }
 
 export async function createTag(input: TagInput) {
-  const { workspaceId } = await getActingUser()
+  const { workspaceId } = await getActingWriter()
   const name = input.name.trim()
   if (!name) throw new Error("Tag name is required")
 
@@ -56,7 +57,7 @@ export async function createTag(input: TagInput) {
 }
 
 export async function updateTag(tagId: string, input: Partial<TagInput>) {
-  const { scopeIds } = await getActingUser()
+  const { scopeIds } = await getActingWriter()
   await assertTagAccess(tagId, scopeIds)
 
   const patch: Record<string, string> = {}
@@ -77,7 +78,7 @@ export async function updateTag(tagId: string, input: Partial<TagInput>) {
 }
 
 export async function deleteTag(tagId: string) {
-  const { scopeIds } = await getActingUser()
+  const { scopeIds } = await getActingWriter()
   const row = await assertTagAccess(tagId, scopeIds)
 
   await db.delete(contactTags).where(eq(contactTags.tagId, tagId))
@@ -89,7 +90,7 @@ export async function deleteTag(tagId: string) {
 }
 
 export async function addTagToContact(contactId: string, tagId: string) {
-  const { user, workspaceId, scopeIds } = await getActingUser()
+  const { user, workspaceId, scopeIds } = await getActingWriter()
   await assertTagAccess(tagId, scopeIds)
 
   await db
@@ -111,7 +112,7 @@ export async function addTagToContact(contactId: string, tagId: string) {
 }
 
 export async function removeTagFromContact(contactId: string, tagId: string) {
-  const { user, workspaceId, scopeIds } = await getActingUser()
+  const { user, workspaceId, scopeIds } = await getActingWriter()
   await assertTagAccess(tagId, scopeIds)
 
   await db

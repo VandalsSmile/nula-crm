@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache"
 
 import { db } from "@/lib/db"
 import { activities, campaigns, contactGroups, contacts } from "@/lib/db/schema"
-import { getActingUser, workspaceUserIdMatches } from "@/lib/auth-helpers"
+import { workspaceUserIdMatches } from "@/lib/auth-helpers"
+import { getActingWriter } from "@/lib/entitlements"
 import { APP_ROUTES } from "@/lib/routes"
 import { randomId } from "@/lib/library-helpers"
 import { CAMPAIGN_TEMPLATES } from "@/lib/crm-defaults"
@@ -14,7 +15,7 @@ import { enrollCampaign, processDueCampaignSends } from "@/lib/campaigns/schedul
 import type { CampaignStep } from "@/lib/crm-types"
 
 export async function createCampaignFromTemplate(templateId: string) {
-  const { workspaceId } = await getActingUser()
+  const { workspaceId } = await getActingWriter()
   const template = CAMPAIGN_TEMPLATES.find((t) => t.id === templateId)
   if (!template) throw new Error("Template not found")
 
@@ -51,7 +52,7 @@ function normalizeSequence(steps: CampaignStep[]): CampaignStep[] {
 }
 
 export async function updateCampaign(campaignId: string, input: CampaignUpdateInput) {
-  const { scopeIds } = await getActingUser()
+  const { scopeIds } = await getActingWriter()
   const patch: Record<string, string | null | Date | CampaignStep[]> = { updatedAt: new Date() }
   if (input.name !== undefined) patch.name = input.name.trim()
   if (input.goal !== undefined) patch.goal = input.goal.trim()
@@ -72,7 +73,7 @@ export async function updateCampaign(campaignId: string, input: CampaignUpdateIn
 }
 
 export async function deleteCampaign(campaignId: string) {
-  const { scopeIds } = await getActingUser()
+  const { scopeIds } = await getActingWriter()
   const [row] = await db
     .select()
     .from(campaigns)
@@ -87,7 +88,7 @@ export async function deleteCampaign(campaignId: string) {
 }
 
 export async function approveCampaign(campaignId: string) {
-  const { scopeIds } = await getActingUser()
+  const { scopeIds } = await getActingWriter()
   const [row] = await db
     .update(campaigns)
     .set({ status: "pending_approval", updatedAt: new Date() })
@@ -99,7 +100,7 @@ export async function approveCampaign(campaignId: string) {
 }
 
 export async function launchCampaign(campaignId: string) {
-  const { user, workspaceId, scopeIds } = await getActingUser()
+  const { user, workspaceId, scopeIds } = await getActingWriter()
   const [campaign] = await db
     .select()
     .from(campaigns)

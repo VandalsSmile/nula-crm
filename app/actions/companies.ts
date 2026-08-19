@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache"
 
 import { db } from "@/lib/db"
 import { companies, contacts, locations } from "@/lib/db/schema"
-import { getActingUser, workspaceUserIdMatches } from "@/lib/auth-helpers"
+import { workspaceUserIdMatches } from "@/lib/auth-helpers"
+import { getActingWriter } from "@/lib/entitlements"
 import { randomId } from "@/lib/library-helpers"
 import { mapCompany } from "@/lib/mappers"
 import type { Company } from "@/lib/crm-types"
@@ -39,7 +40,7 @@ export async function listCompanies(): Promise<Company[]> {
 }
 
 export async function createCompany(input: CompanyInput): Promise<Company> {
-  const { workspaceId } = await getActingUser()
+  const { workspaceId } = await getActingWriter()
   const name = input.name?.trim()
   if (!name) throw new Error("Company name is required")
 
@@ -64,7 +65,7 @@ export async function createCompany(input: CompanyInput): Promise<Company> {
 }
 
 export async function updateCompany(id: string, input: Partial<CompanyInput>): Promise<Company> {
-  const { scopeIds } = await getActingUser()
+  const { scopeIds } = await getActingWriter()
   await assertCompanyAccess(id, scopeIds)
 
   const patch: Record<string, string> = {}
@@ -98,7 +99,7 @@ export async function updateCompany(id: string, input: Partial<CompanyInput>): P
  * name (case-insensitive) so we don't create duplicates.
  */
 export async function backfillCompaniesFromContacts(): Promise<{ created: number; linked: number }> {
-  const { workspaceId, scopeIds } = await getActingUser()
+  const { workspaceId, scopeIds } = await getActingWriter()
 
   const rows = await db
     .select({ id: contacts.id, companyName: contacts.companyName })
@@ -154,7 +155,7 @@ export async function backfillCompaniesFromContacts(): Promise<{ created: number
 
 /** Merge one company into another: move its contacts + locations, then delete it. */
 export async function mergeCompany(sourceId: string, targetId: string): Promise<{ ok: true }> {
-  const { scopeIds } = await getActingUser()
+  const { scopeIds } = await getActingWriter()
   if (!sourceId || !targetId || sourceId === targetId) {
     throw new Error("Pick a different company to merge into.")
   }
@@ -180,7 +181,7 @@ export async function mergeCompany(sourceId: string, targetId: string): Promise<
 }
 
 export async function deleteCompany(id: string): Promise<{ ok: true; name: string }> {
-  const { scopeIds } = await getActingUser()
+  const { scopeIds } = await getActingWriter()
   const row = await assertCompanyAccess(id, scopeIds)
 
   // Unlink contacts (keep their free-text companyName as a historical label).

@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache"
 
 import { db } from "@/lib/db"
 import { activities, contacts, deals } from "@/lib/db/schema"
-import { getActingUser, workspaceUserIdMatches } from "@/lib/auth-helpers"
+import { workspaceUserIdMatches } from "@/lib/auth-helpers"
+import { getActingWriter } from "@/lib/entitlements"
 import { randomId } from "@/lib/library-helpers"
 import { mapDeal } from "@/lib/mappers"
 import type { DealStage } from "@/lib/crm-types"
@@ -33,7 +34,7 @@ async function assertContactAccess(contactId: string, scopeIds: string[]) {
 }
 
 export async function createDeal(input: DealInput) {
-  const { user, workspaceId, scopeIds } = await getActingUser()
+  const { user, workspaceId, scopeIds } = await getActingWriter()
   const title = input.title.trim()
   if (!title) throw new Error("Deal title is required")
 
@@ -72,7 +73,7 @@ export async function createDeal(input: DealInput) {
 }
 
 export async function updateDeal(dealId: string, input: Partial<DealInput>) {
-  const { scopeIds } = await getActingUser()
+  const { scopeIds } = await getActingWriter()
 
   const [existing] = await db
     .select()
@@ -100,7 +101,7 @@ export async function updateDeal(dealId: string, input: Partial<DealInput>) {
 }
 
 export async function deleteDeal(dealId: string) {
-  const { scopeIds } = await getActingUser()
+  const { scopeIds } = await getActingWriter()
 
   const [existing] = await db
     .select()

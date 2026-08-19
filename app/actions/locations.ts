@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache"
 
 import { db } from "@/lib/db"
 import { companies, contacts, locations } from "@/lib/db/schema"
-import { getActingUser, workspaceUserIdMatches } from "@/lib/auth-helpers"
+import { workspaceUserIdMatches } from "@/lib/auth-helpers"
+import { getActingWriter } from "@/lib/entitlements"
 import { randomId } from "@/lib/library-helpers"
 import { mapLocation } from "@/lib/mappers"
 import type { Location } from "@/lib/crm-types"
@@ -48,7 +49,7 @@ export async function listLocations(companyId: string): Promise<Location[]> {
 }
 
 export async function createLocation(companyId: string, input: LocationInput): Promise<Location> {
-  const { workspaceId, scopeIds } = await getActingUser()
+  const { workspaceId, scopeIds } = await getActingWriter()
   await assertCompanyAccess(companyId, scopeIds)
   const name = input.name?.trim()
   if (!name) throw new Error("Location name is required")
@@ -73,7 +74,7 @@ export async function createLocation(companyId: string, input: LocationInput): P
 }
 
 export async function updateLocation(id: string, input: Partial<LocationInput>): Promise<Location> {
-  const { scopeIds } = await getActingUser()
+  const { scopeIds } = await getActingWriter()
   const existing = await assertLocationAccess(id, scopeIds)
 
   const patch: Record<string, string> = {}
@@ -93,7 +94,7 @@ export async function updateLocation(id: string, input: Partial<LocationInput>):
 }
 
 export async function deleteLocation(id: string): Promise<{ ok: true }> {
-  const { scopeIds } = await getActingUser()
+  const { scopeIds } = await getActingWriter()
   const existing = await assertLocationAccess(id, scopeIds)
 
   // Unlink contacts from this location (they stay on the company).

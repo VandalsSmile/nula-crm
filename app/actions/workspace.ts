@@ -17,6 +17,7 @@ import {
 } from "@/lib/crm-defaults"
 import { seedDefaultAutomations } from "@/lib/automations/engine"
 import { randomId } from "@/lib/library-helpers"
+import { isBillingConfigured } from "@/lib/square"
 import { computeTrialStatus, trialEndDate, type TrialStatus } from "@/lib/trial"
 
 export type CompanyProfile = {
@@ -249,12 +250,16 @@ export async function getTrialStatus(): Promise<TrialStatus> {
 }
 
 /**
- * Move the workspace off the trial onto the paid plan. Placeholder for real
- * billing — for now an Admin can activate directly; swap this for a checkout
- * flow when payments are wired up.
+ * Manual plan activation fallback for environments where Square billing isn't
+ * configured yet (local/dev). Once billing IS configured (production), this is
+ * blocked so the only way to reach the paid plan is real checkout — closing the
+ * free "active" bypass.
  */
 export async function activatePlan(): Promise<TrialStatus> {
   const { workspaceId } = await requireOwner()
+  if (isBillingConfigured()) {
+    throw new Error("Please subscribe through checkout to activate your plan.")
+  }
   await db
     .insert(workspaceSettings)
     .values({ workspaceId, plan: "active", onboardingComplete: true })
