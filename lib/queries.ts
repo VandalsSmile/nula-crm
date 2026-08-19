@@ -315,6 +315,16 @@ export async function getCampaigns() {
   return rows.map(mapCampaign)
 }
 
+export async function getCampaignById(id: string) {
+  const { scopeIds } = await getWorkspaceScope()
+  const [row] = await db
+    .select()
+    .from(campaigns)
+    .where(and(eq(campaigns.id, id), workspaceUserIdMatches(campaigns.userId, scopeIds)))
+    .limit(1)
+  return row ? mapCampaign(row) : null
+}
+
 export async function getActivities(limit = 20) {
   const { scopeIds } = await getWorkspaceScope()
   const [rows, contactRows, labels] = await Promise.all([

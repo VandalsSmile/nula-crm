@@ -4,7 +4,14 @@ import { and, eq, lte } from "drizzle-orm"
 
 import { db } from "@/lib/db"
 import { campaignSends, campaigns, contacts } from "@/lib/db/schema"
-import { getWorkspaceEmailConfig, sendEmailViaResend, type EmailConfig } from "@/lib/email/sender"
+import {
+  getWorkspaceBrand,
+  getWorkspaceEmailConfig,
+  sendEmailViaResend,
+  type EmailBrand,
+  type EmailConfig,
+} from "@/lib/email/sender"
+import { renderCampaignEmail } from "@/lib/email/template"
 import { randomId } from "@/lib/library-helpers"
 
 type CampaignRow = typeof campaigns.$inferSelect
@@ -15,6 +22,7 @@ export type SequenceStep = {
   channel: string
   subject?: string
   body?: string
+  featuredImageUrl?: string
   delayDays?: number
 }
 
@@ -66,13 +74,21 @@ export async function enrollCampaign(
 
 async function sendEmailStep(
   config: EmailConfig,
-  params: { to: string; subject: string; body: string },
+  brand: EmailBrand,
+  params: { to: string; subject: string; body: string; featuredImageUrl?: string },
 ): Promise<{ ok: boolean; error?: string }> {
+  // Bodies authored before the rich editor are plain text; wrap those in a
+  // paragraph. Rich HTML bodies (contain a tag) are rendered as-is (sanitized
+  // inside the template).
+  const bodyHtml = /<[a-z][\s\S]*>/i.test(params.body)
+    ? params.body
+    : `<p>${params.body.replace(/\n/g, "<br>")}</p>`
+  const rendered = renderCampaignEmail({ brand, bodyHtml, featuredImageUrl: params.featuredImageUrl })
   return sendEmailViaResend(config, {
     to: params.to,
     subject: params.subject,
-    html: `<p>${params.body.replace(/\n/g, "<br>")}</p>`,
-    text: params.body,
+    html: rendered.html,
+    text: rendered.text,
   })
 }
 
@@ -108,6 +124,7 @@ export async function processDueCampaignSends(
     .limit(limit)
 
   const emailConfig = await getWorkspaceEmailConfig(workspaceId)
+  const brand = await getWorkspaceBrand(workspaceId)
   const hasResendKey = Boolean(emailConfig.apiKey)
   let sent = 0
   let skipped = 0
@@ -153,10 +170,11 @@ export async function processDueCampaignSends(
       continue
     }
 
-    const result = await sendEmailStep(emailConfig, {
+    const result = await sendEmailStep(emailConfig, brand, {
       to: contact.email,
       subject: step?.subject || campaign.name,
       body: step?.body || "",
+      featuredImageUrl: step?.featuredImageUrl,
     })
 
     if (result.ok) {

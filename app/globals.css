@@ -211,3 +211,10 @@
       0 12px 40px -8px rgba(79, 61, 245, 0.1);
   }
 }
+
+/* Placeholder text for the contentEditable rich-text editor when empty. */
+.rte-content:empty::before {
+  content: attr(data-placeholder);
+  color: var(--muted-foreground);
+  pointer-events: none;
+}

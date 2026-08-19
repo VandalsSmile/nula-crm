@@ -3,18 +3,19 @@
 import { useState, useTransition } from "react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
-import { Pencil, Plus, Rocket, Trash2 } from "lucide-react"
+import { Mail, Pencil, Plus, Rocket, Trash2, Workflow } from "lucide-react"
 
 import { PageHeader } from "@/components/page-header"
-import { CampaignFormDialog } from "@/components/campaign-form-dialog"
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CAMPAIGN_TEMPLATES } from "@/lib/crm-defaults"
+import { APP_ROUTES } from "@/lib/routes"
 import type { Campaign, Group } from "@/lib/crm-types"
 import {
   approveCampaign,
+  createCampaign,
   createCampaignFromTemplate,
   deleteCampaign,
   launchCampaign,
@@ -29,15 +30,29 @@ export function CampaignsView({
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
-  const [editCampaign, setEditCampaign] = useState<Campaign | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Campaign | null>(null)
+
+  function openEditor(id: string) {
+    router.push(`${APP_ROUTES.campaigns}/${id}`)
+  }
+
+  function createNew(kind: "broadcast" | "sequence") {
+    startTransition(async () => {
+      try {
+        const { id } = await createCampaign({ kind })
+        openEditor(id)
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Could not create campaign")
+      }
+    })
+  }
 
   function createFromTemplate(templateId: string) {
     startTransition(async () => {
       try {
         const result = await createCampaignFromTemplate(templateId)
         toast.success(`Created draft: ${result.name}`)
-        router.refresh()
+        openEditor(result.id)
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Could not create campaign")
       }
@@ -85,7 +100,19 @@ export function CampaignsView({
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Campaigns"
-        description="Email campaigns and sequences — built from templates and AI drafts."
+        description="Send a one-time email, or build a multi-step sequence that drips over days."
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" disabled={pending} onClick={() => createNew("broadcast")}>
+              <Mail data-icon="inline-start" />
+              New email
+            </Button>
+            <Button disabled={pending} onClick={() => createNew("sequence")}>
+              <Workflow data-icon="inline-start" />
+              New sequence
+            </Button>
+          </div>
+        }
       />
 
       <div>
@@ -127,7 +154,7 @@ export function CampaignsView({
                 </CardHeader>
                 <CardContent className="flex flex-col gap-3">
                   <div className="flex flex-wrap gap-2">
-                    <Badge>{c.type}</Badge>
+                    <Badge>{c.kind === "sequence" ? "Sequence" : "One-time email"}</Badge>
                     <Badge variant="secondary">{c.status}</Badge>
                     {c.groupId ? (
                       <Badge variant="outline">
@@ -136,7 +163,7 @@ export function CampaignsView({
                     ) : null}
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <Button size="sm" variant="outline" onClick={() => setEditCampaign(c)}>
+                    <Button size="sm" variant="outline" onClick={() => openEditor(c.id)}>
                       <Pencil data-icon="inline-start" />
                       Edit
                     </Button>
@@ -170,14 +197,6 @@ export function CampaignsView({
         )}
       </div>
 
-      {editCampaign ? (
-        <CampaignFormDialog
-          open={!!editCampaign}
-          onOpenChange={(open) => !open && setEditCampaign(null)}
-          campaign={editCampaign}
-          groups={groups}
-        />
-      ) : null}
       <ConfirmDeleteDialog
         open={!!deleteTarget}
         onOpenChange={(open) => !open && setDeleteTarget(null)}

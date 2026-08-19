@@ -200,13 +200,20 @@ export type CampaignStep = {
   step: number
   channel: "email" | "sms" | string
   subject?: string
+  /** Rich-text HTML body (produced by the email editor). */
   body?: string
+  /** Optional featured image shown above the body in the rendered email. */
+  featuredImageUrl?: string
   delayDays?: number
 }
+
+/** A one-time email ("broadcast") vs a multi-step drip ("sequence"). */
+export type CampaignKind = "broadcast" | "sequence"
 
 export type Campaign = {
   id: string
   name: string
+  kind: CampaignKind
   type: CampaignType
   status: CampaignStatus
   goal: string

@@ -5,14 +5,55 @@ import { revalidatePath } from "next/cache"
 
 import { db } from "@/lib/db"
 import { activities, campaigns, contactGroups, contacts } from "@/lib/db/schema"
-import { workspaceUserIdMatches } from "@/lib/auth-helpers"
+import { getActingUser, workspaceUserIdMatches } from "@/lib/auth-helpers"
 import { getActingWriter } from "@/lib/entitlements"
+import { getWorkspaceBrand } from "@/lib/email/sender"
+import { renderCampaignEmail } from "@/lib/email/template"
 import { APP_ROUTES } from "@/lib/routes"
 import { randomId } from "@/lib/library-helpers"
 import { CAMPAIGN_TEMPLATES } from "@/lib/crm-defaults"
 import { createCampaignDraftForWorkspace } from "@/lib/campaigns/drafts"
 import { enrollCampaign, processDueCampaignSends } from "@/lib/campaigns/schedule"
 import type { CampaignStep } from "@/lib/crm-types"
+
+/** Create a blank draft — either a one-time email ("broadcast") or a "sequence". */
+export async function createCampaign(input: {
+  name?: string
+  kind: "broadcast" | "sequence"
+}): Promise<{ id: string }> {
+  const { workspaceId } = await getActingWriter()
+  const kind = input.kind === "sequence" ? "sequence" : "broadcast"
+  const name = input.name?.trim() || (kind === "sequence" ? "New sequence" : "New email campaign")
+  const [row] = await db
+    .insert(campaigns)
+    .values({
+      id: randomId("cmp"),
+      userId: workspaceId,
+      name,
+      kind,
+      type: kind === "sequence" ? "sequence" : "email",
+      status: "draft",
+      sequence: [{ step: 1, channel: "email", subject: "", body: "", featuredImageUrl: "", delayDays: 0 }],
+    })
+    .returning()
+  revalidatePath(APP_ROUTES.campaigns)
+  return { id: row.id }
+}
+
+/** Render a live preview of one email using the workspace's brand. Read-only. */
+export async function renderCampaignPreview(input: {
+  subject: string
+  body: string
+  featuredImageUrl?: string
+}): Promise<{ html: string }> {
+  const { workspaceId } = await getActingUser()
+  const brand = await getWorkspaceBrand(workspaceId)
+  const bodyHtml = /<[a-z][\s\S]*>/i.test(input.body)
+    ? input.body
+    : `<p>${(input.body || "").replace(/\n/g, "<br>")}</p>`
+  const { html } = renderCampaignEmail({ brand, bodyHtml, featuredImageUrl: input.featuredImageUrl })
+  return { html }
+}
 
 export async function createCampaignFromTemplate(templateId: string) {
   const { workspaceId } = await getActingWriter()
@@ -36,6 +77,7 @@ export type CampaignUpdateInput = {
   audience?: string
   groupId?: string | null
   status?: string
+  kind?: "broadcast" | "sequence"
   sequence?: CampaignStep[]
 }
 
@@ -49,7 +91,8 @@ function normalizeSequence(steps: CampaignStep[]): CampaignStep[] {
       channel: "email",
       subject: (s.subject ?? "").trim(),
       body: (s.body ?? "").trim(),
-      delayDays: Math.max(0, Math.round(Number(s.delayDays ?? 0))),
+      featuredImageUrl: (s.featuredImageUrl ?? "").trim(),
+      delayDays: index === 0 ? 0 : Math.max(0, Math.round(Number(s.delayDays ?? 0))),
     }))
 }
 
@@ -61,7 +104,13 @@ export async function updateCampaign(campaignId: string, input: CampaignUpdateIn
   if (input.audience !== undefined) patch.audience = input.audience.trim()
   if (input.groupId !== undefined) patch.groupId = input.groupId
   if (input.status !== undefined) patch.status = input.status
-  if (input.sequence !== undefined) patch.sequence = normalizeSequence(input.sequence)
+  if (input.kind !== undefined) patch.kind = input.kind === "sequence" ? "sequence" : "broadcast"
+  if (input.sequence !== undefined) {
+    let seq = normalizeSequence(input.sequence)
+    // A broadcast is exactly one email; keep only the first step.
+    if (patch.kind === "broadcast") seq = seq.slice(0, 1)
+    patch.sequence = seq
+  }
 
   const [row] = await db
     .update(campaigns)

@@ -191,6 +191,7 @@ export function mapCampaign(row: CampaignRow): Campaign {
   return {
     id: row.id,
     name: row.name,
+    kind: (row.kind as Campaign["kind"]) ?? "broadcast",
     type: row.type as CampaignType,
     status: row.status as CampaignStatus,
     goal: row.goal,

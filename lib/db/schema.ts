@@ -178,6 +178,8 @@ export const campaigns = pgTable("campaigns", {
   id: text("id").primaryKey(),
   userId: text("userId").notNull(),
   name: text("name").notNull(),
+  // "broadcast" (one email) vs "sequence" (multi-step drip).
+  kind: text("kind").notNull().default("broadcast"),
   type: text("type").notNull().default("email"),
   status: text("status").notNull().default("draft"),
   goal: text("goal").notNull().default(""),

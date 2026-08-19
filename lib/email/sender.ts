@@ -14,6 +14,36 @@ export type EmailConfig = {
   usingWorkspace: boolean
 }
 
+export type EmailBrand = {
+  companyName: string
+  logoUrl: string
+  supportEmail: string
+  address: string
+  website: string
+}
+
+/** Company branding used in the campaign email header/footer. */
+export async function getWorkspaceBrand(workspaceId: string): Promise<EmailBrand> {
+  const [row] = await db
+    .select({
+      companyName: workspaceSettings.companyName,
+      logoUrl: workspaceSettings.logoUrl,
+      supportEmail: workspaceSettings.supportEmail,
+      address: workspaceSettings.address,
+      website: workspaceSettings.website,
+    })
+    .from(workspaceSettings)
+    .where(eq(workspaceSettings.workspaceId, workspaceId))
+    .limit(1)
+  return {
+    companyName: row?.companyName ?? "",
+    logoUrl: row?.logoUrl ?? "",
+    supportEmail: row?.supportEmail ?? "",
+    address: row?.address ?? "",
+    website: row?.website ?? "",
+  }
+}
+
 const PLATFORM_FROM = "Nula CRM <info@nulacrm.ai>"
 
 /**

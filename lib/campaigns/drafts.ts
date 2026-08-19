@@ -67,18 +67,20 @@ export async function createCampaignDraftForWorkspace(workspaceId: string, input
     groupId = group?.id ?? null
   }
 
+  const sequence = sequenceForType(input.type)
   const [row] = await db
     .insert(campaigns)
     .values({
       id: randomId("cmp"),
       userId: workspaceId,
       name: input.name,
+      kind: sequence.length > 1 ? "sequence" : "broadcast",
       type: input.type,
       goal: input.goal,
       audience: input.audience,
       groupId,
       status: "draft",
-      sequence: sequenceForType(input.type),
+      sequence,
     })
     .returning()
 
