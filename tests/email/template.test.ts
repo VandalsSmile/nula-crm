@@ -39,6 +39,21 @@ describe("renderCampaignEmail", () => {
     expect(html).toContain("https://cdn.example.com/feature.jpg")
   })
 
+  it("links the footer Unsubscribe to the per-recipient URL when provided", () => {
+    const { html, text } = renderCampaignEmail({
+      brand,
+      bodyHtml: "<p>Hi</p>",
+      unsubscribeUrl: "https://www.nulacrm.ai/unsubscribe/unsub_abc123",
+    })
+    expect(html).toContain('href="https://www.nulacrm.ai/unsubscribe/unsub_abc123"')
+    expect(text).toContain("Unsubscribe: https://www.nulacrm.ai/unsubscribe/unsub_abc123")
+  })
+
+  it("falls back to a mailto unsubscribe when no URL is given", () => {
+    const { html } = renderCampaignEmail({ brand, bodyHtml: "<p>Hi</p>" })
+    expect(html).toContain("mailto:hello@acme.test?subject=Unsubscribe")
+  })
+
   it("produces a plain-text alternative", () => {
     const { text } = renderCampaignEmail({ brand, bodyHtml: "<h2>Hi</h2><p>there</p>" })
     expect(text).toContain("Hi")

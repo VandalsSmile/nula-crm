@@ -13,6 +13,7 @@ import {
 } from "@/lib/email/sender"
 import { renderCampaignEmail } from "@/lib/email/template"
 import { randomId } from "@/lib/library-helpers"
+import { ensureUnsubscribeToken, unsubscribeUrl } from "@/lib/unsubscribe"
 
 type CampaignRow = typeof campaigns.$inferSelect
 type ContactRow = typeof contacts.$inferSelect
@@ -75,7 +76,13 @@ export async function enrollCampaign(
 async function sendEmailStep(
   config: EmailConfig,
   brand: EmailBrand,
-  params: { to: string; subject: string; body: string; featuredImageUrl?: string },
+  params: {
+    to: string
+    subject: string
+    body: string
+    featuredImageUrl?: string
+    unsubscribeUrl?: string
+  },
 ): Promise<{ ok: boolean; error?: string }> {
   // Bodies authored before the rich editor are plain text; wrap those in a
   // paragraph. Rich HTML bodies (contain a tag) are rendered as-is (sanitized
@@ -83,12 +90,21 @@ async function sendEmailStep(
   const bodyHtml = /<[a-z][\s\S]*>/i.test(params.body)
     ? params.body
     : `<p>${params.body.replace(/\n/g, "<br>")}</p>`
-  const rendered = renderCampaignEmail({ brand, bodyHtml, featuredImageUrl: params.featuredImageUrl })
+  const rendered = renderCampaignEmail({
+    brand,
+    bodyHtml,
+    featuredImageUrl: params.featuredImageUrl,
+    unsubscribeUrl: params.unsubscribeUrl,
+  })
   return sendEmailViaResend(config, {
     to: params.to,
     subject: params.subject,
     html: rendered.html,
     text: rendered.text,
+    // List-Unsubscribe improves deliverability and enables inbox "unsubscribe".
+    headers: params.unsubscribeUrl
+      ? { "List-Unsubscribe": `<${params.unsubscribeUrl}>` }
+      : undefined,
   })
 }
 
@@ -170,11 +186,13 @@ export async function processDueCampaignSends(
       continue
     }
 
+    const unsubToken = await ensureUnsubscribeToken(contact.id, contact.unsubscribeToken)
     const result = await sendEmailStep(emailConfig, brand, {
       to: contact.email,
       subject: step?.subject || campaign.name,
       body: step?.body || "",
       featuredImageUrl: step?.featuredImageUrl,
+      unsubscribeUrl: unsubscribeUrl(unsubToken),
     })
 
     if (result.ok) {
