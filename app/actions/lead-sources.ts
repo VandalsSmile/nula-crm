@@ -109,6 +109,13 @@ export async function setApiRequireKey(require: boolean): Promise<LeadSourceInfo
   return toInfo(row)
 }
 
+/** The booking/appointment webhook URL for this workspace (Calendly/Cal.com, etc.). */
+export async function getBookingWebhookUrl(): Promise<{ url: string }> {
+  const { workspaceId } = await requireRole("Admin")
+  const row = await getOrCreateApiSource(workspaceId)
+  return { url: row.publicKey ? `${appBaseUrl()}/api/bookings/${row.publicKey}` : "" }
+}
+
 export async function getLeadSources(): Promise<LeadSourceInfo[]> {
   // Admin-only: the returned rows include signing secrets and API keys, which
   // Members must not be able to read.

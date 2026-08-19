@@ -192,6 +192,25 @@ export const tasks = pgTable("tasks", {
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 })
 
+export const bookings = pgTable("bookings", {
+  id: text("id").primaryKey(),
+  userId: text("userId").notNull(),
+  contactId: text("contactId").notNull().default(""),
+  title: text("title").notNull().default("Appointment"),
+  status: text("status").notNull().default("scheduled"),
+  startAt: timestamp("startAt"),
+  endAt: timestamp("endAt"),
+  location: text("location").notNull().default(""),
+  notes: text("notes").notNull().default(""),
+  attendeeName: text("attendeeName").notNull().default(""),
+  attendeeEmail: text("attendeeEmail").notNull().default(""),
+  attendeePhone: text("attendeePhone").notNull().default(""),
+  source: text("source").notNull().default(""),
+  externalId: text("externalId").notNull().default(""),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+})
+
 export const campaigns = pgTable("campaigns", {
   id: text("id").primaryKey(),
   userId: text("userId").notNull(),

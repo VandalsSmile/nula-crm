@@ -217,6 +217,23 @@ export type Task = {
   createdAt: string
 }
 
+export type Booking = {
+  id: string
+  contactId: string
+  contactName: string
+  title: string
+  status: string
+  startAt: string | null
+  endAt: string | null
+  location: string
+  notes: string
+  attendeeName: string
+  attendeeEmail: string
+  attendeePhone: string
+  source: string
+  createdAt: string
+}
+
 export type CampaignStep = {
   step: number
   channel: "email" | "sms" | string
