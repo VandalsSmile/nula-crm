@@ -184,15 +184,21 @@ export async function deleteCompany(id: string): Promise<{ ok: true; name: strin
   const { scopeIds } = await getActingWriter()
   const row = await assertCompanyAccess(id, scopeIds)
 
-  // Unlink contacts (keep their free-text companyName as a historical label).
-  await db
-    .update(contacts)
-    .set({ companyId: "" })
-    .where(and(eq(contacts.companyId, id), workspaceUserIdMatches(contacts.userId, scopeIds)))
-
-  await db
-    .delete(companies)
-    .where(and(eq(companies.id, id), workspaceUserIdMatches(companies.userId, scopeIds)))
+  await db.transaction(async (tx) => {
+    // Unlink contacts (keep their free-text companyName as a historical label)
+    // and clear the location pointer, since the company's locations go with it.
+    await tx
+      .update(contacts)
+      .set({ companyId: "", locationId: "" })
+      .where(and(eq(contacts.companyId, id), workspaceUserIdMatches(contacts.userId, scopeIds)))
+    // Remove the company's locations so they aren't orphaned.
+    await tx
+      .delete(locations)
+      .where(and(eq(locations.companyId, id), workspaceUserIdMatches(locations.userId, scopeIds)))
+    await tx
+      .delete(companies)
+      .where(and(eq(companies.id, id), workspaceUserIdMatches(companies.userId, scopeIds)))
+  })
 
   revalidatePath(APP_ROUTES.companies)
   revalidatePath(APP_ROUTES.contacts)

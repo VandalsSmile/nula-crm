@@ -4,7 +4,15 @@ import { and, eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
 import { db } from "@/lib/db"
-import { activities, contactGroups, contactTags, contacts, deals } from "@/lib/db/schema"
+import {
+  activities,
+  campaignSends,
+  contactGroups,
+  contactTags,
+  contacts,
+  deals,
+  messages,
+} from "@/lib/db/schema"
 import { workspaceUserIdMatches } from "@/lib/auth-helpers"
 import { pickEditableContactFields } from "@/lib/contact-fields"
 import {
@@ -217,11 +225,27 @@ export async function recordPurchase(input: {
 export async function deleteContact(id: string): Promise<void> {
   const { scopeIds } = await getActingWriter()
 
-  await db.delete(contactTags).where(eq(contactTags.contactId, id))
-  await db.delete(contactGroups).where(eq(contactGroups.contactId, id))
-  await db.delete(deals).where(and(eq(deals.contactId, id), workspaceUserIdMatches(deals.userId, scopeIds)))
-  await db.delete(activities).where(and(eq(activities.contactId, id), workspaceUserIdMatches(activities.userId, scopeIds)))
-  await db.delete(contacts).where(and(eq(contacts.id, id), workspaceUserIdMatches(contacts.userId, scopeIds)))
+  // Delete the contact and every row that references it in one transaction so we
+  // never leave orphaned links, deals, messages, or scheduled campaign sends.
+  await db.transaction(async (tx) => {
+    await tx.delete(contactTags).where(eq(contactTags.contactId, id))
+    await tx.delete(contactGroups).where(eq(contactGroups.contactId, id))
+    await tx
+      .delete(campaignSends)
+      .where(and(eq(campaignSends.contactId, id), workspaceUserIdMatches(campaignSends.userId, scopeIds)))
+    await tx
+      .delete(messages)
+      .where(and(eq(messages.contactId, id), workspaceUserIdMatches(messages.userId, scopeIds)))
+    await tx
+      .delete(deals)
+      .where(and(eq(deals.contactId, id), workspaceUserIdMatches(deals.userId, scopeIds)))
+    await tx
+      .delete(activities)
+      .where(and(eq(activities.contactId, id), workspaceUserIdMatches(activities.userId, scopeIds)))
+    await tx
+      .delete(contacts)
+      .where(and(eq(contacts.id, id), workspaceUserIdMatches(contacts.userId, scopeIds)))
+  })
 
   revalidatePath(APP_ROUTES.contacts)
   revalidatePath(APP_ROUTES.dashboard)
