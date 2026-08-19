@@ -42,48 +42,38 @@ export function RichTextEditor({
     if (url) exec("createLink", url)
   }
 
+  // Keep focus/selection in the editor when a toolbar button is pressed —
+  // otherwise clicking the button blurs the contentEditable and execCommand has
+  // no selection to format.
+  const keepSelection = (e: React.MouseEvent) => e.preventDefault()
+
   const btn =
     "inline-flex size-8 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
 
   return (
     <div className={cn("rounded-md border", className)}>
       <div className="flex flex-wrap items-center gap-0.5 border-b bg-muted/40 p-1">
-        <button type="button" className={btn} onClick={() => exec("bold")} aria-label="Bold">
+        <button type="button" className={btn} onMouseDown={keepSelection} onClick={() => exec("bold")} aria-label="Bold">
           <Bold className="size-4" />
         </button>
-        <button type="button" className={btn} onClick={() => exec("italic")} aria-label="Italic">
+        <button type="button" className={btn} onMouseDown={keepSelection} onClick={() => exec("italic")} aria-label="Italic">
           <Italic className="size-4" />
         </button>
-        <button type="button" className={btn} onClick={() => exec("underline")} aria-label="Underline">
+        <button type="button" className={btn} onMouseDown={keepSelection} onClick={() => exec("underline")} aria-label="Underline">
           <Underline className="size-4" />
         </button>
         <span className="mx-1 h-5 w-px bg-border" />
-        <button
-          type="button"
-          className={btn}
-          onClick={() => exec("formatBlock", "<h2>")}
-          aria-label="Heading"
-        >
+        <button type="button" className={btn} onMouseDown={keepSelection} onClick={() => exec("formatBlock", "<h2>")} aria-label="Heading">
           <Heading2 className="size-4" />
         </button>
-        <button
-          type="button"
-          className={btn}
-          onClick={() => exec("insertUnorderedList")}
-          aria-label="Bulleted list"
-        >
+        <button type="button" className={btn} onMouseDown={keepSelection} onClick={() => exec("insertUnorderedList")} aria-label="Bulleted list">
           <List className="size-4" />
         </button>
-        <button
-          type="button"
-          className={btn}
-          onClick={() => exec("insertOrderedList")}
-          aria-label="Numbered list"
-        >
+        <button type="button" className={btn} onMouseDown={keepSelection} onClick={() => exec("insertOrderedList")} aria-label="Numbered list">
           <ListOrdered className="size-4" />
         </button>
         <span className="mx-1 h-5 w-px bg-border" />
-        <button type="button" className={btn} onClick={addLink} aria-label="Insert link">
+        <button type="button" className={btn} onMouseDown={keepSelection} onClick={addLink} aria-label="Insert link">
           <Link2 className="size-4" />
         </button>
       </div>
