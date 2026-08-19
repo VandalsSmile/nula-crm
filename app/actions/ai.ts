@@ -14,6 +14,7 @@ import {
   tags,
 } from "@/lib/db/schema"
 import { getActingUser, workspaceUserIdMatches } from "@/lib/auth-helpers"
+import { requireActiveWorkspace } from "@/lib/entitlements"
 import { APP_ROUTES } from "@/lib/routes"
 import { interpretCommandAsync } from "@/lib/ai/interpret-with-llm"
 import { chatCompletion } from "@/lib/ai/llm"
@@ -195,6 +196,7 @@ async function executeAiActionInternal(
   preview: AiActionPreview,
 ) {
   const { user, workspaceId, scopeIds } = await getActingUser()
+  await requireActiveWorkspace(workspaceId)
   let summary = "Done."
   let impactCount = 0
   let undoPayload: Record<string, unknown> | null = null
@@ -390,6 +392,7 @@ async function executeAiActionInternal(
 
 export async function undoLastAiAction() {
   const { workspaceId } = await getActingUser()
+  await requireActiveWorkspace(workspaceId)
   // Find the most recent executed action that is actually reversible, skipping
   // read-only actions (e.g. drafts, summaries) that have no undo payload.
   const [action] = await db

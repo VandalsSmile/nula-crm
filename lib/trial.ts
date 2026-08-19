@@ -35,3 +35,19 @@ export function computeTrialStatus(plan: string, trialEndsAt: Date | null): Tria
   const daysLeft = Math.max(0, Math.ceil(ms / (24 * 60 * 60 * 1000)))
   return { plan, trialEndsAt: iso, daysLeft, isTrialing: ms > 0, isExpired: ms <= 0 }
 }
+
+/**
+ * Whether a workspace may make changes (write access). Paid ("active"), comped
+ * ("free"), or a trial that hasn't ended yet are all entitled. An ended trial is
+ * not. Pure helper so it's easy to unit-test; callers resolve plan/trialEndsAt
+ * from the workspace row (a missing row = brand-new account = entitled).
+ */
+export function isEntitled(
+  plan: string | undefined,
+  trialEndsAt: Date | null | undefined,
+): boolean {
+  const p = plan ?? "trial"
+  if (p === "active" || p === "free") return true
+  // trial (or unknown) → entitled only while the trial window is open.
+  return !computeTrialStatus("trial", trialEndsAt ?? null).isExpired
+}

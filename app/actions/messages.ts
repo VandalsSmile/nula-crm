@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
 import { activities, contacts, messages } from "@/lib/db/schema"
 import { requireRole, workspaceUserIdMatches } from "@/lib/auth-helpers"
+import { requireActiveWorkspace } from "@/lib/entitlements"
 import { getMessagesForContact } from "@/lib/queries"
 import { randomId } from "@/lib/library-helpers"
 import { APP_ROUTES } from "@/lib/routes"
@@ -23,6 +24,7 @@ export async function sendMessage(input: {
   body: string
 }): Promise<{ ok: boolean; status: string }> {
   const { user, workspaceId, scopeIds } = await requireRole("Admin", "Member")
+  await requireActiveWorkspace(workspaceId)
   const body = input.body?.trim()
   if (!body) throw new Error("Message body is required")
 
