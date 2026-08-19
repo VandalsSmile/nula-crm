@@ -1,6 +1,6 @@
 "use server"
 
-import { and, eq } from "drizzle-orm"
+import { and, eq, notInArray } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
 import { db } from "@/lib/db"
@@ -111,6 +111,16 @@ export async function launchCampaign(campaignId: string) {
     throw new Error("Campaign already launched")
   }
 
+  // Atomically claim the launch: only the caller that flips the status away from
+  // its current value proceeds. This stops two concurrent launches (e.g. a
+  // double-click) from both enrolling the audience and double-sending.
+  const [claimed] = await db
+    .update(campaigns)
+    .set({ status: "active", updatedAt: new Date() })
+    .where(and(eq(campaigns.id, campaignId), notInArray(campaigns.status, ["active", "completed"])))
+    .returning({ id: campaigns.id })
+  if (!claimed) throw new Error("Campaign already launched")
+
   let audienceContacts: (typeof contacts.$inferSelect)[] = []
   if (campaign.groupId) {
     const rows = await db
@@ -135,10 +145,14 @@ export async function launchCampaign(campaignId: string) {
   const processed = await processDueCampaignSends(workspaceId, { campaignId })
 
   const launched = enrollment.recipients > 0
-  await db
-    .update(campaigns)
-    .set({ status: launched ? "active" : "scheduled", updatedAt: new Date() })
-    .where(eq(campaigns.id, campaignId))
+  if (!launched) {
+    // Nothing to send yet — release the claim back to "scheduled" so it can be
+    // launched again once the audience has contacts.
+    await db
+      .update(campaigns)
+      .set({ status: "scheduled", updatedAt: new Date() })
+      .where(eq(campaigns.id, campaignId))
+  }
 
   for (const contact of eligible.slice(0, 50)) {
     await db.insert(activities).values({

@@ -134,6 +134,23 @@ export async function processDueCampaignSends(
   for (const { send, campaign, contact } of dueRows) {
     const step = campaignSequence(campaign).find((s) => s.step === send.step)
 
+    if (send.channel === "email" && contact.email && !hasResendKey) {
+      // Leave scheduled so it retries once RESEND_API_KEY is configured — don't
+      // claim it, so a later run can pick it up.
+      pending++
+      continue
+    }
+
+    // Atomically claim this send (scheduled → sending) so a concurrent run — e.g.
+    // the campaigns cron overlapping a manual launch — can't process/send the
+    // same row twice. Only the worker that flips the status proceeds.
+    const [claimed] = await db
+      .update(campaignSends)
+      .set({ status: "sending" })
+      .where(and(eq(campaignSends.id, send.id), eq(campaignSends.status, "scheduled")))
+      .returning({ id: campaignSends.id })
+    if (!claimed) continue
+
     if (send.channel !== "email") {
       // No SMS provider configured yet — skip so the sequence can continue.
       await db
@@ -150,12 +167,6 @@ export async function processDueCampaignSends(
         .set({ status: "skipped", sentAt: now, error: "no_email_address" })
         .where(eq(campaignSends.id, send.id))
       skipped++
-      continue
-    }
-
-    if (!hasResendKey) {
-      // Leave scheduled so it retries once RESEND_API_KEY is configured.
-      pending++
       continue
     }
 
