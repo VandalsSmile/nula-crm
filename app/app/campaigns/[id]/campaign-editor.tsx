@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { RichTextEditor } from "@/components/rich-text-editor"
+import { CampaignSendHistory } from "./campaign-send-history"
 import {
   approveCampaign,
   launchCampaign,
@@ -412,6 +413,8 @@ export function CampaignEditor({ campaign, groups }: { campaign: Campaign; group
           </p>
         </div>
       </div>
+
+      <CampaignSendHistory campaignId={campaign.id} />
     </div>
   )
 }
