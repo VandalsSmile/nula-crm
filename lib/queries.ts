@@ -11,9 +11,10 @@ import {
   locations,
   messages,
   tags,
+  tasks,
   workspaceSettings,
 } from "@/lib/db/schema"
-import { and, desc, eq, ilike, inArray, ne, or, sql } from "drizzle-orm"
+import { and, desc, eq, ilike, inArray, lte, ne, or, sql } from "drizzle-orm"
 import { getWorkspaceScope, workspaceUserIdMatches } from "@/lib/auth-helpers"
 import {
   mapActivity,
@@ -24,8 +25,9 @@ import {
   mapGroup,
   mapLocation,
   mapTag,
+  mapTask,
 } from "@/lib/mappers"
-import type { Company, Contact, DashboardStats, Deal, InboxConversation, Location, Message, ReportData } from "@/lib/crm-types"
+import type { Company, Contact, DashboardStats, Deal, InboxConversation, Location, Message, ReportData, Task } from "@/lib/crm-types"
 import { LIFECYCLE_STAGES } from "@/lib/crm-types"
 import { getWorkspaceUserLabels, labelForUserId } from "@/lib/workspace-users"
 
@@ -436,6 +438,89 @@ export async function getDeals(): Promise<Deal[]> {
     .orderBy(desc(deals.updatedAt))
   return rows.map(({ deal, contact }) =>
     mapDeal(deal, [contact.firstName, contact.lastName].filter(Boolean).join(" ") || contact.name),
+  )
+}
+
+function contactDisplayName(contact: { firstName: string; lastName: string; name: string } | null): string {
+  if (!contact) return ""
+  return [contact.firstName, contact.lastName].filter(Boolean).join(" ") || contact.name
+}
+
+const TASK_ORDER = [
+  sql`case when ${tasks.status}='open' then 0 else 1 end`,
+  sql`${tasks.dueAt} asc nulls last`,
+  desc(tasks.createdAt),
+]
+
+export async function getTasks(): Promise<Task[]> {
+  const { workspaceId, scopeIds } = await getWorkspaceScope()
+  const users = await getWorkspaceUserLabels(workspaceId)
+  const rows = await db
+    .select({ task: tasks, contact: contacts })
+    .from(tasks)
+    .leftJoin(contacts, eq(contacts.id, tasks.contactId))
+    .where(workspaceUserIdMatches(tasks.userId, scopeIds))
+    .orderBy(...TASK_ORDER)
+  return rows.map(({ task, contact }) =>
+    mapTask(task, { contactName: contactDisplayName(contact), users }),
+  )
+}
+
+export async function getTasksForContact(contactId: string): Promise<Task[]> {
+  const { workspaceId, scopeIds } = await getWorkspaceScope()
+  const users = await getWorkspaceUserLabels(workspaceId)
+  const rows = await db
+    .select()
+    .from(tasks)
+    .where(and(eq(tasks.contactId, contactId), workspaceUserIdMatches(tasks.userId, scopeIds)))
+    .orderBy(...TASK_ORDER)
+  return rows.map((t) => mapTask(t, { users }))
+}
+
+export type TaskStats = { open: number; overdue: number; dueToday: number }
+
+export async function getTaskStats(): Promise<TaskStats> {
+  const { scopeIds } = await getWorkspaceScope()
+  const rows = await db
+    .select({ status: tasks.status, dueAt: tasks.dueAt })
+    .from(tasks)
+    .where(workspaceUserIdMatches(tasks.userId, scopeIds))
+  const now = new Date()
+  const endToday = new Date(now)
+  endToday.setHours(23, 59, 59, 999)
+  const stats: TaskStats = { open: 0, overdue: 0, dueToday: 0 }
+  for (const r of rows) {
+    if (r.status !== "open") continue
+    stats.open++
+    if (r.dueAt) {
+      if (r.dueAt < now) stats.overdue++
+      else if (r.dueAt <= endToday) stats.dueToday++
+    }
+  }
+  return stats
+}
+
+/** Open tasks that are overdue or due today — for the dashboard alert. */
+export async function getDueTasks(limit = 6): Promise<Task[]> {
+  const { workspaceId, scopeIds } = await getWorkspaceScope()
+  const users = await getWorkspaceUserLabels(workspaceId)
+  const endToday = new Date()
+  endToday.setHours(23, 59, 59, 999)
+  const rows = await db
+    .select({ task: tasks, contact: contacts })
+    .from(tasks)
+    .leftJoin(contacts, eq(contacts.id, tasks.contactId))
+    .where(
+      and(
+        workspaceUserIdMatches(tasks.userId, scopeIds),
+        eq(tasks.status, "open"),
+        lte(tasks.dueAt, endToday),
+      ),
+    )
+    .orderBy(sql`${tasks.dueAt} asc nulls last`)
+    .limit(limit)
+  return rows.map(({ task, contact }) =>
+    mapTask(task, { contactName: contactDisplayName(contact), users }),
   )
 }
 

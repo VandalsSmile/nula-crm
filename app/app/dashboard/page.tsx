@@ -1,6 +1,6 @@
 import { DashboardView } from "./dashboard-view"
 import { seedWorkspaceDefaults } from "@/app/actions/workspace"
-import { getActivities, getContacts, getDashboardStats } from "@/lib/queries"
+import { getActivities, getContacts, getDashboardStats, getDueTasks } from "@/lib/queries"
 import { appPageMetadata } from "@/lib/seo"
 import { APP_ROUTES } from "@/lib/routes"
 
@@ -17,11 +17,14 @@ export default async function DashboardPage() {
   // default on first load — never a hardcoded wellness type.
   await seedWorkspaceDefaults()
 
-  const [contacts, activities, stats] = await Promise.all([
+  const [contacts, activities, stats, dueTasks] = await Promise.all([
     getContacts(),
     getActivities(10),
     getDashboardStats(),
+    getDueTasks(6),
   ])
 
-  return <DashboardView contacts={contacts} activities={activities} stats={stats} />
+  return (
+    <DashboardView contacts={contacts} activities={activities} stats={stats} dueTasks={dueTasks} />
+  )
 }

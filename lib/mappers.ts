@@ -13,6 +13,9 @@ import type {
   LifecycleStage,
   Location,
   Tag,
+  Task,
+  TaskPriority,
+  TaskStatus,
 } from "@/lib/crm-types"
 import { contactFullName } from "@/lib/crm-types"
 import type {
@@ -24,6 +27,7 @@ import type {
   groups,
   locations,
   tags,
+  tasks,
 } from "@/lib/db/schema"
 import { labelForUserId, type UserLabelMap } from "@/lib/workspace-users"
 
@@ -168,6 +172,28 @@ export function mapActivity(
     companyName: company.companyName ?? "",
     actorName: labelForUserId(labels, row.actorId),
     at: iso(row.at) ?? "",
+  }
+}
+
+type TaskRow = typeof tasks.$inferSelect
+
+export function mapTask(
+  row: TaskRow,
+  opts?: { contactName?: string; users?: UserLabelMap },
+): Task {
+  return {
+    id: row.id,
+    title: row.title,
+    notes: row.notes,
+    status: row.status as TaskStatus,
+    priority: row.priority as TaskPriority,
+    dueAt: iso(row.dueAt),
+    contactId: row.contactId,
+    contactName: opts?.contactName ?? "",
+    assigneeId: row.assigneeId,
+    assigneeName: row.assigneeId ? labelForUserId(opts?.users, row.assigneeId) : "",
+    completedAt: iso(row.completedAt),
+    createdAt: iso(row.createdAt) ?? "",
   }
 }
 
