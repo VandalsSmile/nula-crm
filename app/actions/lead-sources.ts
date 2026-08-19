@@ -110,7 +110,9 @@ export async function setApiRequireKey(require: boolean): Promise<LeadSourceInfo
 }
 
 export async function getLeadSources(): Promise<LeadSourceInfo[]> {
-  const { workspaceId } = await getActingUser()
+  // Admin-only: the returned rows include signing secrets and API keys, which
+  // Members must not be able to read.
+  const { workspaceId } = await requireRole("Admin")
   const rows = await getLeadSourcesForWorkspace(workspaceId)
   return rows.map(toInfo)
 }
