@@ -24,6 +24,16 @@ export function RichTextEditor({
 }) {
   const ref = useRef<HTMLDivElement>(null)
 
+  // Wrap typed lines in <p> blocks so block-level commands (headings) apply
+  // reliably — otherwise the first, unwrapped line can't be turned into a heading.
+  useEffect(() => {
+    try {
+      document.execCommand("defaultParagraphSeparator", false, "p")
+    } catch {
+      // not supported — headings still work once the caret is inside a block
+    }
+  }, [])
+
   // Sync external value into the DOM only when it actually differs, so typing
   // doesn't reset the caret to the start.
   useEffect(() => {
@@ -35,6 +45,26 @@ export function RichTextEditor({
     ref.current?.focus()
     document.execCommand(command, false, arg)
     if (ref.current) onChange(ref.current.innerHTML)
+  }
+
+  /**
+   * Toggle an H2 heading on the current line. `formatBlock` with a bare/unwrapped
+   * first line is unreliable across browsers, so if it doesn't take we wrap the
+   * caret's block manually.
+   */
+  function toggleHeading() {
+    const el = ref.current
+    if (!el) return
+    el.focus()
+    const before = el.innerHTML
+    document.execCommand("formatBlock", false, "H2")
+    if (el.innerHTML === before) {
+      // Fallback: no block was converted (e.g. bare text node) — ensure a block
+      // exists first, then retry.
+      document.execCommand("formatBlock", false, "P")
+      document.execCommand("formatBlock", false, "H2")
+    }
+    onChange(el.innerHTML)
   }
 
   function addLink() {
@@ -63,7 +93,7 @@ export function RichTextEditor({
           <Underline className="size-4" />
         </button>
         <span className="mx-1 h-5 w-px bg-border" />
-        <button type="button" className={btn} onMouseDown={keepSelection} onClick={() => exec("formatBlock", "<h2>")} aria-label="Heading">
+        <button type="button" className={btn} onMouseDown={keepSelection} onClick={toggleHeading} aria-label="Heading">
           <Heading2 className="size-4" />
         </button>
         <button type="button" className={btn} onMouseDown={keepSelection} onClick={() => exec("insertUnorderedList")} aria-label="Bulleted list">
