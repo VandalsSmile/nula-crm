@@ -43,6 +43,8 @@ export type IntelligenceSettingsInfo = {
   hasCallbackSecret: boolean
   autoEnrichOnIntake: boolean
   platformConfigured: boolean
+  /** The URL the user pastes into Clay's HTTP API column to return results. */
+  callbackUrl: string
 }
 
 export async function getIntelligenceSettings(): Promise<IntelligenceSettingsInfo> {
@@ -63,6 +65,43 @@ export async function getIntelligenceSettings(): Promise<IntelligenceSettingsInf
       Boolean(row?.callbackSecret?.trim()) || Boolean(process.env.CLAY_CALLBACK_SECRET?.trim()),
     autoEnrichOnIntake: row?.autoEnrichOnIntake ?? false,
     platformConfigured: Boolean(process.env.CLAY_WEBHOOK_URL?.trim()),
+    callbackUrl: `${appOrigin(await headers())}/api/webhooks/clay`,
+  }
+}
+
+/**
+ * Send a sample record to the configured Clay table to confirm Nula can reach
+ * it. This verifies the outbound leg; the return leg (Clay's HTTP API column
+ * posting back to the callback URL) is confirmed by running a real enrichment.
+ */
+export async function testIntelligenceConnection(): Promise<{ ok: boolean; message: string }> {
+  const { workspaceId } = await requireRole("Admin")
+  const config = await getClayConfig(workspaceId)
+  if (!config.configured) {
+    return {
+      ok: false,
+      message:
+        "No webhook URL saved yet. Paste your Clay table's webhook URL above and save first.",
+    }
+  }
+  const callbackUrl = `${appOrigin(await headers())}/api/webhooks/clay`
+  try {
+    await submitToClay(config, {
+      correlationId: `test_${randomId("t")}`,
+      callbackUrl,
+      subjectType: "contact",
+      firstName: "Nula",
+      lastName: "Connection Test",
+      companyName: "Nula Connection Test",
+      email: "test@example.com",
+    })
+    return {
+      ok: true,
+      message:
+        "Success — Nula reached your Clay table. Look for a new “Nula Connection Test” row in Clay, then make sure your HTTP API column posts back to the callback URL.",
+    }
+  } catch (err) {
+    return { ok: false, message: err instanceof Error ? err.message : "Could not reach that URL." }
   }
 }
 
