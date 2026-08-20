@@ -17,6 +17,26 @@ export type BusinessTypeId = (typeof BUSINESS_TYPES)[number]["id"]
 /** Industry-neutral fallback used when no business type is chosen. */
 export const DEFAULT_BUSINESS_TYPE: BusinessTypeId = "general"
 
+/** Whether a workspace sells to businesses, consumers, or both. */
+export type CompanyModel = "b2b" | "b2c" | "both"
+
+/**
+ * Infer a B2B/B2C hint from the chosen vertical. Drives *promotion* of the B2B
+ * Intelligence add-on only (never a hard block) — B2B firmographic enrichment is
+ * valuable for B2B sellers and largely irrelevant to a pure B2C shop.
+ */
+export function defaultCompanyModel(businessType: string | null | undefined): CompanyModel {
+  switch (businessType) {
+    case "b2b":
+    case "professional":
+      return "b2b"
+    case "general":
+      return "both"
+    default:
+      return "b2c"
+  }
+}
+
 export const DEFAULT_GROUPS: Record<BusinessTypeId, string[]> = {
   general: [
     "New Leads",

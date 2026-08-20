@@ -119,7 +119,7 @@ export async function consumeEnrichmentCredit(
   if (!row || !isActiveStatus(row.status, row.currentPeriodEnd)) {
     throw new Error(MODULE_DISABLED_MESSAGE)
   }
-  const { used, limit, remaining, needsReset } = computeCredits(row)
+  const { used, remaining, needsReset } = computeCredits(row)
   if (remaining <= 0) throw new Error(CREDITS_EXHAUSTED_MESSAGE)
 
   await db

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useState } from "react"
-import { Check, Sparkles } from "lucide-react"
+import { BrainCircuit, Check, Sparkles } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -156,6 +156,38 @@ export function MarketingPricing() {
             AI is included with a generous monthly allowance pooled across your team. If you ever
             exceed it, Nula falls back to its non-AI mode — never a surprise bill.
           </p>
+        </div>
+      </section>
+
+      {/* Add-ons */}
+      <section className="px-4 pb-4 md:px-6">
+        <div className="mx-auto max-w-lg">
+          <div className="rounded-3xl border border-nula-violet/15 bg-white p-7 shadow-sm">
+            <div className="flex items-start gap-3">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-nula-violet/10 text-nula-violet">
+                <BrainCircuit className="size-5" />
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-semibold text-nula-ink">B2B Intelligence</p>
+                  <span className="rounded-full bg-nula-violet/10 px-2.5 py-0.5 text-xs font-medium text-nula-violet">
+                    Add-on · $49/mo
+                  </span>
+                </div>
+                <p className="mt-1.5 text-sm leading-relaxed text-nula-ink/65">
+                  Optional for B2B sellers: one-click enrichment that fills in industry, company
+                  size, revenue, and title, scores fit, and recommends the next step. 250
+                  enrichments/month included.
+                </p>
+                <Link
+                  href={APP_ROUTES.b2bIntelligence}
+                  className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-nula-violet hover:underline"
+                >
+                  Learn more →
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 

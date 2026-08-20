@@ -66,6 +66,18 @@ export function mapCompany(row: CompanyRow, contactCount = 0): Company {
     zip: row.zip,
     notes: row.notes,
     contactCount,
+    industry: row.industry,
+    subIndustry: row.subIndustry,
+    employeeCount: row.employeeCount,
+    revenueEstimate: row.revenueEstimate,
+    companySize: row.companySize,
+    companyType: row.companyType,
+    linkedinUrl: row.linkedinUrl,
+    description: row.description,
+    techStack: row.techStack,
+    fitScore: row.fitScore,
+    enrichedAt: iso(row.enrichedAt),
+    enrichmentStatus: row.enrichmentStatus,
     createdAt: iso(row.createdAt) ?? "",
   }
 }

@@ -140,7 +140,7 @@ async function runEnrichment(
   const table = subjectType === "contact" ? contacts : companies
   await db.update(table).set({ enrichmentStatus: "pending" }).where(eq(table.id, subjectId))
 
-  const module = await getModuleState(MODULE_IDS.b2bIntelligence)
+  const moduleState = await getModuleState(MODULE_IDS.b2bIntelligence)
 
   if (config.configured) {
     await submitToClay(config, {
@@ -150,7 +150,7 @@ async function runEnrichment(
       ...subject,
     })
     revalidateSubject(subjectType, subjectId)
-    return { status: "pending", creditsRemaining: module.creditsRemaining }
+    return { status: "pending", creditsRemaining: moduleState.creditsRemaining }
   }
 
   // Dev/no-Clay fallback: synthesize a plausible result and process it inline so
@@ -158,7 +158,7 @@ async function runEnrichment(
   const normalized: NormalizedEnrichment = mockEnrichment(subject)
   await processEnrichmentResult(run!, { mock: true, ...normalized } as Record<string, unknown>, normalized)
   revalidateSubject(subjectType, subjectId)
-  return { status: "enriched", creditsRemaining: module.creditsRemaining }
+  return { status: "enriched", creditsRemaining: moduleState.creditsRemaining }
 }
 
 function revalidateSubject(subjectType: EnrichmentSubjectType, subjectId: string) {
@@ -255,7 +255,7 @@ export async function getEnrichmentView(
     .orderBy(desc(enrichmentRuns.requestedAt))
     .limit(1)
 
-  const module = await getModuleState(MODULE_IDS.b2bIntelligence)
+  const moduleState = await getModuleState(MODULE_IDS.b2bIntelligence)
   if (!run) return null
 
   const feedbackRows = await db
@@ -298,7 +298,7 @@ export async function getEnrichmentView(
     recommendation,
     fields: viewFields(run.normalized),
     feedback: feedbackRows.map((r) => r.signal as FeedbackSignal),
-    creditsRemaining: module.creditsRemaining,
+    creditsRemaining: moduleState.creditsRemaining,
   }
 }
 

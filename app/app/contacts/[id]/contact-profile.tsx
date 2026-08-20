@@ -31,6 +31,8 @@ import {
 import { addContactNote } from "@/app/actions/activities"
 import { deleteContact } from "@/app/actions/contacts"
 import { deleteDeal } from "@/app/actions/deals"
+import { NulaIntelligenceCard } from "@/components/enrichment/nula-intelligence-card"
+import { enrichContact, type EnrichmentView } from "@/app/actions/enrichment"
 import { formatDateTime } from "@/lib/format"
 import { formatRevenue, type Activity, type Booking, type Contact, type Deal, type Group, type Tag, type Task } from "@/lib/crm-types"
 import { APP_ROUTES, companyPath } from "@/lib/routes"
@@ -43,6 +45,8 @@ export function ContactProfile({
   bookings,
   allTags,
   allGroups,
+  intelligenceEnabled = false,
+  enrichment = null,
 }: {
   contact: Contact
   activities: Activity[]
@@ -51,6 +55,8 @@ export function ContactProfile({
   bookings: Booking[]
   allTags: Tag[]
   allGroups: Group[]
+  intelligenceEnabled?: boolean
+  enrichment?: EnrichmentView | null
 }) {
   const router = useRouter()
   const [editOpen, setEditOpen] = useState(false)
@@ -61,7 +67,25 @@ export function ContactProfile({
   const [bookingOpen, setBookingOpen] = useState(false)
   const [editDeal, setEditDeal] = useState<Deal | null>(null)
   const [note, setNote] = useState("")
+  const [enrichBusy, setEnrichBusy] = useState(false)
   const [pending, startTransition] = useTransition()
+
+  async function handleEnrich() {
+    setEnrichBusy(true)
+    try {
+      const res = await enrichContact(contact.id)
+      toast.success(
+        res.status === "enriched"
+          ? "Enriched with Nula Intelligence"
+          : "Enrichment started — results will appear shortly",
+      )
+      router.refresh()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not enrich")
+    } finally {
+      setEnrichBusy(false)
+    }
+  }
 
   async function handleDelete() {
     await deleteContact(contact.id)
@@ -124,6 +148,12 @@ export function ContactProfile({
             <ArrowLeft data-icon="inline-start" />
             Back
           </Button>
+          {intelligenceEnabled ? (
+            <Button variant="outline" onClick={handleEnrich} disabled={enrichBusy}>
+              <Sparkles data-icon="inline-start" />
+              {contact.enrichmentStatus === "enriched" ? "Re-enrich" : "Enrich"}
+            </Button>
+          ) : null}
           <Button variant="outline" onClick={() => setPurchaseOpen(true)}>
             <ShoppingBag data-icon="inline-start" />
             Record purchase
@@ -139,7 +169,9 @@ export function ContactProfile({
         </div>
       </div>
 
-      {contact.aiSummary || contact.recommendedNextAction ? (
+      {intelligenceEnabled ? (
+        <NulaIntelligenceCard subjectType="contact" subjectId={contact.id} view={enrichment} />
+      ) : contact.aiSummary || contact.recommendedNextAction ? (
         <Card className="border-primary/20 bg-primary/5">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">

@@ -170,6 +170,19 @@ export type Company = {
   zip: string
   notes: string
   contactCount: number
+  // Nula Intelligence (enrichment)
+  industry: string
+  subIndustry: string
+  employeeCount: number
+  revenueEstimate: string
+  companySize: string
+  companyType: string
+  linkedinUrl: string
+  description: string
+  techStack: string
+  fitScore: number
+  enrichedAt: string | null
+  enrichmentStatus: string
   createdAt: string
 }
 

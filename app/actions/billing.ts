@@ -22,6 +22,7 @@ import {
   planByPriceId,
 } from "@/lib/billing/plans"
 import { getModuleState, MODULE_IDS, type ModuleState } from "@/lib/modules"
+import { defaultCompanyModel } from "@/lib/crm-defaults"
 import { clearAddonSubscription, enableAddonLocally } from "@/lib/billing/addons"
 import { and } from "drizzle-orm"
 
@@ -141,14 +142,20 @@ export type AddonState = {
 export async function getAddonState(): Promise<AddonState> {
   const { workspaceId, role } = await getActingUser()
   const [row] = await db
-    .select({ companyModel: workspaceSettings.companyModel })
+    .select({
+      companyModel: workspaceSettings.companyModel,
+      businessType: workspaceSettings.businessType,
+    })
     .from(workspaceSettings)
     .where(eq(workspaceSettings.workspaceId, workspaceId))
     .limit(1)
 
+  // Explicit choice wins; otherwise infer a promotion hint from the vertical.
+  const companyModel = row?.companyModel?.trim() || defaultCompanyModel(row?.businessType)
+
   return {
     module: await getModuleState(MODULE_IDS.b2bIntelligence),
-    companyModel: row?.companyModel ?? "",
+    companyModel,
     configured: isBillingConfigured(),
     canManage: isBillingManager(role),
     plans: availableAddons(MODULE_IDS.b2bIntelligence).map((a) => ({

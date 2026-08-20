@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Building2, Globe, Mail, MapPin, MapPinned, Merge, Pencil, Phone, Plus, Trash2, UserPlus, UserRound } from "lucide-react"
+import { Building2, Globe, Mail, MapPin, MapPinned, Merge, Pencil, Phone, Plus, Sparkles, Trash2, UserPlus, UserRound } from "lucide-react"
 import { toast } from "sonner"
 
 import { PageHeader } from "@/components/page-header"
@@ -32,6 +32,8 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { deleteCompany } from "@/app/actions/companies"
+import { NulaIntelligenceCard } from "@/components/enrichment/nula-intelligence-card"
+import { enrichCompany, type EnrichmentView } from "@/app/actions/enrichment"
 import { APP_ROUTES, contactPath } from "@/lib/routes"
 import type { Company, Contact, Location } from "@/lib/crm-types"
 
@@ -39,12 +41,34 @@ export function CompanyDetailView({
   company,
   contacts,
   locations,
+  intelligenceEnabled = false,
+  enrichment = null,
 }: {
   company: Company
   contacts: Contact[]
   locations: Location[]
+  intelligenceEnabled?: boolean
+  enrichment?: EnrichmentView | null
 }) {
   const router = useRouter()
+  const [enrichBusy, setEnrichBusy] = useState(false)
+
+  async function handleEnrich() {
+    setEnrichBusy(true)
+    try {
+      const res = await enrichCompany(company.id)
+      toast.success(
+        res.status === "enriched"
+          ? "Enriched with Nula Intelligence"
+          : "Enrichment started — results will appear shortly",
+      )
+      router.refresh()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not enrich")
+    } finally {
+      setEnrichBusy(false)
+    }
+  }
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [mergeOpen, setMergeOpen] = useState(false)
@@ -151,6 +175,12 @@ export function CompanyDetailView({
         description={`${company.contactCount} ${company.contactCount === 1 ? "contact" : "contacts"}`}
         actions={
           <div className="flex gap-2">
+            {intelligenceEnabled ? (
+              <Button variant="outline" onClick={handleEnrich} disabled={enrichBusy}>
+                <Sparkles data-icon="inline-start" />
+                {company.enrichmentStatus === "enriched" ? "Re-enrich" : "Enrich"}
+              </Button>
+            ) : null}
             <Button variant="outline" onClick={() => setEditOpen(true)}>
               <Pencil data-icon="inline-start" />
               Edit
@@ -166,6 +196,10 @@ export function CompanyDetailView({
           </div>
         }
       />
+
+      {intelligenceEnabled ? (
+        <NulaIntelligenceCard subjectType="company" subjectId={company.id} view={enrichment} />
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="flex flex-col gap-6 lg:col-span-1">
