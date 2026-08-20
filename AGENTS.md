@@ -19,6 +19,14 @@ This is a **standalone workspace** for `VandalsSmile/nula-crm` — separate from
 
 Full environment setup, secrets, and migration notes: `docs/cursor-cloud-workspace.md`
 
+### Releasing / version badge
+
+The in-app version badge reads `version.json` (displayed as `v{version}` via `lib/version.ts`). It only changes when `version.json` is committed — a Vercel build cannot persist a bump. **So every production deploy must bump + commit the version**, or the badge appears frozen:
+
+1. After merging to `master` and before `vercel --prod`, run `npm run release` (bumps the minor in `version.json`, e.g. `1.150` → `1.151`).
+2. Commit it: `git commit -am "chore: release v<new>"` and push.
+3. Then deploy. The deployed build now shows the new number.
+
 ### Local dev database (when no `DATABASE_URL` secret is provided)
 
 When no remote Neon `DATABASE_URL` secret is available, this VM runs a local PostgreSQL 16 instead. The Postgres install, the `nula_crm` database (user `nula`/`nula`), applied migrations, and `.env.local` all persist in the VM snapshot, so future agents normally only need to (re)start the DB.
