@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/page-header"
 import { StatCard } from "@/components/stat-card"
 import { ActivityFeed } from "@/components/activity-feed"
 import { AddContactDialog } from "@/components/add-contact-dialog"
+import { GettingStartedCard } from "@/components/getting-started-card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -44,6 +45,10 @@ export function DashboardView({
       />
 
       <AddContactDialog open={addOpen} onOpenChange={setAddOpen} />
+
+      {stats.totalContacts < 10 ? (
+        <GettingStartedCard hasContacts={stats.totalContacts > 0} />
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="New leads (last 7 days)" value={stats.newLeads} icon={UserPlus} tone="primary" />
