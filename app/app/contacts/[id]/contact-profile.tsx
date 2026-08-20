@@ -12,6 +12,7 @@ import { EditContactDialog } from "@/components/edit-contact-dialog"
 import { ContactRelationsEditor } from "@/components/contact-relations-editor"
 import { DealFormDialog } from "@/components/deal-form-dialog"
 import { TaskFormDialog } from "@/components/task-form-dialog"
+import { BookingFormDialog } from "@/components/booking-form-dialog"
 import { RecordPurchaseDialog } from "@/components/record-purchase-dialog"
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog"
 import { Button } from "@/components/ui/button"
@@ -57,6 +58,7 @@ export function ContactProfile({
   const [dealOpen, setDealOpen] = useState(false)
   const [purchaseOpen, setPurchaseOpen] = useState(false)
   const [taskOpen, setTaskOpen] = useState(false)
+  const [bookingOpen, setBookingOpen] = useState(false)
   const [editDeal, setEditDeal] = useState<Deal | null>(null)
   const [note, setNote] = useState("")
   const [pending, startTransition] = useTransition()
@@ -314,16 +316,20 @@ export function ContactProfile({
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex-row items-center justify-between gap-4">
           <CardTitle className="flex items-center gap-2">
             <CalendarClock className="size-4 text-muted-foreground" />
             Appointments
           </CardTitle>
+          <Button size="sm" variant="outline" onClick={() => setBookingOpen(true)}>
+            <Plus data-icon="inline-start" />
+            Add appointment
+          </Button>
         </CardHeader>
         <CardContent>
           {bookings.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No appointments yet. Booked appointments from your scheduling tool appear here.
+              No appointments yet. Add one, or connect a scheduling tool (Settings → Lead sources).
             </p>
           ) : (
             <ul className="divide-y divide-border">
@@ -376,6 +382,7 @@ export function ContactProfile({
       <EditContactDialog open={editOpen} onOpenChange={setEditOpen} contact={contact} />
       <RecordPurchaseDialog open={purchaseOpen} onOpenChange={setPurchaseOpen} contactId={contact.id} />
       <TaskFormDialog open={taskOpen} onOpenChange={setTaskOpen} defaultContactId={contact.id} />
+      <BookingFormDialog open={bookingOpen} onOpenChange={setBookingOpen} defaultContactId={contact.id} />
       <DealFormDialog
         open={dealOpen}
         onOpenChange={(open) => { setDealOpen(open); if (!open) setEditDeal(null) }}

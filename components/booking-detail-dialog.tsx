@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { CalendarClock, MapPin, User } from "lucide-react"
+import { CalendarClock, MapPin, Pencil, Trash2, User } from "lucide-react"
 
 import {
   Dialog,
@@ -18,9 +18,13 @@ import type { Booking } from "@/lib/crm-types"
 export function BookingDetailDialog({
   booking,
   onOpenChange,
+  onEdit,
+  onDelete,
 }: {
   booking: Booking | null
   onOpenChange: (open: boolean) => void
+  onEdit?: (booking: Booking) => void
+  onDelete?: (booking: Booking) => void
 }) {
   return (
     <Dialog open={!!booking} onOpenChange={onOpenChange}>
@@ -59,16 +63,34 @@ export function BookingDetailDialog({
               {booking.source ? (
                 <p className="text-xs text-muted-foreground">Source: {booking.source}</p>
               ) : null}
-              {booking.contactId ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-1 w-fit"
-                  render={<Link href={contactPath(booking.contactId)} />}
-                >
-                  View contact
-                </Button>
-              ) : null}
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                {booking.contactId ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    render={<Link href={contactPath(booking.contactId)} />}
+                  >
+                    View contact
+                  </Button>
+                ) : null}
+                {onEdit ? (
+                  <Button variant="outline" size="sm" onClick={() => onEdit(booking)}>
+                    <Pencil data-icon="inline-start" />
+                    Edit
+                  </Button>
+                ) : null}
+                {onDelete ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive"
+                    onClick={() => onDelete(booking)}
+                  >
+                    <Trash2 data-icon="inline-start" />
+                    Delete
+                  </Button>
+                ) : null}
+              </div>
             </div>
           </>
         ) : null}

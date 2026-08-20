@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import {
   addMonths,
   eachDayOfInterval,
@@ -13,13 +14,23 @@ import {
   startOfMonth,
   startOfWeek,
 } from "date-fns"
-import { CalendarClock, CalendarDays, ChevronLeft, ChevronRight, Plus } from "lucide-react"
+import { toast } from "sonner"
+import { CalendarClock, CalendarDays, ChevronLeft, ChevronRight, ListChecks, Plus } from "lucide-react"
 
 import { PageHeader } from "@/components/page-header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { TaskFormDialog } from "@/components/task-form-dialog"
 import { BookingDetailDialog } from "@/components/booking-detail-dialog"
+import { BookingFormDialog } from "@/components/booking-form-dialog"
+import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog"
+import { deleteBooking } from "@/app/actions/bookings"
 import { APP_ROUTES } from "@/lib/routes"
 import { cn } from "@/lib/utils"
 import type { Booking, Task } from "@/lib/crm-types"
@@ -35,11 +46,16 @@ function priorityDot(task: Task, overdue: boolean): string {
 }
 
 export function CalendarView({ tasks, bookings }: { tasks: Task[]; bookings: Booking[] }) {
+  const router = useRouter()
   const [monthStart, setMonthStart] = useState(() => startOfMonth(new Date()))
   const [editTask, setEditTask] = useState<Task | null>(null)
   const [openBooking, setOpenBooking] = useState<Booking | null>(null)
   const [newOpen, setNewOpen] = useState(false)
   const [newDueAt, setNewDueAt] = useState<string | null>(null)
+  const [bookingFormOpen, setBookingFormOpen] = useState(false)
+  const [editBooking, setEditBooking] = useState<Booking | null>(null)
+  const [newBookingAt, setNewBookingAt] = useState<string | null>(null)
+  const [deleteBookingTarget, setDeleteBookingTarget] = useState<Booking | null>(null)
 
   const days = useMemo(() => {
     const gridStart = startOfWeek(monthStart)
@@ -77,11 +93,39 @@ export function CalendarView({ tasks, bookings }: { tasks: Task[]; bookings: Boo
 
   const [now] = useState(() => Date.now())
 
-  function openNewOn(day: Date) {
+  function dayAt9(day: Date): string {
     const d = new Date(day)
     d.setHours(9, 0, 0, 0)
-    setNewDueAt(d.toISOString())
+    return d.toISOString()
+  }
+
+  function openNewTaskOn(day: Date) {
+    setNewDueAt(dayAt9(day))
     setNewOpen(true)
+  }
+
+  function openNewBookingOn(day: Date) {
+    setEditBooking(null)
+    setNewBookingAt(dayAt9(day))
+    setBookingFormOpen(true)
+  }
+
+  function openNewBooking() {
+    setEditBooking(null)
+    setNewBookingAt(null)
+    setBookingFormOpen(true)
+  }
+
+  function handleDeleteBooking(booking: Booking) {
+    void (async () => {
+      try {
+        await deleteBooking(booking.id)
+        toast.success("Appointment deleted")
+        router.refresh()
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Could not delete appointment")
+      }
+    })()
   }
 
   return (
@@ -90,15 +134,21 @@ export function CalendarView({ tasks, bookings }: { tasks: Task[]; bookings: Boo
         title="Calendar"
         description="Your tasks and follow-ups, by day."
         actions={
-          <Button
-            onClick={() => {
-              setNewDueAt(null)
-              setNewOpen(true)
-            }}
-          >
-            <Plus data-icon="inline-start" />
-            New task
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" onClick={openNewBooking}>
+              <CalendarClock data-icon="inline-start" />
+              New appointment
+            </Button>
+            <Button
+              onClick={() => {
+                setNewDueAt(null)
+                setNewOpen(true)
+              }}
+            >
+              <Plus data-icon="inline-start" />
+              New task
+            </Button>
+          </div>
         }
       />
 
@@ -167,17 +217,33 @@ export function CalendarView({ tasks, bookings }: { tasks: Task[]; bookings: Boo
                   )}
                 >
                   <div className="flex items-center justify-between">
-                    <button
-                      type="button"
-                      onClick={() => openNewOn(day)}
-                      className={cn(
-                        "flex size-6 items-center justify-center rounded-full text-xs hover:bg-muted",
-                        isToday(day) && "bg-nula-violet font-semibold text-white hover:bg-nula-violet/90",
-                      )}
-                      aria-label={`Add task on ${format(day, "PP")}`}
-                    >
-                      {format(day, "d")}
-                    </button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        render={
+                          <button
+                            type="button"
+                            className={cn(
+                              "flex size-6 items-center justify-center rounded-full text-xs hover:bg-muted",
+                              isToday(day) &&
+                                "bg-nula-violet font-semibold text-white hover:bg-nula-violet/90",
+                            )}
+                            aria-label={`Add on ${format(day, "PP")}`}
+                          />
+                        }
+                      >
+                        {format(day, "d")}
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start">
+                        <DropdownMenuItem onClick={() => openNewTaskOn(day)}>
+                          <ListChecks data-icon="inline-start" />
+                          New task
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openNewBookingOn(day)}>
+                          <CalendarClock data-icon="inline-start" />
+                          New appointment
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                   <div className="mt-1 flex flex-col gap-1">
                     {shownBookings.map((b) => (
@@ -238,7 +304,38 @@ export function CalendarView({ tasks, bookings }: { tasks: Task[]; bookings: Boo
         onOpenChange={(open) => !open && setEditTask(null)}
         task={editTask}
       />
-      <BookingDetailDialog booking={openBooking} onOpenChange={(open) => !open && setOpenBooking(null)} />
+      <BookingDetailDialog
+        booking={openBooking}
+        onOpenChange={(open) => !open && setOpenBooking(null)}
+        onEdit={(b) => {
+          setOpenBooking(null)
+          setEditBooking(b)
+          setNewBookingAt(null)
+          setBookingFormOpen(true)
+        }}
+        onDelete={(b) => {
+          setOpenBooking(null)
+          setDeleteBookingTarget(b)
+        }}
+      />
+      <BookingFormDialog
+        open={bookingFormOpen}
+        onOpenChange={(open) => {
+          setBookingFormOpen(open)
+          if (!open) setEditBooking(null)
+        }}
+        booking={editBooking}
+        defaultStartAt={newBookingAt}
+      />
+      <ConfirmDeleteDialog
+        open={!!deleteBookingTarget}
+        onOpenChange={(open) => !open && setDeleteBookingTarget(null)}
+        title="Delete appointment?"
+        description={`Remove "${deleteBookingTarget?.title}"?`}
+        onConfirm={async () => {
+          if (deleteBookingTarget) handleDeleteBooking(deleteBookingTarget)
+        }}
+      />
     </div>
   )
 }
