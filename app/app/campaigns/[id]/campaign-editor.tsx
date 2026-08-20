@@ -36,7 +36,7 @@ import {
   updateCampaign,
 } from "@/app/actions/campaigns"
 import { APP_ROUTES } from "@/lib/routes"
-import type { Campaign, CampaignStep, Group } from "@/lib/crm-types"
+import { campaignStatusLabel, type Campaign, type CampaignStep, type Group } from "@/lib/crm-types"
 
 type Editable = {
   subject: string
@@ -212,7 +212,7 @@ export function CampaignEditor({ campaign, groups }: { campaign: Campaign; group
               <Badge variant={isSequence ? "default" : "secondary"}>
                 {isSequence ? "Sequence" : "One-time email"}
               </Badge>
-              <Badge variant="outline">{campaign.status}</Badge>
+              <Badge variant="outline">{campaignStatusLabel(campaign.status)}</Badge>
             </div>
             <p className="text-xs text-muted-foreground">
               {isSequence

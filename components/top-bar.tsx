@@ -22,9 +22,10 @@ const titles: Record<string, string> = {
   [APP_ROUTES.campaigns]: "Campaigns",
   [APP_ROUTES.inbox]: "Inbox",
   [APP_ROUTES.automations]: "Automations",
-  [APP_ROUTES.ai]: "AI Command Center",
+  [APP_ROUTES.ai]: "AI Assistant",
   [APP_ROUTES.reports]: "Reports",
   [APP_ROUTES.settings]: "Settings",
+  [APP_ROUTES.help]: "Help & docs",
 }
 
 function deriveTitle(pathname: string) {

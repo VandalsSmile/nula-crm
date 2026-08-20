@@ -46,7 +46,7 @@ export function DashboardView({
       <AddContactDialog open={addOpen} onOpenChange={setAddOpen} />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="New leads (7d)" value={stats.newLeads} icon={UserPlus} tone="primary" />
+        <StatCard label="New leads (last 7 days)" value={stats.newLeads} icon={UserPlus} tone="primary" />
         <StatCard label="Hot leads" value={stats.hotLeads} icon={Flame} tone="warning" />
         <StatCard label="Needs follow-up" value={stats.needsFollowUp} icon={Clock} tone="primary" />
         <StatCard label="Total contacts" value={stats.totalContacts} icon={Users} tone="primary" />
@@ -107,7 +107,7 @@ export function DashboardView({
               </div>
             </div>
             <Button variant="outline" render={<Link href={APP_ROUTES.ai} />}>
-              Open AI Command Center
+              Open AI Assistant
             </Button>
           </CardContent>
         </Card>
@@ -120,7 +120,15 @@ export function DashboardView({
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
             {contacts.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No contacts yet.</p>
+              <div className="flex flex-col items-start gap-3 py-2">
+                <p className="text-sm text-muted-foreground">
+                  No contacts yet. Add your first one to get started.
+                </p>
+                <Button size="sm" onClick={() => setAddOpen(true)}>
+                  <UserPlus data-icon="inline-start" />
+                  Add contact
+                </Button>
+              </div>
             ) : (
               contacts.slice(0, 6).map((c) => (
                 <Link

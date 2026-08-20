@@ -13,9 +13,9 @@ import type { AiActionPreview } from "@/lib/crm-types"
 
 const SUGGESTIONS = [
   "Find duplicate contacts",
-  "Normalize all tags",
-  "Create a reactivation campaign for customers who haven't bought in 90 days",
-  "Show me leads who never booked",
+  "Clean up duplicate tags",
+  "Create a win-back campaign for customers who haven't bought in 90 days",
+  "Show me leads who never replied",
 ]
 
 export function AiCommandBar({ className }: { className?: string }) {
@@ -68,7 +68,7 @@ export function AiCommandBar({ className }: { className?: string }) {
             <Input
               value={command}
               onChange={(e) => setCommand(e.target.value)}
-              placeholder="e.g. Move everyone who bought NAD into NAD Buyers group"
+              placeholder="e.g. Email customers who haven't bought in 90 days"
               disabled={loading}
               className="flex-1"
             />

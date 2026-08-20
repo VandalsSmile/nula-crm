@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { ContactSelect } from "@/components/contact-select"
-import { OwnerSelect } from "@/components/owner-select"
+import { AssigneeField } from "@/components/assignee-field"
 import { createTask, updateTask } from "@/app/actions/tasks"
 import { TASK_PRIORITIES, type Task, type TaskPriority } from "@/lib/crm-types"
 
@@ -168,13 +168,11 @@ export function TaskFormDialog({
               onChange={(contactId) => setForm((f) => ({ ...f, contactId }))}
             />
           </Field>
-          <Field>
-            <FieldLabel>Assignee</FieldLabel>
-            <OwnerSelect
-              value={form.assigneeId}
-              onChange={(assigneeId) => setForm((f) => ({ ...f, assigneeId }))}
-            />
-          </Field>
+          <AssigneeField
+            label="Assignee"
+            value={form.assigneeId}
+            onChange={(assigneeId) => setForm((f) => ({ ...f, assigneeId }))}
+          />
           <Field>
             <FieldLabel>Notes</FieldLabel>
             <Textarea

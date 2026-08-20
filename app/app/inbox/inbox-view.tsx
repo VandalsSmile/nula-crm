@@ -73,8 +73,7 @@ export function InboxView({ conversations }: { conversations: InboxConversation[
       {conversations.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-sm text-muted-foreground">
-            No conversations yet. Inbound messages (from the messages webhook) and replies you send
-            will appear here.
+            No conversations yet. Emails you send to contacts, and their replies, will show up here.
           </CardContent>
         </Card>
       ) : (

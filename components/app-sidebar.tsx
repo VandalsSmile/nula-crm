@@ -65,7 +65,7 @@ const mainNav = [
   { title: "Campaigns", href: APP_ROUTES.campaigns, icon: Megaphone },
   { title: "Inbox", href: APP_ROUTES.inbox, icon: Inbox },
   { title: "Automations", href: APP_ROUTES.automations, icon: Zap },
-  { title: "AI Command Center", href: APP_ROUTES.ai, icon: Sparkles },
+  { title: "AI Assistant", href: APP_ROUTES.ai, icon: Sparkles },
   { title: "Reports", href: APP_ROUTES.reports, icon: BarChart3 },
   { title: "Help & docs", href: APP_ROUTES.help, icon: BookOpen },
   { title: "Settings", href: APP_ROUTES.settings, icon: Settings },
@@ -119,7 +119,7 @@ export function AppSidebar({
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
+          <SidebarGroupLabel>Your business</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainNav.map((item) => (

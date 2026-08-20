@@ -77,6 +77,20 @@ export type CampaignType = (typeof CAMPAIGN_TYPES)[number]
 export const CAMPAIGN_STATUSES = ["draft", "pending_approval", "scheduled", "active", "completed", "paused"] as const
 export type CampaignStatus = (typeof CAMPAIGN_STATUSES)[number]
 
+const CAMPAIGN_STATUS_LABELS: Record<string, string> = {
+  draft: "Draft",
+  pending_approval: "Pending approval",
+  scheduled: "Scheduled",
+  active: "Active",
+  completed: "Completed",
+  paused: "Paused",
+}
+
+/** Human-friendly campaign status label (avoids showing raw values like "pending_approval"). */
+export function campaignStatusLabel(status: string): string {
+  return CAMPAIGN_STATUS_LABELS[status] ?? status.replace(/_/g, " ")
+}
+
 export const ACTIVITY_TYPES = [
   "form_submitted",
   "email_opened",
