@@ -13,7 +13,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "db:migrate": "node scripts/migrate.mjs",
-    "db:bootstrap": "node scripts/bootstrap-invite.mjs"
+    "db:bootstrap": "node scripts/bootstrap-invite.mjs",
+    "release": "node scripts/bump-version.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
