@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { MoreHorizontal, Pencil, Plus, Search, Trash2, Upload } from "lucide-react"
+import { Download, MoreHorizontal, Pencil, Plus, Search, Trash2, Upload } from "lucide-react"
 import { toast } from "sonner"
 
 import { PageHeader } from "@/components/page-header"
@@ -38,7 +38,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { deleteContact } from "@/app/actions/contacts"
+import { deleteContact, exportContactsCsv } from "@/app/actions/contacts"
 import { Building2, Mail, Phone, UserRound } from "lucide-react"
 import { type Company, type Contact } from "@/lib/crm-types"
 import { useViewMode } from "@/hooks/use-view-mode"
@@ -69,6 +69,7 @@ export function ContactsView({
   }
   const [addOpen, setAddOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const [editContact, setEditContact] = useState<Contact | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Contact | null>(null)
   const [view, setView] = useViewMode("contacts")
@@ -82,6 +83,27 @@ export function ContactsView({
     return () => clearTimeout(handle)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, currentQuery])
+
+  async function handleExport() {
+    setExporting(true)
+    try {
+      const csv = await exportContactsCsv()
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = url
+      link.download = `nula-contacts-${new Date().toISOString().slice(0, 10)}.csv`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+      toast.success("Contacts exported")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not export contacts")
+    } finally {
+      setExporting(false)
+    }
+  }
 
   function handleDelete(contact: Contact) {
     startTransition(async () => {
@@ -107,6 +129,10 @@ export function ContactsView({
             <Button variant="outline" onClick={() => setImportOpen(true)}>
               <Upload data-icon="inline-start" />
               Import CSV
+            </Button>
+            <Button variant="outline" onClick={handleExport} disabled={exporting}>
+              <Download data-icon="inline-start" />
+              {exporting ? "Exporting…" : "Export CSV"}
             </Button>
             <Button onClick={() => setAddOpen(true)}>
               <Plus data-icon="inline-start" />

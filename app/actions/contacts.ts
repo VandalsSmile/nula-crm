@@ -364,6 +364,53 @@ export async function importContactsFromCsv(csvText: string): Promise<CsvImportR
   return { created, skipped, errors }
 }
 
+/** Quote a value for CSV: wrap in quotes and double any embedded quotes. */
+function csvCell(value: unknown): string {
+  const s = value == null ? "" : String(value)
+  return `"${s.replace(/"/g, '""')}"`
+}
+
+const EXPORT_COLUMNS = [
+  ["firstName", "First name"],
+  ["lastName", "Last name"],
+  ["companyName", "Company"],
+  ["email", "Email"],
+  ["phone", "Phone"],
+  ["websiteUrl", "Website"],
+  ["address", "Address"],
+  ["city", "City"],
+  ["state", "State"],
+  ["zip", "Zip"],
+  ["lifecycleStage", "Lifecycle stage"],
+  ["leadScore", "Lead score"],
+  ["source", "Source"],
+  ["productsPurchased", "Products purchased"],
+  ["totalRevenueCents", "Total revenue (cents)"],
+  ["notes", "Notes"],
+] as const
+
+/**
+ * Export every contact in the workspace as a CSV string (data portability).
+ * This is a READ, so it deliberately does NOT require an active plan — a lapsed
+ * workspace can still take its data with it.
+ */
+export async function exportContactsCsv(): Promise<string> {
+  const { scopeIds } = await getActingUser()
+  const rows = await db
+    .select()
+    .from(contacts)
+    .where(workspaceUserIdMatches(contacts.userId, scopeIds))
+    .orderBy(contacts.createdAt)
+
+  const header = EXPORT_COLUMNS.map(([, label]) => csvCell(label)).join(",")
+  const body = rows
+    .map((row) =>
+      EXPORT_COLUMNS.map(([key]) => csvCell((row as Record<string, unknown>)[key])).join(","),
+    )
+    .join("\n")
+  return `${header}\n${body}\n`
+}
+
 /** Minimal contact list for pickers (linking tasks/bookings). Read-only. */
 export async function listContactOptions(): Promise<{ id: string; name: string; email: string }[]> {
   const { scopeIds } = await getActingUser()
