@@ -289,8 +289,11 @@ export async function getEnrichmentView(
     summary = co?.description ?? ""
   }
 
+  // Normalize the run's lifecycle status to the view's vocabulary the card uses
+  // ("completed" run → "enriched" record).
+  const status = run.status === "completed" ? "enriched" : run.status
   return {
-    status: run.status,
+    status,
     enrichedAt: run.completedAt?.toISOString() ?? null,
     fitScore: run.fitScore,
     fitLabel: fitScoreLabel(run.fitScore),
