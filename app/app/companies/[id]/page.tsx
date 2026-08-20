@@ -4,6 +4,9 @@ import type { Metadata } from "next"
 import { getCompanyById, getContactsForCompany, getLocationsForCompany } from "@/lib/queries"
 import { appPageMetadata } from "@/lib/seo"
 import { companyPath } from "@/lib/routes"
+import { getWorkspaceId } from "@/lib/auth-helpers"
+import { isModuleEnabled, MODULE_IDS } from "@/lib/modules"
+import { getEnrichmentView } from "@/app/actions/enrichment"
 import { CompanyDetailView } from "./company-detail-view"
 
 export const dynamic = "force-dynamic"
@@ -27,12 +30,24 @@ export async function generateMetadata({
 
 export default async function CompanyDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const [company, contacts, locations] = await Promise.all([
+  const workspaceId = await getWorkspaceId()
+  const [company, contacts, locations, intelligenceEnabled] = await Promise.all([
     getCompanyById(id),
     getContactsForCompany(id),
     getLocationsForCompany(id),
+    isModuleEnabled(workspaceId, MODULE_IDS.b2bIntelligence),
   ])
   if (!company) notFound()
 
-  return <CompanyDetailView company={company} contacts={contacts} locations={locations} />
+  const enrichment = intelligenceEnabled ? await getEnrichmentView("company", id) : null
+
+  return (
+    <CompanyDetailView
+      company={company}
+      contacts={contacts}
+      locations={locations}
+      intelligenceEnabled={intelligenceEnabled}
+      enrichment={enrichment}
+    />
+  )
 }

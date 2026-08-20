@@ -66,7 +66,9 @@ export async function seedDefaultAutomations(workspaceId: string) {
       trigger: auto.trigger,
       action: auto.action,
       config: auto.config,
-      enabled: true,
+      // Automations ship OFF by default — the workspace opts in from the
+      // Automations page. Nothing auto-runs until a human turns it on.
+      enabled: false,
     })
   }
 }

@@ -146,6 +146,14 @@ export type Contact = {
   leadScore: number
   aiSummary: string
   recommendedNextAction: string
+  // Nula Intelligence (enrichment)
+  industry: string
+  title: string
+  seniority: string
+  linkedinUrl: string
+  fitScore: number
+  enrichedAt: string | null
+  enrichmentStatus: string
   tags: Tag[]
   groups: Group[]
   createdAt: string
@@ -162,6 +170,19 @@ export type Company = {
   zip: string
   notes: string
   contactCount: number
+  // Nula Intelligence (enrichment)
+  industry: string
+  subIndustry: string
+  employeeCount: number
+  revenueEstimate: string
+  companySize: string
+  companyType: string
+  linkedinUrl: string
+  description: string
+  techStack: string
+  fitScore: number
+  enrichedAt: string | null
+  enrichmentStatus: string
   createdAt: string
 }
 

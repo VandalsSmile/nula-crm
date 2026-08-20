@@ -69,7 +69,7 @@ export async function createAutomation(input: AutomationInput) {
       trigger: input.trigger,
       action: input.action,
       config: input.config ?? {},
-      enabled: input.enabled ?? true,
+      enabled: input.enabled ?? false,
     })
     .returning()
 

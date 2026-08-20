@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react"
 import { ChevronRight } from "lucide-react"
+import useSWR from "swr"
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PageHeader } from "@/components/page-header"
@@ -16,9 +17,20 @@ import { EmailSettings } from "@/components/settings/email-settings"
 import { EmailConnectionSettings } from "@/components/settings/email-connection-settings"
 import { RoutingRulesSettings } from "@/components/settings/routing-rules-settings"
 import { PlanSettings } from "@/components/settings/plan-settings"
+import { IntelligenceSettings } from "@/components/settings/intelligence-settings"
+import { getAddonState, type AddonState } from "@/app/actions/billing"
 import { useUrlTab } from "@/hooks/use-url-tab"
 
-const SETTINGS_TABS = ["profile", "security", "team", "workspace", "email", "leads", "plan"] as const
+const SETTINGS_TABS = [
+  "profile",
+  "security",
+  "team",
+  "workspace",
+  "email",
+  "leads",
+  "intelligence",
+  "plan",
+] as const
 type SettingsTab = (typeof SETTINGS_TABS)[number]
 
 /** Collapsible section for the Lead sources tab. */
@@ -44,6 +56,8 @@ function LeadSection({
 
 export function SettingsView() {
   const [tab, setTab] = useUrlTab("tab", SETTINGS_TABS, "profile")
+  const { data: addon } = useSWR<AddonState>("addon-state", () => getAddonState())
+  const intelligenceEnabled = Boolean(addon?.module.enabled)
 
   return (
     <div className="flex flex-col gap-6">
@@ -57,6 +71,7 @@ export function SettingsView() {
           <TabsTrigger value="workspace">Company</TabsTrigger>
           <TabsTrigger value="email">Email</TabsTrigger>
           <TabsTrigger value="leads">Lead sources</TabsTrigger>
+          {intelligenceEnabled ? <TabsTrigger value="intelligence">Intelligence</TabsTrigger> : null}
           <TabsTrigger value="plan">Plan</TabsTrigger>
         </TabsList>
 
@@ -98,6 +113,10 @@ export function SettingsView() {
           <LeadSection title="Lead sources">
             <LeadSourcesSettings />
           </LeadSection>
+        </TabsContent>
+
+        <TabsContent value="intelligence" className="mt-6" keepMounted>
+          <IntelligenceSettings />
         </TabsContent>
 
         <TabsContent value="plan" className="mt-6" keepMounted>

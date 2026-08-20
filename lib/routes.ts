@@ -22,6 +22,7 @@ export const APP_ROUTES = {
   onboarding: "/onboarding",
   faq: "/faq",
   pricing: "/pricing",
+  b2bIntelligence: "/b2b-intelligence",
   terms: "/terms",
   privacy: "/privacy",
 } as const

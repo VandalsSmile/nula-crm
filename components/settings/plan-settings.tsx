@@ -21,6 +21,7 @@ import { PLAN_FEATURES } from "@/lib/billing/plans"
 import { TRIAL_DAYS, type TrialStatus } from "@/lib/trial"
 import { isBillingManager } from "@/lib/roles"
 import { useSessionUser } from "@/lib/session-context"
+import { IntelligencePlanCard } from "@/components/settings/intelligence-plan-card"
 
 function formatDate(iso: string | null): string {
   if (!iso) return "—"
@@ -267,6 +268,8 @@ export function PlanSettings() {
           )}
         </CardContent>
       </Card>
+
+      <IntelligencePlanCard />
     </div>
   )
 }
