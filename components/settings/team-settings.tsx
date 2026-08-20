@@ -129,6 +129,15 @@ export function TeamSettings() {
     }
   }
 
+  function handleSendAnother() {
+    // Clear the displayed invite URL so the form is ready for a fresh invite.
+    setLastInvite(null)
+    setCopied(false)
+    setEmail("")
+    setRole("Member")
+    document.getElementById("invite-email")?.focus()
+  }
+
   function copyLink(url: string) {
     navigator.clipboard?.writeText(url)
     setCopied(true)
@@ -233,6 +242,16 @@ export function TeamSettings() {
                 Anyone with this link can join as {lastInvite.role}, so only share it with{" "}
                 {lastInvite.email}. It expires in 14 days.
               </FieldDescription>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="self-start"
+                onClick={handleSendAnother}
+              >
+                <Send data-icon="inline-start" />
+                Send another invite
+              </Button>
             </Field>
           )}
         </CardContent>
