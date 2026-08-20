@@ -32,8 +32,12 @@ export function LeadScoreBadge({ score, className }: { score: number; className?
         : "bg-muted text-muted-foreground border-transparent"
 
   return (
-    <Badge variant="outline" className={cn("font-medium tabular-nums", tone, className)}>
-      {score} · {label}
+    <Badge
+      variant="outline"
+      title={`Lead score ${score}/100`}
+      className={cn("font-medium", tone, className)}
+    >
+      {label}
     </Badge>
   )
 }

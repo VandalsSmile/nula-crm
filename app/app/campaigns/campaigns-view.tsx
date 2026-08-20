@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CAMPAIGN_TEMPLATES } from "@/lib/crm-defaults"
 import { APP_ROUTES } from "@/lib/routes"
-import type { Campaign, Group } from "@/lib/crm-types"
+import { campaignStatusLabel, type Campaign, type Group } from "@/lib/crm-types"
 import {
   approveCampaign,
   createCampaign,
@@ -155,7 +155,7 @@ export function CampaignsView({
                 <CardContent className="flex flex-col gap-3">
                   <div className="flex flex-wrap gap-2">
                     <Badge>{c.kind === "sequence" ? "Sequence" : "One-time email"}</Badge>
-                    <Badge variant="secondary">{c.status}</Badge>
+                    <Badge variant="secondary">{campaignStatusLabel(c.status)}</Badge>
                     {c.groupId ? (
                       <Badge variant="outline">
                         {groups.find((g) => g.id === c.groupId)?.name ?? "Group"}

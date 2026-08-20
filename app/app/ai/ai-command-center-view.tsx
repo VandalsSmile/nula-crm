@@ -38,8 +38,8 @@ export function AiCommandCenterView({
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="AI Command Center"
-        description="Recent AI actions, pending approvals, and undo history."
+        title="AI Assistant"
+        description="Ask the assistant using the bar at the top of any page. Here you can review, approve, and undo what it's done."
         actions={
           <Button variant="outline" onClick={handleUndo} disabled={undoing}>
             <Undo2 data-icon="inline-start" />

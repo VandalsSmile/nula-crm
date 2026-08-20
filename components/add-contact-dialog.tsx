@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, Loader2 } from "lucide-react"
+import { ChevronDown, Plus, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -15,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { OwnerSelect } from "@/components/owner-select"
+import { AssigneeField } from "@/components/assignee-field"
 import { CompanySelect } from "@/components/company-select"
 import { LocationSelect } from "@/components/location-select"
 import { TagPicker } from "@/components/tag-picker"
@@ -77,6 +77,7 @@ export function AddContactDialog({
   const router = useRouter()
   const me = useSessionUser()
   const [saving, setSaving] = useState(false)
+  const [showMore, setShowMore] = useState(false)
   const [form, setForm] = useState<ContactForm>(() => makeForm(me.id, defaultCompany))
 
   // Re-populate on open (adjust state during render — no state-setting effect),
@@ -189,48 +190,14 @@ export function AddContactDialog({
               />
             </Field>
           ) : null}
-          <Field>
-            <FieldLabel>Email</FieldLabel>
-            <Input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
-          </Field>
-          <Field>
-            <FieldLabel>Phone</FieldLabel>
-            <Input value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} />
-          </Field>
-          <Field>
-            <FieldLabel>Website</FieldLabel>
-            <Input
-              placeholder="https://"
-              value={form.websiteUrl}
-              onChange={(e) => setForm((f) => ({ ...f, websiteUrl: e.target.value }))}
-            />
-          </Field>
-          <Field>
-            <FieldLabel>Address</FieldLabel>
-            <Input value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} />
-          </Field>
-          <div className="grid grid-cols-3 gap-3">
-            <Field>
-              <FieldLabel>City</FieldLabel>
-              <Input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} />
-            </Field>
-            <Field>
-              <FieldLabel>State</FieldLabel>
-              <Input value={form.state} onChange={(e) => setForm((f) => ({ ...f, state: e.target.value }))} />
-            </Field>
-            <Field>
-              <FieldLabel>ZIP</FieldLabel>
-              <Input value={form.zip} onChange={(e) => handleZip(e.target.value)} />
-            </Field>
-          </div>
           <div className="grid grid-cols-2 gap-3">
             <Field>
-              <FieldLabel>Source</FieldLabel>
-              <Input placeholder="website, facebook, referral..." value={form.source} onChange={(e) => setForm((f) => ({ ...f, source: e.target.value }))} />
+              <FieldLabel>Email</FieldLabel>
+              <Input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
             </Field>
             <Field>
-              <FieldLabel>Owner</FieldLabel>
-              <OwnerSelect value={form.ownerId} onChange={(ownerId) => setForm((f) => ({ ...f, ownerId }))} />
+              <FieldLabel>Phone</FieldLabel>
+              <Input value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} />
             </Field>
           </div>
           <Field>
@@ -240,6 +207,55 @@ export function AddContactDialog({
               onChange={(tagIds) => setForm((f) => ({ ...f, tagIds }))}
             />
           </Field>
+
+          <button
+            type="button"
+            onClick={() => setShowMore((s) => !s)}
+            className="flex w-fit items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground"
+          >
+            <ChevronDown className={showMore ? "size-4 rotate-180 transition-transform" : "size-4 transition-transform"} />
+            {showMore ? "Fewer details" : "More details (address, source, owner)"}
+          </button>
+
+          {showMore ? (
+            <>
+              <Field>
+                <FieldLabel>Website</FieldLabel>
+                <Input
+                  placeholder="https://"
+                  value={form.websiteUrl}
+                  onChange={(e) => setForm((f) => ({ ...f, websiteUrl: e.target.value }))}
+                />
+              </Field>
+              <Field>
+                <FieldLabel>Address</FieldLabel>
+                <Input value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} />
+              </Field>
+              <div className="grid grid-cols-3 gap-3">
+                <Field>
+                  <FieldLabel>City</FieldLabel>
+                  <Input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} />
+                </Field>
+                <Field>
+                  <FieldLabel>State</FieldLabel>
+                  <Input value={form.state} onChange={(e) => setForm((f) => ({ ...f, state: e.target.value }))} />
+                </Field>
+                <Field>
+                  <FieldLabel>ZIP</FieldLabel>
+                  <Input value={form.zip} onChange={(e) => handleZip(e.target.value)} />
+                </Field>
+              </div>
+              <Field>
+                <FieldLabel>Source</FieldLabel>
+                <Input placeholder="website, facebook, referral..." value={form.source} onChange={(e) => setForm((f) => ({ ...f, source: e.target.value }))} />
+              </Field>
+              <AssigneeField
+                label="Owner"
+                value={form.ownerId}
+                onChange={(ownerId) => setForm((f) => ({ ...f, ownerId }))}
+              />
+            </>
+          ) : null}
         </FieldGroup>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>

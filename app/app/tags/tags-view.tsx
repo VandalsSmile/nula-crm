@@ -9,7 +9,6 @@ import { PageHeader } from "@/components/page-header"
 import { TagFormDialog } from "@/components/tag-form-dialog"
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -96,7 +95,7 @@ export function TagsView({ tags }: { tags: Tag[] }) {
                 {tag.description ? (
                   <p className="text-sm text-muted-foreground">{tag.description}</p>
                 ) : (
-                  <Badge variant="outline">{tag.slug}</Badge>
+                  <p className="text-sm text-muted-foreground/70">No description</p>
                 )}
               </CardContent>
             </Card>

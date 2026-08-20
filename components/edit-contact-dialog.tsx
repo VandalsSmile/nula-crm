@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { OwnerSelect } from "@/components/owner-select"
+import { AssigneeField } from "@/components/assignee-field"
 import { CompanySelect } from "@/components/company-select"
 import { LocationSelect } from "@/components/location-select"
 import { updateContact, type ContactInput } from "@/app/actions/contacts"
@@ -203,10 +203,11 @@ export function EditContactDialog({
             <FieldLabel>Source</FieldLabel>
             <Input value={form.source} onChange={(e) => setForm((f) => ({ ...f, source: e.target.value }))} />
           </Field>
-          <Field>
-            <FieldLabel>Owner</FieldLabel>
-            <OwnerSelect value={form.ownerId ?? ""} onChange={(ownerId) => setForm((f) => ({ ...f, ownerId }))} />
-          </Field>
+          <AssigneeField
+            label="Owner"
+            value={form.ownerId ?? ""}
+            onChange={(ownerId) => setForm((f) => ({ ...f, ownerId }))}
+          />
           <Field>
             <FieldLabel>Lifecycle stage</FieldLabel>
             <Select
