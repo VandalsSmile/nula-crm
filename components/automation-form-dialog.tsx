@@ -65,7 +65,7 @@ export function AutomationFormDialog({
     name: "",
     trigger: "form_submitted",
     action: "new_lead_sequence",
-    enabled: true,
+    enabled: false,
   })
 
   // Re-populate the form whenever the dialog opens or targets a different
@@ -80,7 +80,7 @@ export function AutomationFormDialog({
         name: automation?.name ?? "",
         trigger: automation?.trigger ?? "form_submitted",
         action: automation?.action ?? "new_lead_sequence",
-        enabled: automation?.enabled ?? true,
+        enabled: automation?.enabled ?? false,
       })
     }
   }

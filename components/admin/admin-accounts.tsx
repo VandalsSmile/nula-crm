@@ -25,8 +25,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { BrainCircuit } from "lucide-react"
+
 import {
   getAccounts,
+  setAccountB2BIntelligence,
   setAccountPlan,
   setSuspended,
   setTrialDays,
@@ -74,6 +77,7 @@ export function AdminAccounts() {
                 <TableHead>Trial</TableHead>
                 <TableHead className="text-right">Members</TableHead>
                 <TableHead className="text-right">Contacts</TableHead>
+                <TableHead>Intelligence</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="w-12" />
               </TableRow>
@@ -81,13 +85,13 @@ export function AdminAccounts() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center text-sm text-muted-foreground">
                     Loading accounts…
                   </TableCell>
                 </TableRow>
               ) : accounts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center text-sm text-muted-foreground">
                     No accounts yet.
                   </TableCell>
                 </TableRow>
@@ -115,6 +119,13 @@ export function AdminAccounts() {
                     </TableCell>
                     <TableCell className="text-right tabular-nums">{a.members}</TableCell>
                     <TableCell className="text-right tabular-nums">{a.contacts}</TableCell>
+                    <TableCell>
+                      {a.b2bIntelligence ? (
+                        <Badge>B2B on</Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       {a.suspended ? (
                         <Badge variant="destructive">Suspended</Badge>
@@ -155,6 +166,37 @@ export function AdminAccounts() {
                             >
                               Reset 7-day trial
                             </DropdownMenuItem>
+                          </DropdownMenuGroup>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuGroup>
+                            <DropdownMenuLabel>B2B Intelligence</DropdownMenuLabel>
+                            {a.b2bIntelligence ? (
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  run(
+                                    a.workspaceId,
+                                    () => setAccountB2BIntelligence(a.workspaceId, false),
+                                    "B2B Intelligence disabled",
+                                  )
+                                }
+                              >
+                                <BrainCircuit data-icon="inline-start" />
+                                Disable B2B Intelligence
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  run(
+                                    a.workspaceId,
+                                    () => setAccountB2BIntelligence(a.workspaceId, true),
+                                    "B2B Intelligence enabled (comp)",
+                                  )
+                                }
+                              >
+                                <BrainCircuit data-icon="inline-start" />
+                                Enable B2B Intelligence (comp)
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuGroup>
                           <DropdownMenuSeparator />
                           <DropdownMenuGroup>

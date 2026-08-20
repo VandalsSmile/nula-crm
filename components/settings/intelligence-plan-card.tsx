@@ -50,6 +50,7 @@ export function IntelligencePlanCard() {
 
   const { module, companyModel, configured, canManage, plans } = data
   const isB2c = companyModel === "b2c"
+  const isComped = module.status === "comped"
   const monthly = plans.find((p) => p.interval === "month")
 
   async function handleSubscribe() {
@@ -98,7 +99,13 @@ export function IntelligencePlanCard() {
         <CardTitle className="flex items-center gap-2">
           <BrainCircuit className="size-5 text-nula-violet" />
           B2B Intelligence
-          {module.enabled ? <Badge>Active</Badge> : <Badge variant="secondary">Add-on · $49/mo</Badge>}
+          {isComped ? (
+            <Badge>Complimentary</Badge>
+          ) : module.enabled ? (
+            <Badge>Active</Badge>
+          ) : (
+            <Badge variant="secondary">Add-on · $49/mo</Badge>
+          )}
         </CardTitle>
         <CardDescription>
           {module.enabled
@@ -119,7 +126,11 @@ export function IntelligencePlanCard() {
               {module.creditsUsed} of {module.creditLimit} monthly enrichments used
               {module.renewsAt ? ` · renews ${formatDate(module.renewsAt)}` : ""}
             </p>
-            {canManage ? (
+            {isComped ? (
+              <p className="text-sm text-muted-foreground">
+                Your workspace has complimentary access — no charge.
+              </p>
+            ) : canManage ? (
               <Button variant="outline" className="w-fit" onClick={handleCancel} disabled={busy === "cancel"}>
                 {busy === "cancel" ? <Loader2 className="size-4 animate-spin" /> : <XCircle className="size-4" />}
                 Cancel add-on

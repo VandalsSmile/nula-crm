@@ -6,9 +6,17 @@ import { revalidatePath } from "next/cache"
 import { headers } from "next/headers"
 
 import { db } from "@/lib/db"
-import { contacts, teamInvites, user as userTable, workspaceSettings } from "@/lib/db/schema"
+import {
+  contacts,
+  teamInvites,
+  user as userTable,
+  workspaceAddons,
+  workspaceSettings,
+} from "@/lib/db/schema"
 import { requireSuperAdmin } from "@/lib/superadmin"
 import { computeTrialStatus, trialEndDate } from "@/lib/trial"
+import { setAddonComp } from "@/lib/billing/addons"
+import { MODULE_IDS } from "@/lib/modules"
 
 export type AdminAccount = {
   workspaceId: string
@@ -23,6 +31,8 @@ export type AdminAccount = {
   suspended: boolean
   members: number
   contacts: number
+  /** Whether the B2B Intelligence add-on module is active/comped for this account. */
+  b2bIntelligence: boolean
   createdAt: string
 }
 
@@ -55,7 +65,7 @@ function planLabel(plan: string): string {
 export async function getAccounts(): Promise<AdminAccount[]> {
   await requireSuperAdmin()
 
-  const [users, settings, contactCounts] = await Promise.all([
+  const [users, settings, contactCounts, addons] = await Promise.all([
     db
       .select({
         id: userTable.id,
@@ -70,10 +80,26 @@ export async function getAccounts(): Promise<AdminAccount[]> {
       .select({ userId: contacts.userId, count: sql<number>`count(*)::int` })
       .from(contacts)
       .groupBy(contacts.userId),
+    db
+      .select({
+        workspaceId: workspaceAddons.workspaceId,
+        status: workspaceAddons.status,
+        currentPeriodEnd: workspaceAddons.currentPeriodEnd,
+      })
+      .from(workspaceAddons)
+      .where(eq(workspaceAddons.addonId, MODULE_IDS.b2bIntelligence)),
   ])
 
   const settingsByWs = new Map(settings.map((s) => [s.workspaceId, s]))
   const contactsByWs = new Map(contactCounts.map((c) => [c.userId, c.count]))
+  const addonActive = (status: string, end: Date | null) => {
+    const s = (status || "").toLowerCase()
+    if (s === "active" || s === "trialing" || s === "past_due" || s === "comped") return true
+    return s === "canceled" && Boolean(end && end.getTime() > Date.now())
+  }
+  const b2bByWs = new Map(
+    addons.map((a) => [a.workspaceId, addonActive(a.status, a.currentPeriodEnd)]),
+  )
 
   // Owners = users whose effective workspace is their own id.
   const owners = users.filter((u) => !u.workspaceId || u.workspaceId === u.id)
@@ -96,6 +122,7 @@ export async function getAccounts(): Promise<AdminAccount[]> {
         suspended: s?.suspended ?? false,
         members,
         contacts: contactsByWs.get(owner.id) ?? 0,
+        b2bIntelligence: b2bByWs.get(owner.id) ?? false,
         createdAt: owner.createdAt.toISOString(),
       }
     })
@@ -136,6 +163,17 @@ export async function setTrialDays(workspaceId: string, days: number) {
 export async function setSuspended(workspaceId: string, suspended: boolean) {
   await requireSuperAdmin()
   await upsertSettings(workspaceId, { suspended })
+}
+
+/**
+ * Super-admin: grant or revoke complimentary ("comped") access to the B2B
+ * Intelligence module for an account — free, no Square subscription required.
+ */
+export async function setAccountB2BIntelligence(workspaceId: string, enabled: boolean) {
+  const admin = await requireSuperAdmin()
+  await setAddonComp(workspaceId, enabled, MODULE_IDS.b2bIntelligence, admin.id)
+  revalidatePath("/admin")
+  revalidatePath("/dashboard")
 }
 
 /** Create a prospect invite — a link that spins up a brand-new trial account. */

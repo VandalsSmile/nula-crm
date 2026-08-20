@@ -412,7 +412,8 @@ export const automations = pgTable("automations", {
   trigger: text("trigger").notNull(),
   action: text("action").notNull(),
   config: jsonb("config").$type<Record<string, unknown>>().notNull().default({}),
-  enabled: boolean("enabled").notNull().default(true),
+  // Automations are OFF by default — a human opts in from the Automations page.
+  enabled: boolean("enabled").notNull().default(false),
   lastRunAt: timestamp("lastRunAt"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })

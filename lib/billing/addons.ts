@@ -108,6 +108,51 @@ export async function enableAddonLocally(
   }
 }
 
+/** Comp credit allowance for super-admin-enabled workspaces (generous, free). */
+const COMP_CREDIT_LIMIT = 5000
+
+/**
+ * Super-admin override: grant or revoke complimentary ("comped") access to an
+ * add-on module — no Square subscription, no charge. Revoking sets the row to
+ * canceled with access ended immediately.
+ */
+export async function setAddonComp(
+  workspaceId: string,
+  comped: boolean,
+  addonId: ModuleId = MODULE_IDS.b2bIntelligence,
+  enabledBy = "",
+): Promise<void> {
+  const [existing] = await db
+    .select({ id: workspaceAddons.id })
+    .from(workspaceAddons)
+    .where(and(eq(workspaceAddons.workspaceId, workspaceId), eq(workspaceAddons.addonId, addonId)))
+    .limit(1)
+
+  const set = comped
+    ? {
+        status: "comped",
+        squareSubscriptionId: "",
+        priceId: "",
+        currentPeriodEnd: null,
+        creditLimit: COMP_CREDIT_LIMIT,
+        periodResetAt: new Date(Date.now() + PERIOD_MS),
+        updatedAt: new Date(),
+      }
+    : { status: "canceled", currentPeriodEnd: null, updatedAt: new Date() }
+
+  if (existing) {
+    await db.update(workspaceAddons).set(set).where(eq(workspaceAddons.id, existing.id))
+  } else if (comped) {
+    await db.insert(workspaceAddons).values({
+      id: randomId("addon"),
+      workspaceId,
+      addonId,
+      enabledBy,
+      ...set,
+    })
+  }
+}
+
 export async function findWorkspaceByAddonCustomer(customerId: string): Promise<string | null> {
   if (!customerId) return null
   const [row] = await db

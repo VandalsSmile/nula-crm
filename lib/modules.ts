@@ -43,7 +43,8 @@ type AddonRow = typeof workspaceAddons.$inferSelect
  */
 function isActiveStatus(status: string, currentPeriodEnd: Date | null): boolean {
   const s = (status || "").toLowerCase()
-  if (s === "active" || s === "trialing" || s === "past_due") return true
+  // "comped" = complimentary access granted by a super admin (no charge).
+  if (s === "active" || s === "trialing" || s === "past_due" || s === "comped") return true
   if (s === "canceled" && currentPeriodEnd && currentPeriodEnd.getTime() > Date.now()) return true
   return false
 }
