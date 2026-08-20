@@ -47,6 +47,16 @@ describe("shipping defaults are cross-business", () => {
   it("general default groups are cross-business (no industry audiences)", () => {
     const groups = DEFAULT_GROUPS.general
     expect(groups).toContain("New Leads")
-    expect(groups.join(" ")).not.toMatch(/NAD|Weight Loss|Beauty|Immunity/i)
+    expect(groups).toContain("Active Customers")
+    expect(groups).toContain("Do Not Market")
+    expect(groups.join(" ")).not.toMatch(/NAD|Weight Loss|Beauty|Immunity|Travel Recovery/i)
+  })
+
+  it("IV-therapy default groups no longer ship niche audiences", () => {
+    const groups = DEFAULT_GROUPS["iv-therapy"]
+    // Should be the core cross-business set, not NAD/Weight Loss/etc. buyers.
+    expect(groups.join(" ")).not.toMatch(/NAD|Weight Loss|Beauty|Immunity|Travel Recovery/i)
+    expect(groups).toContain("New Leads")
+    expect(groups).toContain("Active Customers")
   })
 })
