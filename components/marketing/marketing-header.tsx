@@ -84,7 +84,7 @@ const NAV: NavGroup[] = [
 ]
 
 const navLinkClass =
-  "rounded-full px-3.5 py-2 text-sm font-medium text-nula-ink/70 transition-colors hover:bg-white hover:text-nula-ink"
+  "whitespace-nowrap rounded-full px-3.5 py-2 text-sm font-medium text-nula-ink/70 transition-colors hover:bg-white hover:text-nula-ink"
 
 const CLOSE_DELAY_MS = 200
 
@@ -206,6 +206,8 @@ export function MarketingHeader() {
           </div>
         </Link>
 
+        {/* Desktop nav. About/Contact live in the footer to keep this bar
+            uncluttered; they remain in the mobile menu below. */}
         <nav className="hidden items-center gap-0.5 lg:flex">
           {NAV.map((group) => (
             <NavDropdown key={group.title} group={group} />
@@ -218,12 +220,6 @@ export function MarketingHeader() {
           </Link>
           <Link href={APP_ROUTES.faq} className={navLinkClass}>
             FAQ
-          </Link>
-          <Link href="/#about" className={navLinkClass}>
-            About
-          </Link>
-          <Link href="/#contact" className={navLinkClass}>
-            Contact
           </Link>
         </nav>
 
