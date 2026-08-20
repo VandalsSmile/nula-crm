@@ -94,6 +94,13 @@ export const contacts = pgTable("contacts", {
   timezone: text("timezone").notNull().default("America/New_York"),
   industry: text("industry").notNull().default(""),
   websiteUrl: text("websiteUrl").notNull().default(""),
+  // Nula Intelligence (Clay enrichment) — person fields + status.
+  title: text("title").notNull().default(""),
+  seniority: text("seniority").notNull().default(""),
+  linkedinUrl: text("linkedinUrl").notNull().default(""),
+  fitScore: integer("fitScore").notNull().default(0),
+  enrichedAt: timestamp("enrichedAt"),
+  enrichmentStatus: text("enrichmentStatus").notNull().default(""),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 
@@ -108,6 +115,19 @@ export const companies = pgTable("companies", {
   state: text("state").notNull().default(""),
   zip: text("zip").notNull().default(""),
   notes: text("notes").notNull().default(""),
+  // Nula Intelligence (Clay enrichment) — firmographics + status.
+  industry: text("industry").notNull().default(""),
+  subIndustry: text("subIndustry").notNull().default(""),
+  employeeCount: integer("employeeCount").notNull().default(0),
+  revenueEstimate: text("revenueEstimate").notNull().default(""),
+  companySize: text("companySize").notNull().default(""),
+  companyType: text("companyType").notNull().default(""),
+  linkedinUrl: text("linkedinUrl").notNull().default(""),
+  description: text("description").notNull().default(""),
+  techStack: text("techStack").notNull().default(""),
+  fitScore: integer("fitScore").notNull().default(0),
+  enrichedAt: timestamp("enrichedAt"),
+  enrichmentStatus: text("enrichmentStatus").notNull().default(""),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 
@@ -366,6 +386,12 @@ export const workspaceSettings = pgTable("workspace_settings", {
   resendApiKey: text("resendApiKey").notNull().default(""),
   resendFromEmail: text("resendFromEmail").notNull().default(""),
   resendFromName: text("resendFromName").notNull().default(""),
+  // Nula Intelligence: B2B/B2C hint (promotion) + Clay connection + auto-enrich.
+  companyModel: text("companyModel").notNull().default(""),
+  clayWebhookUrl: text("clayWebhookUrl").notNull().default(""),
+  clayAuthToken: text("clayAuthToken").notNull().default(""),
+  clayCallbackSecret: text("clayCallbackSecret").notNull().default(""),
+  autoEnrichOnIntake: boolean("autoEnrichOnIntake").notNull().default(false),
   onboardingComplete: boolean("onboardingComplete").notNull().default(false),
   suspended: boolean("suspended").notNull().default(false),
   plan: text("plan").notNull().default("trial"),
@@ -404,6 +430,65 @@ export const teamInvites = pgTable("team_invites", {
   expiresAt: timestamp("expiresAt").notNull(),
   acceptedAt: timestamp("acceptedAt"),
   acceptedByUserId: text("acceptedByUserId"),
+})
+
+/**
+ * Paid add-on module subscriptions (e.g. B2B Intelligence). Independent of the
+ * base plan — a workspace can have the add-on while on trial, and losing the
+ * add-on never affects base CRM access. One row per (workspaceId, addonId).
+ */
+export const workspaceAddons = pgTable("workspace_addons", {
+  id: text("id").primaryKey(),
+  workspaceId: text("workspaceId").notNull(),
+  addonId: text("addonId").notNull().default("b2b_intelligence"),
+  status: text("status").notNull().default("active"),
+  squareSubscriptionId: text("squareSubscriptionId").notNull().default(""),
+  squareCustomerId: text("squareCustomerId").notNull().default(""),
+  priceId: text("priceId").notNull().default(""),
+  currentPeriodEnd: timestamp("currentPeriodEnd"),
+  // Monthly enrichment credit metering (caps supplier COGS).
+  creditsUsedThisPeriod: integer("creditsUsedThisPeriod").notNull().default(0),
+  creditLimit: integer("creditLimit").notNull().default(250),
+  periodResetAt: timestamp("periodResetAt"),
+  enabledBy: text("enabledBy").notNull().default(""),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+})
+
+/** One row per Enrich request — audit, idempotency, and raw/normalized payloads. */
+export const enrichmentRuns = pgTable("enrichment_runs", {
+  id: text("id").primaryKey(),
+  userId: text("userId").notNull(),
+  subjectType: text("subjectType").notNull().default("contact"),
+  subjectId: text("subjectId").notNull(),
+  provider: text("provider").notNull().default("clay"),
+  correlationId: text("correlationId").notNull(),
+  status: text("status").notNull().default("pending"),
+  requestPayload: jsonb("requestPayload").$type<Record<string, unknown>>().notNull().default({}),
+  responsePayload: jsonb("responsePayload").$type<Record<string, unknown>>().notNull().default({}),
+  normalized: jsonb("normalized")
+    .$type<import("@/lib/enrichment/types").NormalizedEnrichment>()
+    .notNull()
+    .default({}),
+  fitScore: integer("fitScore").notNull().default(0),
+  error: text("error").notNull().default(""),
+  requestedBy: text("requestedBy").notNull().default(""),
+  requestedAt: timestamp("requestedAt").notNull().defaultNow(),
+  completedAt: timestamp("completedAt"),
+})
+
+/** Append-only human/outcome feedback on enriched records (the learning dataset). */
+export const enrichmentFeedback = pgTable("enrichment_feedback", {
+  id: text("id").primaryKey(),
+  userId: text("userId").notNull(),
+  subjectType: text("subjectType").notNull().default("contact"),
+  subjectId: text("subjectId").notNull(),
+  runId: text("runId").notNull().default(""),
+  signal: text("signal").notNull(),
+  fitScoreAtFeedback: integer("fitScoreAtFeedback").notNull().default(0),
+  note: text("note").notNull().default(""),
+  createdBy: text("createdBy").notNull().default(""),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 
 /** @deprecated Use contacts — kept for migration compatibility */

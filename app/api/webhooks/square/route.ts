@@ -16,6 +16,12 @@ import {
   clearSubscription,
   findWorkspaceByCustomer,
 } from "@/lib/billing/subscription"
+import {
+  applyAddonSubscription,
+  clearAddonSubscription,
+  findWorkspaceByAddonCustomer,
+} from "@/lib/billing/addons"
+import { addonByPriceId } from "@/lib/billing/plans"
 
 export const runtime = "nodejs"
 
@@ -36,7 +42,9 @@ async function workspaceForSubscription(sub: SquareSubscription): Promise<string
   const shared = sharedWorkspaceId()
   if (shared) return shared
   if (sub.customer_id) {
-    const byCustomer = await findWorkspaceByCustomer(sub.customer_id)
+    const byCustomer =
+      (await findWorkspaceByCustomer(sub.customer_id)) ??
+      (await findWorkspaceByAddonCustomer(sub.customer_id))
     if (byCustomer) return byCustomer
     const email = await retrieveCustomerEmail(sub.customer_id)
     if (email) return findWorkspaceByOwnerEmail(email)
@@ -57,7 +65,19 @@ function toState(sub: SquareSubscription) {
 async function handleSubscription(sub: SquareSubscription) {
   const workspaceId = await workspaceForSubscription(sub)
   if (!workspaceId) return
-  if (ENDED_STATUSES.has(sub.status.toUpperCase())) {
+
+  const ended = ENDED_STATUSES.has(sub.status.toUpperCase())
+  // Route add-on subscriptions to their own table; base plan stays on
+  // workspace_settings. An add-on event must never mutate base plan state.
+  const isAddon = Boolean(addonByPriceId(sub.plan_variation_id ?? ""))
+
+  if (isAddon) {
+    if (ended) await clearAddonSubscription(workspaceId)
+    else await applyAddonSubscription(workspaceId, toState(sub))
+    return
+  }
+
+  if (ended) {
     await clearSubscription(workspaceId)
   } else {
     await applySubscription(workspaceId, toState(sub))
