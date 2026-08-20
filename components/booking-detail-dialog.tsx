@@ -35,7 +35,7 @@ export function BookingDetailDialog({
               <DialogTitle className="flex items-center gap-2">
                 {booking.title}
                 <Badge variant={booking.status === "canceled" ? "destructive" : "default"}>
-                  {booking.status}
+                  {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
                 </Badge>
               </DialogTitle>
             </DialogHeader>

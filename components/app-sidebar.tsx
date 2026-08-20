@@ -53,22 +53,50 @@ import { useSessionUser } from "@/lib/session-context"
 import { authClient } from "@/lib/auth-client"
 
 import { APP_ROUTES } from "@/lib/routes"
-const mainNav = [
-  { title: "Dashboard", href: APP_ROUTES.dashboard, icon: LayoutDashboard },
-  { title: "Contacts", href: APP_ROUTES.contacts, icon: Users },
-  { title: "Companies", href: APP_ROUTES.companies, icon: Building2 },
-  { title: "Tasks", href: APP_ROUTES.tasks, icon: ListChecks },
-  { title: "Calendar", href: APP_ROUTES.calendar, icon: CalendarDays },
-  { title: "Deals", href: APP_ROUTES.deals, icon: Briefcase },
-  { title: "Groups", href: APP_ROUTES.groups, icon: Layers },
-  { title: "Tags", href: APP_ROUTES.tags, icon: Tag },
-  { title: "Campaigns", href: APP_ROUTES.campaigns, icon: Megaphone },
-  { title: "Inbox", href: APP_ROUTES.inbox, icon: Inbox },
-  { title: "Automations", href: APP_ROUTES.automations, icon: Zap },
-  { title: "AI Assistant", href: APP_ROUTES.ai, icon: Sparkles },
-  { title: "Reports", href: APP_ROUTES.reports, icon: BarChart3 },
-  { title: "Help & docs", href: APP_ROUTES.help, icon: BookOpen },
-  { title: "Settings", href: APP_ROUTES.settings, icon: Settings },
+
+// Grouped into small, labeled sections so the nav reads as a few clear areas
+// instead of one long 15-item list.
+const NAV_SECTIONS: { label?: string; items: { title: string; href: string; icon: typeof LayoutDashboard }[] }[] = [
+  { items: [{ title: "Dashboard", href: APP_ROUTES.dashboard, icon: LayoutDashboard }] },
+  {
+    label: "People",
+    items: [
+      { title: "Contacts", href: APP_ROUTES.contacts, icon: Users },
+      { title: "Companies", href: APP_ROUTES.companies, icon: Building2 },
+      { title: "Groups", href: APP_ROUTES.groups, icon: Layers },
+      { title: "Tags", href: APP_ROUTES.tags, icon: Tag },
+    ],
+  },
+  {
+    label: "Planner",
+    items: [
+      { title: "Tasks", href: APP_ROUTES.tasks, icon: ListChecks },
+      { title: "Calendar", href: APP_ROUTES.calendar, icon: CalendarDays },
+    ],
+  },
+  {
+    label: "Sales & outreach",
+    items: [
+      { title: "Deals", href: APP_ROUTES.deals, icon: Briefcase },
+      { title: "Campaigns", href: APP_ROUTES.campaigns, icon: Megaphone },
+      { title: "Inbox", href: APP_ROUTES.inbox, icon: Inbox },
+      { title: "Automations", href: APP_ROUTES.automations, icon: Zap },
+    ],
+  },
+  {
+    label: "Insights",
+    items: [
+      { title: "AI Assistant", href: APP_ROUTES.ai, icon: Sparkles },
+      { title: "Reports", href: APP_ROUTES.reports, icon: BarChart3 },
+    ],
+  },
+  {
+    label: "Account",
+    items: [
+      { title: "Help & docs", href: APP_ROUTES.help, icon: BookOpen },
+      { title: "Settings", href: APP_ROUTES.settings, icon: Settings },
+    ],
+  },
 ]
 
 export function AppSidebar({
@@ -118,27 +146,29 @@ export function AppSidebar({
         </Link>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Your business</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {mainNav.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    render={
-                      <Link href={item.href}>
-                        <item.icon />
-                        <span>{item.title}</span>
-                      </Link>
-                    }
-                    isActive={isActive(item.href)}
-                    tooltip={item.title}
-                  />
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {NAV_SECTIONS.map((section, i) => (
+          <SidebarGroup key={section.label ?? `group-${i}`}>
+            {section.label ? <SidebarGroupLabel>{section.label}</SidebarGroupLabel> : null}
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {section.items.map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      render={
+                        <Link href={item.href}>
+                          <item.icon />
+                          <span>{item.title}</span>
+                        </Link>
+                      }
+                      isActive={isActive(item.href)}
+                      tooltip={item.title}
+                    />
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>

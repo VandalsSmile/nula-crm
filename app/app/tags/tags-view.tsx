@@ -43,7 +43,7 @@ export function TagsView({ tags }: { tags: Tag[] }) {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Tags"
-        description="Labels that describe facts about your contacts — source, status, interests."
+        description="Labels for facts about a contact — source, status, interests. To pick who to message, use Groups."
         actions={
           <Button onClick={() => setCreateOpen(true)}>
             <Plus data-icon="inline-start" />

@@ -132,7 +132,7 @@ export function CalendarView({ tasks, bookings }: { tasks: Task[]; bookings: Boo
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Calendar"
-        description="Your tasks and follow-ups, by day."
+        description="Your tasks and appointments, by day."
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" onClick={openNewBooking}>

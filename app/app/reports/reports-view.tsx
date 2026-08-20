@@ -3,7 +3,15 @@ import { Megaphone, Percent, TrendingUp, Users } from "lucide-react"
 import { PageHeader } from "@/components/page-header"
 import { StatCard } from "@/components/stat-card"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { ReportData } from "@/lib/crm-types"
+import { campaignStatusLabel, type ReportData } from "@/lib/crm-types"
+
+/** Turn a raw source key like "web_form" / "contact-page-form" into "Web form". */
+function humanizeSource(source: string): string {
+  const s = source.trim()
+  if (!s || s.toLowerCase() === "unknown") return "Unknown"
+  const words = s.replace(/[-_]+/g, " ").trim()
+  return words.charAt(0).toUpperCase() + words.slice(1)
+}
 
 function BarRow({ label, count, max }: { label: string; count: number; max: number }) {
   const pct = max > 0 ? (count / max) * 100 : 0
@@ -56,7 +64,7 @@ export function ReportsView({ data }: { data: ReportData }) {
               <p className="text-sm text-muted-foreground">No contacts yet.</p>
             ) : (
               data.leadsBySource.map((s) => (
-                <BarRow key={s.source} label={s.source} count={s.count} max={sourceMax} />
+                <BarRow key={s.source} label={humanizeSource(s.source)} count={s.count} max={sourceMax} />
               ))
             )}
           </CardContent>
@@ -83,7 +91,7 @@ export function ReportsView({ data }: { data: ReportData }) {
             <p className="text-sm text-muted-foreground">No campaigns yet.</p>
           ) : (
             data.campaignsByStatus.map((s) => (
-              <BarRow key={s.status} label={s.status} count={s.count} max={campaignMax} />
+              <BarRow key={s.status} label={campaignStatusLabel(s.status)} count={s.count} max={campaignMax} />
             ))
           )}
         </CardContent>
