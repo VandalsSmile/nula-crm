@@ -1,5 +1,8 @@
 "use client"
 
+import type { ReactNode } from "react"
+import { ChevronRight } from "lucide-react"
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PageHeader } from "@/components/page-header"
 import { ProfileSettings } from "@/components/settings/profile-settings"
@@ -17,6 +20,27 @@ import { useUrlTab } from "@/hooks/use-url-tab"
 
 const SETTINGS_TABS = ["profile", "security", "team", "workspace", "email", "leads", "plan"] as const
 type SettingsTab = (typeof SETTINGS_TABS)[number]
+
+/** Collapsible section for the Lead sources tab. */
+function LeadSection({
+  title,
+  defaultOpen,
+  children,
+}: {
+  title: string
+  defaultOpen?: boolean
+  children: ReactNode
+}) {
+  return (
+    <details open={defaultOpen} className="group">
+      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-lg px-1 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
+        <ChevronRight className="size-4 transition-transform duration-200 group-open:rotate-90" />
+        {title}
+      </summary>
+      <div className="mt-2">{children}</div>
+    </details>
+  )
+}
 
 export function SettingsView() {
   const [tab, setTab] = useUrlTab("tab", SETTINGS_TABS, "profile")
@@ -58,12 +82,22 @@ export function SettingsView() {
           <EmailSettings />
         </TabsContent>
 
-        <TabsContent value="leads" className="mt-6 flex flex-col gap-6" keepMounted>
-          <ApiAccessSettings />
-          <BookingsWebhookSettings />
-          <EmailConnectionSettings />
-          <RoutingRulesSettings />
-          <LeadSourcesSettings />
+        <TabsContent value="leads" className="mt-6 flex flex-col gap-3" keepMounted>
+          <LeadSection title="Zapier & API access" defaultOpen>
+            <ApiAccessSettings />
+          </LeadSection>
+          <LeadSection title="Appointment bookings">
+            <BookingsWebhookSettings />
+          </LeadSection>
+          <LeadSection title="Email logging">
+            <EmailConnectionSettings />
+          </LeadSection>
+          <LeadSection title="Routing rules">
+            <RoutingRulesSettings />
+          </LeadSection>
+          <LeadSection title="Lead sources">
+            <LeadSourcesSettings />
+          </LeadSection>
         </TabsContent>
 
         <TabsContent value="plan" className="mt-6" keepMounted>
