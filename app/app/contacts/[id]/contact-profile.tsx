@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Building2, Globe, Mail, MapPin, Pencil, Phone, Plus, ShoppingBag, Sparkles, Trash2 } from "lucide-react"
+import { ArrowLeft, Building2, CalendarClock, ListChecks, Globe, Mail, MapPin, Pencil, Phone, Plus, ShoppingBag, Sparkles, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { LifecycleBadge, LeadScoreBadge } from "@/components/lifecycle-badge"
@@ -11,6 +11,7 @@ import { ActivityFeed } from "@/components/activity-feed"
 import { EditContactDialog } from "@/components/edit-contact-dialog"
 import { ContactRelationsEditor } from "@/components/contact-relations-editor"
 import { DealFormDialog } from "@/components/deal-form-dialog"
+import { TaskFormDialog } from "@/components/task-form-dialog"
 import { RecordPurchaseDialog } from "@/components/record-purchase-dialog"
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog"
 import { Button } from "@/components/ui/button"
@@ -30,19 +31,23 @@ import { addContactNote } from "@/app/actions/activities"
 import { deleteContact } from "@/app/actions/contacts"
 import { deleteDeal } from "@/app/actions/deals"
 import { formatDateTime } from "@/lib/format"
-import { formatRevenue, type Activity, type Contact, type Deal, type Group, type Tag } from "@/lib/crm-types"
+import { formatRevenue, type Activity, type Booking, type Contact, type Deal, type Group, type Tag, type Task } from "@/lib/crm-types"
 import { APP_ROUTES, companyPath } from "@/lib/routes"
 
 export function ContactProfile({
   contact,
   activities,
   deals,
+  tasks,
+  bookings,
   allTags,
   allGroups,
 }: {
   contact: Contact
   activities: Activity[]
   deals: Deal[]
+  tasks: Task[]
+  bookings: Booking[]
   allTags: Tag[]
   allGroups: Group[]
 }) {
@@ -51,6 +56,7 @@ export function ContactProfile({
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [dealOpen, setDealOpen] = useState(false)
   const [purchaseOpen, setPurchaseOpen] = useState(false)
+  const [taskOpen, setTaskOpen] = useState(false)
   const [editDeal, setEditDeal] = useState<Deal | null>(null)
   const [note, setNote] = useState("")
   const [pending, startTransition] = useTransition()
@@ -273,6 +279,71 @@ export function ContactProfile({
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader className="flex-row items-center justify-between gap-4">
+          <CardTitle className="flex items-center gap-2">
+            <ListChecks className="size-4 text-muted-foreground" />
+            Tasks
+          </CardTitle>
+          <Button size="sm" variant="outline" onClick={() => setTaskOpen(true)}>
+            <Plus data-icon="inline-start" />
+            Add task
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {tasks.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No tasks yet.</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {tasks.map((task) => (
+                <li key={task.id} className="flex items-center justify-between gap-3 py-3">
+                  <div className="min-w-0">
+                    <p className={task.status === "done" ? "font-medium text-muted-foreground line-through" : "font-medium"}>
+                      {task.title}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {task.dueAt ? formatDateTime(task.dueAt) : "No due date"} · {task.priority}
+                    </p>
+                  </div>
+                  <Badge variant={task.status === "done" ? "secondary" : "outline"}>{task.status}</Badge>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CalendarClock className="size-4 text-muted-foreground" />
+            Appointments
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {bookings.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No appointments yet. Booked appointments from your scheduling tool appear here.
+            </p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {bookings.map((b) => (
+                <li key={b.id} className="flex items-center justify-between gap-3 py-3">
+                  <div className="min-w-0">
+                    <p className="font-medium">{b.title}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {b.startAt ? formatDateTime(b.startAt) : "No time"}
+                      {b.location ? ` · ${b.location}` : ""}
+                    </p>
+                  </div>
+                  <Badge variant={b.status === "canceled" ? "destructive" : "default"}>{b.status}</Badge>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
       {contact.notes ? (
         <Card>
           <CardHeader>
@@ -304,6 +375,7 @@ export function ContactProfile({
 
       <EditContactDialog open={editOpen} onOpenChange={setEditOpen} contact={contact} />
       <RecordPurchaseDialog open={purchaseOpen} onOpenChange={setPurchaseOpen} contactId={contact.id} />
+      <TaskFormDialog open={taskOpen} onOpenChange={setTaskOpen} defaultContactId={contact.id} />
       <DealFormDialog
         open={dealOpen}
         onOpenChange={(open) => { setDealOpen(open); if (!open) setEditDeal(null) }}

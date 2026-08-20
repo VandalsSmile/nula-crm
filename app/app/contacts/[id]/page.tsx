@@ -3,10 +3,12 @@ import type { Metadata } from "next"
 
 import {
   getActivitiesForContact,
+  getBookingsForContact,
   getContactById,
   getDealsForContact,
   getGroups,
   getTags,
+  getTasksForContact,
 } from "@/lib/queries"
 import { appPageMetadata } from "@/lib/seo"
 import { contactPath } from "@/lib/routes"
@@ -33,10 +35,12 @@ export async function generateMetadata({
 
 export default async function ContactPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const [contact, activities, deals, allTags, allGroups] = await Promise.all([
+  const [contact, activities, deals, tasks, bookings, allTags, allGroups] = await Promise.all([
     getContactById(id),
     getActivitiesForContact(id),
     getDealsForContact(id),
+    getTasksForContact(id),
+    getBookingsForContact(id),
     getTags(),
     getGroups(),
   ])
@@ -47,6 +51,8 @@ export default async function ContactPage({ params }: { params: Promise<{ id: st
       contact={contact}
       activities={activities}
       deals={deals}
+      tasks={tasks}
+      bookings={bookings}
       allTags={allTags}
       allGroups={allGroups}
     />

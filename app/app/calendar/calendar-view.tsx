@@ -13,15 +13,16 @@ import {
   startOfMonth,
   startOfWeek,
 } from "date-fns"
-import { CalendarDays, ChevronLeft, ChevronRight, Plus } from "lucide-react"
+import { CalendarClock, CalendarDays, ChevronLeft, ChevronRight, Plus } from "lucide-react"
 
 import { PageHeader } from "@/components/page-header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { TaskFormDialog } from "@/components/task-form-dialog"
+import { BookingDetailDialog } from "@/components/booking-detail-dialog"
 import { APP_ROUTES } from "@/lib/routes"
 import { cn } from "@/lib/utils"
-import type { Task } from "@/lib/crm-types"
+import type { Booking, Task } from "@/lib/crm-types"
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
@@ -33,9 +34,10 @@ function priorityDot(task: Task, overdue: boolean): string {
   return "bg-nula-violet"
 }
 
-export function CalendarView({ tasks }: { tasks: Task[] }) {
+export function CalendarView({ tasks, bookings }: { tasks: Task[]; bookings: Booking[] }) {
   const [monthStart, setMonthStart] = useState(() => startOfMonth(new Date()))
   const [editTask, setEditTask] = useState<Task | null>(null)
+  const [openBooking, setOpenBooking] = useState<Booking | null>(null)
   const [newOpen, setNewOpen] = useState(false)
   const [newDueAt, setNewDueAt] = useState<string | null>(null)
 
@@ -60,6 +62,18 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
     }
     return { byDay: map, undated: undatedCount }
   }, [tasks])
+
+  const bookingsByDay = useMemo(() => {
+    const map = new Map<string, Booking[]>()
+    for (const b of bookings) {
+      if (!b.startAt) continue
+      const key = format(new Date(b.startAt), "yyyy-MM-dd")
+      const list = map.get(key) ?? []
+      list.push(b)
+      map.set(key, list)
+    }
+    return map
+  }, [bookings])
 
   const [now] = useState(() => Date.now())
 
@@ -119,6 +133,15 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
             </div>
           </div>
 
+          <div className="mb-3 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="size-1.5 rounded-full bg-nula-violet" /> Task
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <CalendarClock className="size-3 text-emerald-600" /> Appointment
+            </span>
+          </div>
+
           <div className="grid grid-cols-7 gap-px overflow-hidden rounded-lg border bg-border text-sm">
             {WEEKDAYS.map((d) => (
               <div key={d} className="bg-muted/50 py-2 text-center text-xs font-medium text-muted-foreground">
@@ -128,6 +151,12 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
             {days.map((day) => {
               const key = format(day, "yyyy-MM-dd")
               const dayTasks = byDay.get(key) ?? []
+              const dayBookings = bookingsByDay.get(key) ?? []
+              const shownBookings = dayBookings.slice(0, 2)
+              const taskSlots = Math.max(0, 3 - shownBookings.length)
+              const shownTasks = dayTasks.slice(0, taskSlots)
+              const overflow =
+                dayBookings.length + dayTasks.length - (shownBookings.length + shownTasks.length)
               const inMonth = isSameMonth(day, monthStart)
               return (
                 <div
@@ -151,7 +180,21 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
                     </button>
                   </div>
                   <div className="mt-1 flex flex-col gap-1">
-                    {dayTasks.slice(0, 3).map((t) => {
+                    {shownBookings.map((b) => (
+                      <button
+                        key={b.id}
+                        type="button"
+                        onClick={() => setOpenBooking(b)}
+                        className="flex items-center gap-1 truncate rounded bg-emerald-500/10 px-1 py-0.5 text-left text-xs text-emerald-800 hover:bg-emerald-500/20 dark:text-emerald-300"
+                        title={`${b.title}${b.attendeeName ? ` — ${b.attendeeName}` : ""}`}
+                      >
+                        <CalendarClock className="size-3 shrink-0" />
+                        <span className={cn("truncate", b.status === "canceled" && "line-through")}>
+                          {format(new Date(b.startAt!), "h:mma").toLowerCase()} {b.title}
+                        </span>
+                      </button>
+                    ))}
+                    {shownTasks.map((t) => {
                       const overdue = t.status === "open" && new Date(t.dueAt!).getTime() < now
                       return (
                         <button
@@ -168,10 +211,8 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
                         </button>
                       )
                     })}
-                    {dayTasks.length > 3 ? (
-                      <span className="px-1 text-xs text-muted-foreground">
-                        +{dayTasks.length - 3} more
-                      </span>
+                    {overflow > 0 ? (
+                      <span className="px-1 text-xs text-muted-foreground">+{overflow} more</span>
                     ) : null}
                   </div>
                 </div>
@@ -197,6 +238,7 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
         onOpenChange={(open) => !open && setEditTask(null)}
         task={editTask}
       />
+      <BookingDetailDialog booking={openBooking} onOpenChange={(open) => !open && setOpenBooking(null)} />
     </div>
   )
 }
