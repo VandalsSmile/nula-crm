@@ -1,19 +1,41 @@
 "use server"
 
 import crypto from "node:crypto"
-import { desc, eq, sql } from "drizzle-orm"
+import { desc, eq, inArray, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { headers } from "next/headers"
 
 import { db } from "@/lib/db"
 import {
+  activities,
+  aiActions,
+  automations,
+  bookings,
+  campaignSends,
+  campaigns,
+  companies,
+  contactGroups,
+  contactTags,
   contacts,
+  deals,
+  emailConnections,
+  enrichmentFeedback,
+  enrichmentRuns,
+  leadEvents,
+  leadRoutingRules,
+  leadSources,
+  locations,
+  messages,
+  groups,
+  tags,
+  tasks,
   teamInvites,
   user as userTable,
   workspaceAddons,
   workspaceSettings,
 } from "@/lib/db/schema"
-import { requireSuperAdmin } from "@/lib/superadmin"
+import { isSuperAdminEmail, requireSuperAdmin } from "@/lib/superadmin"
+import { getWorkspaceScopeIds } from "@/lib/workspace-scope"
 import { computeTrialStatus, trialEndDate } from "@/lib/trial"
 import { setAddonComp } from "@/lib/billing/addons"
 import { MODULE_IDS } from "@/lib/modules"
@@ -174,6 +196,82 @@ export async function setAccountB2BIntelligence(workspaceId: string, enabled: bo
   await setAddonComp(workspaceId, enabled, MODULE_IDS.b2bIntelligence, admin.id)
   revalidatePath("/admin")
   revalidatePath("/dashboard")
+}
+
+/**
+ * Permanently delete an entire account (workspace): the owner, all teammates,
+ * every workspace-scoped record, billing/settings rows, and the auth rows
+ * (sessions/accounts cascade from the user row). Irreversible. Super-admin only.
+ *
+ * Guards prevent deleting your own account or another super-admin's account.
+ */
+export async function deleteAccount(workspaceId: string): Promise<{ ok: true; deletedUsers: number }> {
+  const admin = await requireSuperAdmin()
+  if (!workspaceId) throw new Error("Missing account.")
+  if (workspaceId === admin.id) throw new Error("You can't delete your own account.")
+
+  const [owner] = await db
+    .select({ email: userTable.email })
+    .from(userTable)
+    .where(eq(userTable.id, workspaceId))
+    .limit(1)
+  if (owner && isSuperAdminEmail(owner.email)) {
+    throw new Error("You can't delete a super-admin account.")
+  }
+
+  // Every user id that owns data in this workspace (owner + teammates).
+  const scopeIds = await getWorkspaceScopeIds(workspaceId)
+
+  await db.transaction(async (tx) => {
+    // Contact-linked junctions have no user scope — clear them by contact id first.
+    const contactRows = await tx
+      .select({ id: contacts.id })
+      .from(contacts)
+      .where(inArray(contacts.userId, scopeIds))
+    const contactIds = contactRows.map((r) => r.id)
+    if (contactIds.length) {
+      await tx.delete(contactTags).where(inArray(contactTags.contactId, contactIds))
+      await tx.delete(contactGroups).where(inArray(contactGroups.contactId, contactIds))
+    }
+
+    // All workspace-scoped tables (keyed by userId).
+    const scoped = [
+      campaignSends,
+      activities,
+      messages,
+      deals,
+      tasks,
+      bookings,
+      enrichmentFeedback,
+      enrichmentRuns,
+      aiActions,
+      automations,
+      leadEvents,
+      leadRoutingRules,
+      leadSources,
+      emailConnections,
+      campaigns,
+      locations,
+      companies,
+      tags,
+      groups,
+      contacts,
+    ] as const
+    for (const table of scoped) {
+      await tx.delete(table).where(inArray(table.userId, scopeIds))
+    }
+
+    // Workspace-keyed rows.
+    await tx.delete(workspaceAddons).where(eq(workspaceAddons.workspaceId, workspaceId))
+    await tx.delete(workspaceSettings).where(eq(workspaceSettings.workspaceId, workspaceId))
+    await tx.delete(teamInvites).where(eq(teamInvites.workspaceId, workspaceId))
+
+    // Finally the user rows — sessions/accounts cascade via FK onDelete.
+    await tx.delete(userTable).where(inArray(userTable.id, scopeIds))
+  })
+
+  revalidatePath("/dashboard")
+  return { ok: true, deletedUsers: scopeIds.length }
 }
 
 /** Create a prospect invite — a link that spins up a brand-new trial account. */
