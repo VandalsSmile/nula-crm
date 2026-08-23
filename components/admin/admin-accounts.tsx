@@ -2,12 +2,13 @@
 
 import { useState } from "react"
 import useSWR from "swr"
-import { MoreHorizontal, PauseCircle, PlayCircle, Clock } from "lucide-react"
+import { MoreHorizontal, PauseCircle, PlayCircle, Clock, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,6 +29,7 @@ import {
 import { BrainCircuit } from "lucide-react"
 
 import {
+  deleteAccount,
   getAccounts,
   setAccountB2BIntelligence,
   setAccountPlan,
@@ -46,6 +48,7 @@ function planVariant(plan: string): "default" | "secondary" | "outline" | "destr
 export function AdminAccounts() {
   const { data, isLoading, mutate } = useSWR<AdminAccount[]>("admin-accounts", getAccounts)
   const [busy, setBusy] = useState<string | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<AdminAccount | null>(null)
   const accounts = data ?? []
 
   async function run(id: string, fn: () => Promise<unknown>, ok: string) {
@@ -62,6 +65,7 @@ export function AdminAccounts() {
   }
 
   return (
+    <>
     <Card>
       <CardHeader>
         <CardTitle>All accounts {accounts.length ? `(${accounts.length})` : ""}</CardTitle>
@@ -229,6 +233,14 @@ export function AdminAccounts() {
                               </DropdownMenuItem>
                             )}
                           </DropdownMenuGroup>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={() => setDeleteTarget(a)}
+                          >
+                            <Trash2 data-icon="inline-start" />
+                            Delete account…
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -240,5 +252,28 @@ export function AdminAccounts() {
         </div>
       </CardContent>
     </Card>
+
+    <ConfirmDeleteDialog
+      open={!!deleteTarget}
+      onOpenChange={(open) => !open && setDeleteTarget(null)}
+      title="Delete this account permanently?"
+      description={
+        deleteTarget
+          ? `Permanently delete ${deleteTarget.ownerEmail}${
+              deleteTarget.company ? ` (${deleteTarget.company})` : ""
+            } — the owner, ${deleteTarget.members > 1 ? `all ${deleteTarget.members} members, ` : ""}and every contact, deal, campaign, and setting in this workspace. This cannot be undone.`
+          : ""
+      }
+      onConfirm={async () => {
+        if (!deleteTarget) return
+        await run(
+          deleteTarget.workspaceId,
+          () => deleteAccount(deleteTarget.workspaceId),
+          "Account permanently deleted",
+        )
+        setDeleteTarget(null)
+      }}
+    />
+    </>
   )
 }
