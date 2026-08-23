@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowRight, Eye, EyeOff } from "lucide-react"
 
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Field, FieldGroup, FieldLabel, FieldDescription } from "@/components/ui/field"
 import { authClient } from "@/lib/auth-client"
+import { HONEYPOT_FIELD, isHoneypotTripped } from "@/lib/honeypot"
 import { APP_ROUTES } from "@/lib/routes"
 
 export function SignupPanel() {
@@ -21,9 +22,17 @@ export function SignupPanel() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  // Uncontrolled so we read the true DOM value at submit — catches bots that set
+  // the field value directly without firing React change events.
+  const honeypotRef = useRef<HTMLInputElement>(null)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+
+    // Bot check: real users never fill the hidden honeypot. Silently stop so we
+    // don't tip off the bot that it was detected.
+    if (isHoneypotTripped(honeypotRef.current?.value)) return
+
     setError(null)
     setLoading(true)
 
@@ -31,7 +40,9 @@ export function SignupPanel() {
       email: email.trim(),
       password,
       name: name.trim() || email.split("@")[0],
-    })
+      // Sent through to the auth route's server-side honeypot guard.
+      [HONEYPOT_FIELD]: honeypotRef.current?.value ?? "",
+    } as Parameters<typeof authClient.signUp.email>[0])
 
     if (error) {
       setLoading(false)
@@ -86,6 +97,23 @@ export function SignupPanel() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit}>
+              {/* Honeypot: hidden from real users, filled only by bots. Kept in
+                  the DOM (off-screen) so scrapers see it; never displayed. */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute left-[-9999px] top-[-9999px] h-0 w-0 overflow-hidden"
+              >
+                <label htmlFor={HONEYPOT_FIELD}>Company website</label>
+                <input
+                  ref={honeypotRef}
+                  id={HONEYPOT_FIELD}
+                  name={HONEYPOT_FIELD}
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  defaultValue=""
+                />
+              </div>
               <FieldGroup>
                 <Field>
                   <FieldLabel htmlFor="name">Full name</FieldLabel>
