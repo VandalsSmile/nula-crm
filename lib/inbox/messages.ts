@@ -95,6 +95,7 @@ export async function ingestInboundMessage(
       subject: payload.subject ?? "",
       body: payload.body,
       status: "received",
+      threadId: `thr_${contact.id}`,
     })
     .returning()
 
@@ -106,7 +107,7 @@ export async function ingestInboundMessage(
   await db.insert(activities).values({
     id: randomId("a"),
     userId: workspaceId,
-    type: payload.channel === "sms" ? "sms_sent" : "email_opened",
+    type: payload.channel === "sms" ? "sms_sent" : "email_received",
     message: `Inbound ${payload.channel} message received`,
     contactId: contact.id,
     actorId: "inbox",

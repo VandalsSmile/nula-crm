@@ -6,6 +6,7 @@ import { ingestInboundMessage } from "@/lib/inbox/messages"
 import { processLeadIntake } from "@/lib/leads/intake"
 import { resolveSourceByPublicKey, type LeadChannel } from "@/lib/leads/sources"
 import { logMailboxEmail, resolveEmailConnectionByToken } from "@/lib/email/mailbox"
+import { logReplyToRoute, resolveReplyRoute } from "@/lib/email/threading"
 
 export const runtime = "nodejs"
 
@@ -237,6 +238,31 @@ export async function POST(request: NextRequest) {
       console.error("[inbound/email] mailbox error", err)
       return NextResponse.json(
         { ok: false, error: err instanceof Error ? err.message : "Could not log email" },
+        { status: 400 },
+      )
+    }
+  }
+
+  // Reply routing: a contact replied to reply+{token}@… — thread the reply onto
+  // the conversation it belongs to (no mailbox access needed).
+  const route = await resolveReplyRoute(token)
+  if (route) {
+    try {
+      const result = await logReplyToRoute(route, {
+        fromEmail: email,
+        subject,
+        body: bodyText,
+        externalId,
+        messageId: first(data, ["message_id", "Message-Id", "messageId", "Message-ID"]),
+        inReplyTo: first(data, ["in_reply_to", "In-Reply-To", "inReplyTo"]),
+        references: first(data, ["references", "References"]),
+      })
+      console.log("[inbound/email] reply", JSON.stringify(result))
+      return NextResponse.json({ ok: true, ...result })
+    } catch (err) {
+      console.error("[inbound/email] reply error", err)
+      return NextResponse.json(
+        { ok: false, error: err instanceof Error ? err.message : "Could not log reply" },
         { status: 400 },
       )
     }

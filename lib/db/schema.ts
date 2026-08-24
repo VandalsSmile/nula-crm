@@ -283,6 +283,26 @@ export const messages = pgTable("messages", {
   externalId: text("externalId").notNull().default(""),
   fromEmail: text("fromEmail").notNull().default(""),
   toEmail: text("toEmail").notNull().default(""),
+  // Threading (RFC headers + a resolved conversation id).
+  messageId: text("messageId").notNull().default(""),
+  inReplyTo: text("inReplyTo").notNull().default(""),
+  referencesHeader: text("referencesHeader").notNull().default(""),
+  threadId: text("threadId").notNull().default(""),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+/**
+ * Maps a per-contact Reply-To token (reply+{token}@inbox…) back to its
+ * workspace + contact so a contact's reply is captured and threaded without any
+ * mailbox access.
+ */
+export const messageRoutes = pgTable("message_routes", {
+  id: text("id").primaryKey(),
+  userId: text("userId").notNull(),
+  contactId: text("contactId").notNull(),
+  token: text("token").notNull(),
+  threadId: text("threadId").notNull().default(""),
+  createdBy: text("createdBy").notNull().default(""),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 

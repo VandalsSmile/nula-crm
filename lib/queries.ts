@@ -628,7 +628,8 @@ export async function getInboxConversations(): Promise<InboxConversation[]> {
       lastChannel: msg.channel,
       lastAt: msg.createdAt.toISOString(),
       messageCount: 1,
-      unread: msg.direction === "inbound" && msg.status === "received",
+      unread:
+        msg.direction === "inbound" && (msg.status === "received" || msg.status === "logged"),
     })
   }
   return [...byContact.values()]
