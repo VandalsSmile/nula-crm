@@ -7,6 +7,7 @@ import {
   getContactById,
   getDealsForContact,
   getGroups,
+  getMessagesForContact,
   getTags,
   getTasksForContact,
 } from "@/lib/queries"
@@ -39,13 +40,14 @@ export async function generateMetadata({
 export default async function ContactPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const workspaceId = await getWorkspaceId()
-  const [contact, activities, deals, tasks, bookings, allTags, allGroups, intelligenceEnabled] =
+  const [contact, activities, deals, tasks, bookings, messages, allTags, allGroups, intelligenceEnabled] =
     await Promise.all([
       getContactById(id),
       getActivitiesForContact(id),
       getDealsForContact(id),
       getTasksForContact(id),
       getBookingsForContact(id),
+      getMessagesForContact(id),
       getTags(),
       getGroups(),
       isModuleEnabled(workspaceId, MODULE_IDS.b2bIntelligence),
@@ -53,6 +55,8 @@ export default async function ContactPage({ params }: { params: Promise<{ id: st
   if (!contact) notFound()
 
   const enrichment = intelligenceEnabled ? await getEnrichmentView("contact", id) : null
+  // Most-recent-first email history for the contact record.
+  const emails = messages.filter((m) => m.channel === "email").reverse()
 
   return (
     <ContactProfile
@@ -61,6 +65,7 @@ export default async function ContactPage({ params }: { params: Promise<{ id: st
       deals={deals}
       tasks={tasks}
       bookings={bookings}
+      emails={emails}
       allTags={allTags}
       allGroups={allGroups}
       intelligenceEnabled={intelligenceEnabled}
