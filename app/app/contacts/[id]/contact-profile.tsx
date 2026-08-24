@@ -14,6 +14,7 @@ import { DealFormDialog } from "@/components/deal-form-dialog"
 import { TaskFormDialog } from "@/components/task-form-dialog"
 import { BookingFormDialog } from "@/components/booking-form-dialog"
 import { RecordPurchaseDialog } from "@/components/record-purchase-dialog"
+import { EmailContactDialog } from "@/components/email-contact-dialog"
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -62,6 +63,7 @@ export function ContactProfile({
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [dealOpen, setDealOpen] = useState(false)
+  const [emailOpen, setEmailOpen] = useState(false)
   const [purchaseOpen, setPurchaseOpen] = useState(false)
   const [taskOpen, setTaskOpen] = useState(false)
   const [bookingOpen, setBookingOpen] = useState(false)
@@ -147,6 +149,10 @@ export function ContactProfile({
           <Button variant="outline" render={<Link href={APP_ROUTES.contacts} />}>
             <ArrowLeft data-icon="inline-start" />
             Back
+          </Button>
+          <Button onClick={() => setEmailOpen(true)}>
+            <Mail data-icon="inline-start" />
+            Email
           </Button>
           {intelligenceEnabled ? (
             <Button variant="outline" onClick={handleEnrich} disabled={enrichBusy}>
@@ -412,6 +418,13 @@ export function ContactProfile({
       </Card>
 
       <EditContactDialog open={editOpen} onOpenChange={setEditOpen} contact={contact} />
+      <EmailContactDialog
+        open={emailOpen}
+        onOpenChange={setEmailOpen}
+        contactId={contact.id}
+        contactName={contact.fullName}
+        contactEmail={contact.email}
+      />
       <RecordPurchaseDialog open={purchaseOpen} onOpenChange={setPurchaseOpen} contactId={contact.id} />
       <TaskFormDialog open={taskOpen} onOpenChange={setTaskOpen} defaultContactId={contact.id} />
       <BookingFormDialog open={bookingOpen} onOpenChange={setBookingOpen} defaultContactId={contact.id} />

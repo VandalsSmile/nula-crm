@@ -39,6 +39,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { deleteContact, exportContactsCsv } from "@/app/actions/contacts"
+import { EmailContactDialog } from "@/components/email-contact-dialog"
 import { Building2, Mail, Phone, UserRound } from "lucide-react"
 import { type Company, type Contact } from "@/lib/crm-types"
 import { useViewMode } from "@/hooks/use-view-mode"
@@ -71,6 +72,7 @@ export function ContactsView({
   const [importOpen, setImportOpen] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [editContact, setEditContact] = useState<Contact | null>(null)
+  const [emailContact, setEmailContact] = useState<Contact | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Contact | null>(null)
   const [view, setView] = useViewMode("contacts")
   const [, startTransition] = useTransition()
@@ -221,6 +223,10 @@ export function ContactsView({
                     <DropdownMenuItem render={<Link href={contactPath(contact.id)} />}>
                       View profile
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setEmailContact(contact)}>
+                      <Mail />
+                      Email
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setEditContact(contact)}>
                       <Pencil />
                       Edit
@@ -311,6 +317,10 @@ export function ContactsView({
                             <DropdownMenuItem render={<Link href={contactPath(contact.id)} />}>
                               View profile
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setEmailContact(contact)}>
+                              <Mail />
+                              Email
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => setEditContact(contact)}>
                               <Pencil />
                               Edit
@@ -338,6 +348,15 @@ export function ContactsView({
           open={!!editContact}
           onOpenChange={(open) => !open && setEditContact(null)}
           contact={editContact}
+        />
+      ) : null}
+      {emailContact ? (
+        <EmailContactDialog
+          open={!!emailContact}
+          onOpenChange={(open) => !open && setEmailContact(null)}
+          contactId={emailContact.id}
+          contactName={emailContact.fullName}
+          contactEmail={emailContact.email}
         />
       ) : null}
       <ConfirmDeleteDialog
