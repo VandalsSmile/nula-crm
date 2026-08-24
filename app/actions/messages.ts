@@ -10,6 +10,7 @@ import { requireActiveWorkspace } from "@/lib/entitlements"
 import { getMessagesForContact } from "@/lib/queries"
 import { randomId } from "@/lib/library-helpers"
 import { getWorkspaceEmailConfig, sendEmailViaResend } from "@/lib/email/sender"
+import { appendSignature } from "@/lib/email/signature"
 import {
   ensureReplyRoute,
   generateMessageId,
@@ -57,11 +58,17 @@ export async function sendMessage(input: {
         // capturing the full two-way thread without any mailbox access.
         const route = await ensureReplyRoute(workspaceId, input.contactId, user.id)
         messageId = generateMessageId()
+        // Append the author's saved signature to the email they send.
+        const { html, text } = await appendSignature(
+          user.id,
+          `<p>${body.replace(/\n/g, "<br>")}</p>`,
+          body,
+        )
         const result = await sendEmailViaResend(config, {
           to: contact.email,
           subject: input.subject || "Message from Nula",
-          html: `<p>${body.replace(/\n/g, "<br>")}</p>`,
-          text: body,
+          html,
+          text,
           replyTo: replyAddressForToken(route.token),
           headers: { "Message-ID": messageId },
         })

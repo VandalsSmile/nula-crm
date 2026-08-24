@@ -18,6 +18,7 @@ import { EmailConnectionSettings } from "@/components/settings/email-connection-
 import { RoutingRulesSettings } from "@/components/settings/routing-rules-settings"
 import { PlanSettings } from "@/components/settings/plan-settings"
 import { IntelligenceSettings } from "@/components/settings/intelligence-settings"
+import { SignatureSettings } from "@/components/settings/signature-settings"
 import { getAddonState, type AddonState } from "@/app/actions/billing"
 import { useUrlTab } from "@/hooks/use-url-tab"
 
@@ -27,6 +28,7 @@ const SETTINGS_TABS = [
   "team",
   "workspace",
   "email",
+  "signature",
   "leads",
   "intelligence",
   "plan",
@@ -70,6 +72,7 @@ export function SettingsView() {
           <TabsTrigger value="team">Team</TabsTrigger>
           <TabsTrigger value="workspace">Company</TabsTrigger>
           <TabsTrigger value="email">Email</TabsTrigger>
+          <TabsTrigger value="signature">Signature</TabsTrigger>
           <TabsTrigger value="leads">Lead sources</TabsTrigger>
           {intelligenceEnabled ? <TabsTrigger value="intelligence">Intelligence</TabsTrigger> : null}
           <TabsTrigger value="plan">Plan</TabsTrigger>
@@ -95,6 +98,10 @@ export function SettingsView() {
 
         <TabsContent value="email" className="mt-6" keepMounted>
           <EmailSettings />
+        </TabsContent>
+
+        <TabsContent value="signature" className="mt-6" keepMounted>
+          <SignatureSettings />
         </TabsContent>
 
         <TabsContent value="leads" className="mt-6 flex flex-col gap-3" keepMounted>

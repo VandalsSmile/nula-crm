@@ -306,6 +306,24 @@ export const messageRoutes = pgTable("message_routes", {
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 
+/** Per-user email signature appended to 1:1 emails authored in the CRM. */
+export const emailSignatures = pgTable("email_signatures", {
+  id: text("id").primaryKey(),
+  userId: text("userId").notNull(),
+  workspaceId: text("workspaceId").notNull().default(""),
+  enabled: boolean("enabled").notNull().default(true),
+  fullName: text("fullName").notNull().default(""),
+  title: text("title").notNull().default(""),
+  company: text("company").notNull().default(""),
+  phone: text("phone").notNull().default(""),
+  email: text("email").notNull().default(""),
+  website: text("website").notNull().default(""),
+  logoUrl: text("logoUrl").notNull().default(""),
+  tagline: text("tagline").notNull().default(""),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+})
+
 export const emailConnections = pgTable("email_connections", {
   id: text("id").primaryKey(),
   userId: text("userId").notNull(),
