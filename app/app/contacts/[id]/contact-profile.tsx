@@ -14,6 +14,7 @@ import { DealFormDialog } from "@/components/deal-form-dialog"
 import { TaskFormDialog } from "@/components/task-form-dialog"
 import { BookingFormDialog } from "@/components/booking-form-dialog"
 import { RecordPurchaseDialog } from "@/components/record-purchase-dialog"
+import { EmailContactDialog } from "@/components/email-contact-dialog"
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -34,7 +35,7 @@ import { deleteDeal } from "@/app/actions/deals"
 import { NulaIntelligenceCard } from "@/components/enrichment/nula-intelligence-card"
 import { enrichContact, type EnrichmentView } from "@/app/actions/enrichment"
 import { formatDateTime } from "@/lib/format"
-import { formatRevenue, type Activity, type Booking, type Contact, type Deal, type Group, type Tag, type Task } from "@/lib/crm-types"
+import { formatRevenue, type Activity, type Booking, type Contact, type Deal, type Group, type Message, type Tag, type Task } from "@/lib/crm-types"
 import { APP_ROUTES, companyPath } from "@/lib/routes"
 
 export function ContactProfile({
@@ -43,6 +44,7 @@ export function ContactProfile({
   deals,
   tasks,
   bookings,
+  emails = [],
   allTags,
   allGroups,
   intelligenceEnabled = false,
@@ -53,6 +55,7 @@ export function ContactProfile({
   deals: Deal[]
   tasks: Task[]
   bookings: Booking[]
+  emails?: Message[]
   allTags: Tag[]
   allGroups: Group[]
   intelligenceEnabled?: boolean
@@ -62,6 +65,7 @@ export function ContactProfile({
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [dealOpen, setDealOpen] = useState(false)
+  const [emailOpen, setEmailOpen] = useState(false)
   const [purchaseOpen, setPurchaseOpen] = useState(false)
   const [taskOpen, setTaskOpen] = useState(false)
   const [bookingOpen, setBookingOpen] = useState(false)
@@ -147,6 +151,10 @@ export function ContactProfile({
           <Button variant="outline" render={<Link href={APP_ROUTES.contacts} />}>
             <ArrowLeft data-icon="inline-start" />
             Back
+          </Button>
+          <Button onClick={() => setEmailOpen(true)}>
+            <Mail data-icon="inline-start" />
+            Email
           </Button>
           {intelligenceEnabled ? (
             <Button variant="outline" onClick={handleEnrich} disabled={enrichBusy}>
@@ -392,6 +400,50 @@ export function ContactProfile({
       ) : null}
 
       <Card>
+        <CardHeader className="flex-row items-center justify-between gap-4">
+          <CardTitle className="flex items-center gap-2">
+            <Mail className="size-4 text-muted-foreground" />
+            Emails
+          </CardTitle>
+          <Button size="sm" variant="outline" onClick={() => setEmailOpen(true)}>
+            <Mail data-icon="inline-start" />
+            New email
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {emails.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No emails yet. Send one to start the conversation.
+            </p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {emails.map((m) => (
+                <li key={m.id} className="flex flex-col gap-0.5 py-3 first:pt-0 last:pb-0">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm font-medium">
+                      {m.direction === "outbound" ? "Sent" : "Received"}
+                      {m.subject ? `: ${m.subject}` : ""}
+                    </span>
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      {formatDateTime(m.createdAt)}
+                    </span>
+                  </div>
+                  {m.body ? (
+                    <p className="line-clamp-2 whitespace-pre-line text-sm text-muted-foreground">
+                      {m.body}
+                    </p>
+                  ) : null}
+                  {m.direction === "outbound" && !["sent", "logged"].includes(m.status) ? (
+                    <span className="text-xs text-muted-foreground/80">{m.status}</span>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
         <CardHeader>
           <CardTitle>Timeline</CardTitle>
         </CardHeader>
@@ -412,6 +464,13 @@ export function ContactProfile({
       </Card>
 
       <EditContactDialog open={editOpen} onOpenChange={setEditOpen} contact={contact} />
+      <EmailContactDialog
+        open={emailOpen}
+        onOpenChange={setEmailOpen}
+        contactId={contact.id}
+        contactName={contact.fullName}
+        contactEmail={contact.email}
+      />
       <RecordPurchaseDialog open={purchaseOpen} onOpenChange={setPurchaseOpen} contactId={contact.id} />
       <TaskFormDialog open={taskOpen} onOpenChange={setTaskOpen} defaultContactId={contact.id} />
       <BookingFormDialog open={bookingOpen} onOpenChange={setBookingOpen} defaultContactId={contact.id} />
