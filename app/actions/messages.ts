@@ -9,6 +9,13 @@ import { requireRole, workspaceUserIdMatches } from "@/lib/auth-helpers"
 import { requireActiveWorkspace } from "@/lib/entitlements"
 import { getMessagesForContact } from "@/lib/queries"
 import { randomId } from "@/lib/library-helpers"
+import { getWorkspaceEmailConfig, sendEmailViaResend } from "@/lib/email/sender"
+import {
+  ensureReplyRoute,
+  generateMessageId,
+  replyAddressForToken,
+  threadIdForContact,
+} from "@/lib/email/threading"
 import { APP_ROUTES } from "@/lib/routes"
 import type { Message } from "@/lib/crm-types"
 
@@ -36,31 +43,29 @@ export async function sendMessage(input: {
   if (!contact) throw new Error("Contact not found")
 
   let status = "queued"
+  let messageId = ""
   if (input.channel === "email") {
     if (!contact.email) {
       status = "skipped"
     } else {
-      const key = process.env.RESEND_API_KEY?.trim()
-      if (!key) {
+      const config = await getWorkspaceEmailConfig(workspaceId)
+      if (!config.apiKey) {
         status = "queued"
       } else {
-        const from = process.env.RESEND_FROM_EMAIL?.trim() || "Nula CRM <info@nulacrm.ai>"
-        try {
-          const res = await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-            body: JSON.stringify({
-              from,
-              to: contact.email,
-              subject: input.subject || "Message from Nula",
-              html: `<p>${body.replace(/\n/g, "<br>")}</p>`,
-              text: body,
-            }),
-          })
-          status = res.ok ? "sent" : "failed"
-        } catch {
-          status = "failed"
-        }
+        // Route replies back to us: the contact replies to reply+{token}@… which
+        // lands on /api/inbound/email and is threaded onto this conversation —
+        // capturing the full two-way thread without any mailbox access.
+        const route = await ensureReplyRoute(workspaceId, input.contactId, user.id)
+        messageId = generateMessageId()
+        const result = await sendEmailViaResend(config, {
+          to: contact.email,
+          subject: input.subject || "Message from Nula",
+          html: `<p>${body.replace(/\n/g, "<br>")}</p>`,
+          text: body,
+          replyTo: replyAddressForToken(route.token),
+          headers: { "Message-ID": messageId },
+        })
+        status = result.ok ? "sent" : "failed"
       }
     }
   } else {
@@ -77,6 +82,8 @@ export async function sendMessage(input: {
     subject: input.subject ?? "",
     body,
     status,
+    messageId,
+    threadId: threadIdForContact(input.contactId),
   })
 
   await db
@@ -87,8 +94,10 @@ export async function sendMessage(input: {
   await db.insert(activities).values({
     id: randomId("a"),
     userId: workspaceId,
-    type: input.channel === "sms" ? "sms_sent" : "note_added",
-    message: `Sent ${input.channel} message`,
+    type: input.channel === "sms" ? "sms_sent" : "email_sent",
+    message: input.subject
+      ? `Sent email: "${input.subject}"`
+      : `Sent ${input.channel} message`,
     contactId: input.contactId,
     actorId: user.id,
   })

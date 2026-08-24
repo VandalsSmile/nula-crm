@@ -141,6 +141,8 @@ export async function logMailboxEmail(
     externalId,
     fromEmail: from,
     toEmail: counterparty,
+    // One conversation per contact (matches Inbox grouping + reply routing).
+    threadId: `thr_${contact.id}`,
   })
 
   await db.update(contacts).set({ lastActivityAt: new Date() }).where(eq(contacts.id, contact.id))
