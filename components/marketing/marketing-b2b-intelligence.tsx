@@ -180,6 +180,55 @@ export function MarketingB2BIntelligence() {
         </div>
       </section>
 
+      {/* See it in your CRM — real product screenshots */}
+      <section className="px-4 py-16 md:px-6">
+        <div className="mx-auto max-w-5xl">
+          <h2 className="text-center text-2xl font-semibold tracking-tight text-nula-ink md:text-3xl">
+            See it in your CRM
+          </h2>
+          <p className="mx-auto mt-3 max-w-2xl text-center text-nula-ink/60">
+            One click on a contact fills in the firmographics, scores the fit, and tells you what to
+            do next — right on the record.
+          </p>
+
+          <figure className="mx-auto mt-10 max-w-4xl">
+            <div className="overflow-hidden rounded-xl border border-nula-violet/10 bg-white shadow-xl shadow-nula-ink/10">
+              <div className="flex items-center gap-1.5 border-b border-nula-violet/10 bg-nula-paper/70 px-3 py-2">
+                <span className="size-2.5 rounded-full bg-nula-ink/15" />
+                <span className="size-2.5 rounded-full bg-nula-ink/15" />
+                <span className="size-2.5 rounded-full bg-nula-ink/15" />
+              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/screenshots/b2b-intelligence.webp"
+                alt="Nula B2B Intelligence card on a contact — Fit 88/100, industry, company size, revenue estimate, title, tech stack, growth signals, and a recommended next step, plus auto-applied segmentation tags"
+                loading="lazy"
+                className="block w-full"
+              />
+            </div>
+            <figcaption className="mt-3 text-center text-sm text-nula-ink/55">
+              The Nula Intelligence card — fit score, firmographics, an AI summary and next step, and
+              smart tags that power your segments.
+            </figcaption>
+          </figure>
+
+          <figure className="mx-auto mt-8 max-w-3xl">
+            <div className="overflow-hidden rounded-xl border border-nula-violet/10 bg-white shadow-lg shadow-nula-ink/10">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/screenshots/b2b-intelligence-plan.webp"
+                alt="Nula Settings — the B2B Intelligence add-on with its enrichment allowance"
+                loading="lazy"
+                className="block w-full"
+              />
+            </div>
+            <figcaption className="mt-3 text-center text-sm text-nula-ink/55">
+              Turn it on anytime from Settings → Plan — a $49/mo add-on with 250 enrichments a month.
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
       {/* Benefits */}
       <section className="px-4 py-16 md:px-6">
         <div className="mx-auto max-w-5xl">

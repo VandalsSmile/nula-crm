@@ -62,6 +62,36 @@ const SHOTS: Shot[] = [
       </>
     ),
   },
+  {
+    src: "/screenshots/b2b-intelligence.webp",
+    alt: "Nula B2B Intelligence card on a contact — a fit score, industry, company size, revenue estimate, title, tech stack, and a recommended next step",
+    caption: (
+      <>
+        <span className="font-medium text-nula-ink">B2B Intelligence</span> — enrich a lead into a
+        scored, qualified prospect in one click.
+      </>
+    ),
+  },
+  {
+    src: "/screenshots/contact-emails.webp",
+    alt: "A contact's email history and activity timeline in Nula, including sent emails and enrichment",
+    caption: (
+      <>
+        <span className="font-medium text-nula-ink">Email history</span> — every email you send and
+        receive, on the contact&apos;s timeline.
+      </>
+    ),
+  },
+  {
+    src: "/screenshots/email-signature.webp",
+    alt: "Nula email signature creator with fields and a live preview, added to every email you send",
+    caption: (
+      <>
+        <span className="font-medium text-nula-ink">Email signatures</span> — set yours once; it&apos;s
+        added to every email you send.
+      </>
+    ),
+  },
 ]
 
 function ShotFrame({ src, alt, className }: { src: string; alt: string; className?: string }) {
