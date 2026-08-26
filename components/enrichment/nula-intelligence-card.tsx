@@ -82,8 +82,8 @@ export function NulaIntelligenceCard({
   function handleFeedback(signal: FeedbackSignal) {
     startTransition(async () => {
       try {
-        await submitEnrichmentFeedback({ subjectType, subjectId, signal })
-        toast.success("Thanks — feedback saved")
+        const res = await submitEnrichmentFeedback({ subjectType, subjectId, signal })
+        toast.success(res.cleared ? "Marked wrong — enrichment cleared" : "Thanks — feedback saved")
         router.refresh()
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Could not save feedback")

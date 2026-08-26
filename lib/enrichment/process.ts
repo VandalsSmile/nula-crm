@@ -1,6 +1,6 @@
 import "server-only"
 
-import { and, eq } from "drizzle-orm"
+import { and, desc, eq } from "drizzle-orm"
 
 import { db } from "@/lib/db"
 import {
@@ -16,12 +16,113 @@ import { getWorkspaceScopeIds } from "@/lib/workspace-scope"
 import { randomId } from "@/lib/library-helpers"
 import { slugifyTag } from "@/lib/crm-defaults"
 import { contactFullName } from "@/lib/crm-types"
-import type { NormalizedEnrichment } from "@/lib/enrichment/types"
+import type { EnrichmentSubjectType, NormalizedEnrichment } from "@/lib/enrichment/types"
 import { attributeTagNames, completeNormalized, seniorityLabel } from "@/lib/enrichment/normalize"
 import { computeFitScore } from "@/lib/enrichment/fit-score"
 import { generateEnrichmentSummary } from "@/lib/enrichment/summary"
 
 type EnrichmentRunRow = typeof enrichmentRuns.$inferSelect
+
+/**
+ * Wipe enrichment data for a record — used when a user marks the info "wrong".
+ * Clears the enrichment-derived fields, removes the segmentation tags that
+ * enrichment applied (contacts), and marks the run(s) cleared so the card resets
+ * to its un-enriched state. The enrichment_runs rows are kept (status "cleared")
+ * so the "wrong" outcome stays in the learning dataset.
+ */
+export async function clearEnrichmentForSubject(
+  workspaceId: string,
+  subjectType: EnrichmentSubjectType,
+  subjectId: string,
+): Promise<void> {
+  const scopeIds = await getWorkspaceScopeIds(workspaceId)
+
+  if (subjectType === "contact") {
+    // Remove the tags this enrichment applied (derived from the latest run's data).
+    const [run] = await db
+      .select({ normalized: enrichmentRuns.normalized })
+      .from(enrichmentRuns)
+      .where(
+        and(
+          eq(enrichmentRuns.userId, workspaceId),
+          eq(enrichmentRuns.subjectType, "contact"),
+          eq(enrichmentRuns.subjectId, subjectId),
+          eq(enrichmentRuns.status, "completed"),
+        ),
+      )
+      .orderBy(desc(enrichmentRuns.requestedAt))
+      .limit(1)
+
+    for (const name of run ? attributeTagNames(run.normalized) : []) {
+      const slug = slugifyTag(name)
+      const [tag] = await db
+        .select({ id: tags.id })
+        .from(tags)
+        .where(and(workspaceUserIdMatches(tags.userId, scopeIds), eq(tags.slug, slug)))
+        .limit(1)
+      if (tag) {
+        await db
+          .delete(contactTags)
+          .where(and(eq(contactTags.contactId, subjectId), eq(contactTags.tagId, tag.id)))
+      }
+    }
+
+    await db
+      .update(contacts)
+      .set({
+        aiSummary: "",
+        recommendedNextAction: "",
+        title: "",
+        seniority: "",
+        linkedinUrl: "",
+        fitScore: 0,
+        enrichedAt: null,
+        enrichmentStatus: "",
+        lastActivityAt: new Date(),
+      })
+      .where(and(eq(contacts.id, subjectId), workspaceUserIdMatches(contacts.userId, scopeIds)))
+  } else {
+    await db
+      .update(companies)
+      .set({
+        industry: "",
+        subIndustry: "",
+        employeeCount: 0,
+        revenueEstimate: "",
+        companySize: "",
+        companyType: "",
+        linkedinUrl: "",
+        description: "",
+        techStack: "",
+        fitScore: 0,
+        enrichedAt: null,
+        enrichmentStatus: "",
+      })
+      .where(and(eq(companies.id, subjectId), workspaceUserIdMatches(companies.userId, scopeIds)))
+  }
+
+  // Mark completed runs as cleared (keeps them for the learning dataset).
+  await db
+    .update(enrichmentRuns)
+    .set({ status: "cleared" })
+    .where(
+      and(
+        eq(enrichmentRuns.userId, workspaceId),
+        eq(enrichmentRuns.subjectType, subjectType),
+        eq(enrichmentRuns.subjectId, subjectId),
+        eq(enrichmentRuns.status, "completed"),
+      ),
+    )
+
+  await db.insert(activities).values({
+    id: randomId("a"),
+    userId: workspaceId,
+    type: "edited",
+    message: "Cleared enrichment data (marked info wrong)",
+    contactId: subjectType === "contact" ? subjectId : "",
+    actorId: "nula-intelligence",
+  })
+}
 
 async function ensureTagId(
   workspaceId: string,
