@@ -19,7 +19,7 @@ import { randomId } from "@/lib/library-helpers"
 import { APP_ROUTES, companyPath, contactPath } from "@/lib/routes"
 import { getClayConfig, submitToClay } from "@/lib/enrichment/provider"
 import { mockEnrichment } from "@/lib/enrichment/mock"
-import { processEnrichmentResult } from "@/lib/enrichment/process"
+import { clearEnrichmentForSubject, processEnrichmentResult } from "@/lib/enrichment/process"
 import { fitScoreLabel } from "@/lib/enrichment/fit-score"
 import type {
   EnrichmentSubjectType,
@@ -348,7 +348,7 @@ export async function submitEnrichmentFeedback(input: {
   subjectType: EnrichmentSubjectType
   subjectId: string
   signal: FeedbackSignal
-}): Promise<{ ok: true }> {
+}): Promise<{ ok: true; cleared: boolean }> {
   const acting = await requireModule(MODULE_IDS.b2bIntelligence)
   if (!FEEDBACK_SIGNALS.includes(input.signal)) throw new Error("Unknown feedback signal")
 
@@ -384,6 +384,13 @@ export async function submitEnrichmentFeedback(input: {
     createdBy: acting.user.id,
   })
 
+  // "Info wrong" also clears the enrichment so bad data doesn't stick around.
+  let cleared = false
+  if (input.signal === "contact_incorrect") {
+    await clearEnrichmentForSubject(acting.workspaceId, input.subjectType, input.subjectId)
+    cleared = true
+  }
+
   revalidateSubject(input.subjectType, input.subjectId)
-  return { ok: true }
+  return { ok: true, cleared }
 }
