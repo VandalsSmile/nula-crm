@@ -80,7 +80,7 @@ export function EmailContactDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-h-[85vh]">
         <DialogHeader>
           <DialogTitle>Email {contactName}</DialogTitle>
           <DialogDescription>
@@ -89,33 +89,39 @@ export function EmailContactDialog({
               : "This contact has no email address yet. Add one on their profile first."}
           </DialogDescription>
         </DialogHeader>
-        <FieldGroup>
-          <Field>
-            <FieldLabel>To</FieldLabel>
-            <Input value={contactEmail || "No email on file"} readOnly disabled />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="email-subject">Subject</FieldLabel>
-            <Input
-              id="email-subject"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              placeholder="Subject"
-              disabled={!hasEmail || sending}
-            />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="email-body">Message</FieldLabel>
-            <Textarea
-              id="email-body"
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              placeholder={`Write to ${contactName}…`}
-              rows={7}
-              disabled={!hasEmail || sending}
-            />
-          </Field>
-        </FieldGroup>
+        {/* Scrolls so a long message never pushes Send out of reach. */}
+        <div className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1">
+          <FieldGroup>
+            <Field>
+              <FieldLabel>To</FieldLabel>
+              <Input value={contactEmail || "No email on file"} readOnly disabled />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="email-subject">Subject</FieldLabel>
+              <Input
+                id="email-subject"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder="Subject"
+                disabled={!hasEmail || sending}
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="email-body">Message</FieldLabel>
+              <Textarea
+                id="email-body"
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                placeholder={`Write to ${contactName}…`}
+                rows={7}
+                // Cap growth so the box scrolls internally instead of expanding
+                // the dialog past the viewport.
+                className="max-h-[40vh]"
+                disabled={!hasEmail || sending}
+              />
+            </Field>
+          </FieldGroup>
+        </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={sending}>
             Cancel
