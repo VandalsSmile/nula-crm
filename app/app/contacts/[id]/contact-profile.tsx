@@ -33,6 +33,7 @@ import { addContactNote } from "@/app/actions/activities"
 import { deleteContact } from "@/app/actions/contacts"
 import { deleteDeal } from "@/app/actions/deals"
 import { NulaIntelligenceCard } from "@/components/enrichment/nula-intelligence-card"
+import { EmailViewDialog } from "@/components/email-view-dialog"
 import { enrichContact, type EnrichmentView } from "@/app/actions/enrichment"
 import { formatDateTime } from "@/lib/format"
 import { formatRevenue, type Activity, type Booking, type Contact, type Deal, type Group, type Message, type Tag, type Task } from "@/lib/crm-types"
@@ -66,6 +67,7 @@ export function ContactProfile({
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [dealOpen, setDealOpen] = useState(false)
   const [emailOpen, setEmailOpen] = useState(false)
+  const [viewEmail, setViewEmail] = useState<Message | null>(null)
   const [purchaseOpen, setPurchaseOpen] = useState(false)
   const [taskOpen, setTaskOpen] = useState(false)
   const [bookingOpen, setBookingOpen] = useState(false)
@@ -418,24 +420,31 @@ export function ContactProfile({
           ) : (
             <ul className="divide-y divide-border">
               {emails.map((m) => (
-                <li key={m.id} className="flex flex-col gap-0.5 py-3 first:pt-0 last:pb-0">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-sm font-medium">
-                      {m.direction === "outbound" ? "Sent" : "Received"}
-                      {m.subject ? `: ${m.subject}` : ""}
-                    </span>
-                    <span className="shrink-0 text-xs text-muted-foreground">
-                      {formatDateTime(m.createdAt)}
-                    </span>
-                  </div>
-                  {m.body ? (
-                    <p className="line-clamp-2 whitespace-pre-line text-sm text-muted-foreground">
-                      {m.body}
-                    </p>
-                  ) : null}
-                  {m.direction === "outbound" && !["sent", "logged"].includes(m.status) ? (
-                    <span className="text-xs text-muted-foreground/80">{m.status}</span>
-                  ) : null}
+                <li key={m.id}>
+                  <button
+                    type="button"
+                    onClick={() => setViewEmail(m)}
+                    className="flex w-full flex-col gap-0.5 rounded-md py-3 text-left transition-colors hover:bg-muted/50"
+                    title="View email"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm font-medium">
+                        {m.direction === "outbound" ? "Sent" : "Received"}
+                        {m.subject ? `: ${m.subject}` : ""}
+                      </span>
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        {formatDateTime(m.createdAt)}
+                      </span>
+                    </div>
+                    {m.body ? (
+                      <p className="line-clamp-2 whitespace-pre-line text-sm text-muted-foreground">
+                        {m.body}
+                      </p>
+                    ) : null}
+                    {m.direction === "outbound" && !["sent", "logged"].includes(m.status) ? (
+                      <span className="text-xs text-muted-foreground/80">{m.status}</span>
+                    ) : null}
+                  </button>
                 </li>
               ))}
             </ul>
@@ -470,6 +479,12 @@ export function ContactProfile({
         contactId={contact.id}
         contactName={contact.fullName}
         contactEmail={contact.email}
+      />
+      <EmailViewDialog
+        open={!!viewEmail}
+        onOpenChange={(o) => !o && setViewEmail(null)}
+        email={viewEmail}
+        contactName={contact.fullName}
       />
       <RecordPurchaseDialog open={purchaseOpen} onOpenChange={setPurchaseOpen} contactId={contact.id} />
       <TaskFormDialog open={taskOpen} onOpenChange={setTaskOpen} defaultContactId={contact.id} />
