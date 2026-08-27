@@ -61,6 +61,10 @@ describe("renderSignatureHtml", () => {
     expect(html).toContain(`height="${LOGO_MAX_HEIGHT}"`)
     expect(html).toContain(`max-width:${LOGO_MAX_WIDTH}px`)
   })
+  it("wraps the logo in a light chip for dark-mode legibility", () => {
+    const html = renderSignatureHtml(full)
+    expect(html).toContain("background:#ffffff")
+  })
 })
 
 describe("fitLogoDimensions", () => {

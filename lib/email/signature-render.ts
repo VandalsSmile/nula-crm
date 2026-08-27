@@ -92,8 +92,12 @@ export function renderSignatureHtml(sig: SignatureFields): string {
   const logoDimStyle = hasDims
     ? `width:${sig.logoWidth}px;height:${sig.logoHeight}px;`
     : `height:${LOGO_MAX_HEIGHT}px;width:auto;max-width:${LOGO_MAX_WIDTH}px;max-height:${LOGO_MAX_HEIGHT}px;`
+  // Wrap the logo in a light "chip" so it stays legible in dark-mode clients:
+  // they auto-adjust text colors but not images, so a dark/transparent logo would
+  // otherwise disappear on a dark background. inline-block + line-height:0 hugs
+  // the logo tightly (invisible on light backgrounds).
   const logo = sig.logoUrl
-    ? `<div style="margin-bottom:8px;"><img src="${esc(sig.logoUrl)}" alt="${esc(sig.company || sig.fullName || "Logo")}"${logoDimAttrs} style="display:block;${logoDimStyle}" /></div>`
+    ? `<div style="display:inline-block;background:#ffffff;padding:6px 10px;border-radius:6px;margin-bottom:8px;line-height:0;"><img src="${esc(sig.logoUrl)}" alt="${esc(sig.company || sig.fullName || "Logo")}"${logoDimAttrs} style="display:block;${logoDimStyle}" /></div>`
     : ""
 
   return `<div style="margin-top:24px;padding-top:12px;border-top:1px solid #e5e7eb;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;">${logo}${lines.join("")}</div>`
