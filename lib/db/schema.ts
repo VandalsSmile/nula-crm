@@ -319,6 +319,8 @@ export const emailSignatures = pgTable("email_signatures", {
   email: text("email").notNull().default(""),
   website: text("website").notNull().default(""),
   logoUrl: text("logoUrl").notNull().default(""),
+  logoWidth: integer("logoWidth").notNull().default(0),
+  logoHeight: integer("logoHeight").notNull().default(0),
   tagline: text("tagline").notNull().default(""),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),

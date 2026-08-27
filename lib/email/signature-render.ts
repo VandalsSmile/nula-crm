@@ -12,6 +12,9 @@ export type SignatureFields = {
   email?: string
   website?: string
   logoUrl?: string
+  /** Intended 1× display size (px). Kept crisp on retina via a 2× source image. */
+  logoWidth?: number
+  logoHeight?: number
   tagline?: string
 }
 
@@ -56,8 +59,16 @@ export function renderSignatureHtml(sig: SignatureFields): string {
 
   if (sig.tagline) lines.push(`<div style="color:#6b7280;font-size:12px;margin-top:4px;">${esc(sig.tagline)}</div>`)
 
+  // Explicit width/height keep the logo the right size in clients that ignore
+  // max-* CSS (notably Outlook) and let HiDPI clients render the 2× source
+  // crisply. Fall back to max-* bounds when dimensions aren't known.
+  const hasDims = Boolean(sig.logoWidth && sig.logoHeight)
+  const logoDimAttrs = hasDims ? ` width="${sig.logoWidth}" height="${sig.logoHeight}"` : ""
+  const logoDimStyle = hasDims
+    ? `width:${sig.logoWidth}px;height:${sig.logoHeight}px;`
+    : "max-height:56px;max-width:200px;"
   const logo = sig.logoUrl
-    ? `<div style="margin-bottom:8px;"><img src="${esc(sig.logoUrl)}" alt="${esc(sig.company || sig.fullName || "Logo")}" style="max-height:56px;max-width:200px;" /></div>`
+    ? `<div style="margin-bottom:8px;"><img src="${esc(sig.logoUrl)}" alt="${esc(sig.company || sig.fullName || "Logo")}"${logoDimAttrs} style="display:block;${logoDimStyle}" /></div>`
     : ""
 
   return `<div style="margin-top:24px;padding-top:12px;border-top:1px solid #e5e7eb;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;">${logo}${lines.join("")}</div>`

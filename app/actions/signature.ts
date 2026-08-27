@@ -18,6 +18,8 @@ export type SignatureInfo = {
   email: string
   website: string
   logoUrl: string
+  logoWidth: number
+  logoHeight: number
   tagline: string
 }
 
@@ -40,6 +42,8 @@ export async function getMySignature(): Promise<SignatureInfo> {
       email: row.email,
       website: row.website,
       logoUrl: row.logoUrl,
+      logoWidth: row.logoWidth,
+      logoHeight: row.logoHeight,
       tagline: row.tagline,
     }
   }
@@ -60,6 +64,8 @@ export async function getMySignature(): Promise<SignatureInfo> {
     email: user.email ?? "",
     website: ws?.website ?? "",
     logoUrl: "",
+    logoWidth: 0,
+    logoHeight: 0,
     tagline: "",
   }
 }
@@ -77,6 +83,8 @@ export async function updateMySignature(input: Partial<SignatureInfo>): Promise<
   if (input.email !== undefined) set.email = input.email.trim()
   if (input.website !== undefined) set.website = input.website.trim()
   if (input.logoUrl !== undefined) set.logoUrl = input.logoUrl.trim()
+  if (input.logoWidth !== undefined) set.logoWidth = Math.max(0, Math.round(input.logoWidth))
+  if (input.logoHeight !== undefined) set.logoHeight = Math.max(0, Math.round(input.logoHeight))
   if (input.tagline !== undefined) set.tagline = input.tagline.trim()
 
   const [existing] = await db

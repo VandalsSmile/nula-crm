@@ -46,6 +46,16 @@ describe("renderSignatureHtml", () => {
     expect(html).not.toContain("<script>x</script>")
     expect(html).toContain("&lt;script&gt;")
   })
+  it("emits explicit width/height for the logo when dimensions are known", () => {
+    const html = renderSignatureHtml({ ...full, logoWidth: 200, logoHeight: 48 })
+    expect(html).toContain('width="200" height="48"')
+    expect(html).toContain("width:200px;height:48px;")
+  })
+  it("falls back to max bounds when logo dimensions are unknown", () => {
+    const html = renderSignatureHtml(full)
+    expect(html).toContain("max-height:56px;max-width:200px;")
+    expect(html).not.toContain('width="')
+  })
 })
 
 describe("renderSignatureText", () => {
