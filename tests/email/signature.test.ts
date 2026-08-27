@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest"
 
 import {
+  fitLogoDimensions,
   hasSignatureContent,
+  LOGO_MAX_HEIGHT,
+  LOGO_MAX_WIDTH,
   renderSignatureHtml,
   renderSignatureText,
   type SignatureFields,
@@ -47,14 +50,31 @@ describe("renderSignatureHtml", () => {
     expect(html).toContain("&lt;script&gt;")
   })
   it("emits explicit width/height for the logo when dimensions are known", () => {
-    const html = renderSignatureHtml({ ...full, logoWidth: 200, logoHeight: 48 })
-    expect(html).toContain('width="200" height="48"')
-    expect(html).toContain("width:200px;height:48px;")
+    const html = renderSignatureHtml({ ...full, logoWidth: 180, logoHeight: 40 })
+    expect(html).toContain('width="180" height="40"')
+    expect(html).toContain("width:180px;height:40px;")
   })
-  it("falls back to max bounds when logo dimensions are unknown", () => {
+  it("always pins the logo height even when dimensions are unknown", () => {
+    // An oversized upload without stored dims must still be capped, because many
+    // clients ignore max-height CSS — so we pin the height *attribute*.
     const html = renderSignatureHtml(full)
-    expect(html).toContain("max-height:56px;max-width:200px;")
-    expect(html).not.toContain('width="')
+    expect(html).toContain(`height="${LOGO_MAX_HEIGHT}"`)
+    expect(html).toContain(`max-width:${LOGO_MAX_WIDTH}px`)
+  })
+})
+
+describe("fitLogoDimensions", () => {
+  it("shrinks large logos into the box, preserving aspect ratio", () => {
+    // Tall/near-square logo (like the reported oversized one) is bound by height.
+    expect(fitLogoDimensions(500, 560)).toEqual({ width: 43, height: 48 })
+    // Wide logo is bound by width.
+    expect(fitLogoDimensions(800, 200)).toEqual({ width: 180, height: 45 })
+  })
+  it("never enlarges a small logo", () => {
+    expect(fitLogoDimensions(120, 30)).toEqual({ width: 120, height: 30 })
+  })
+  it("returns zeros for unknown source size", () => {
+    expect(fitLogoDimensions(0, 0)).toEqual({ width: 0, height: 0 })
   })
 })
 

@@ -18,6 +18,27 @@ export type SignatureFields = {
   tagline?: string
 }
 
+/**
+ * The enforced display footprint for a signature logo, in CSS px. Logos are fit
+ * inside this box so no signature can render an oversized logo, regardless of the
+ * uploaded image's dimensions.
+ */
+export const LOGO_MAX_WIDTH = 180
+export const LOGO_MAX_HEIGHT = 48
+
+/** Fit a source image inside the logo box (shrinks only; never enlarges). */
+export function fitLogoDimensions(
+  srcWidth: number,
+  srcHeight: number,
+): { width: number; height: number } {
+  if (!srcWidth || !srcHeight) return { width: 0, height: 0 }
+  const scale = Math.min(LOGO_MAX_WIDTH / srcWidth, LOGO_MAX_HEIGHT / srcHeight, 1)
+  return {
+    width: Math.max(1, Math.round(srcWidth * scale)),
+    height: Math.max(1, Math.round(srcHeight * scale)),
+  }
+}
+
 function esc(s: string): string {
   return s
     .replace(/&/g, "&amp;")
@@ -59,14 +80,18 @@ export function renderSignatureHtml(sig: SignatureFields): string {
 
   if (sig.tagline) lines.push(`<div style="color:#6b7280;font-size:12px;margin-top:4px;">${esc(sig.tagline)}</div>`)
 
-  // Explicit width/height keep the logo the right size in clients that ignore
-  // max-* CSS (notably Outlook) and let HiDPI clients render the 2× source
-  // crisply. Fall back to max-* bounds when dimensions aren't known.
+  // Enforce the logo size with explicit HTML *attributes*, not just CSS: many
+  // clients (Apple Mail, some webmail) ignore max-width/max-height on images, so
+  // an oversized upload would render at full size. When we know the aspect ratio
+  // we pin both width and height; otherwise we always pin height and cap width so
+  // the logo can never blow up. max-* is kept as a secondary backstop.
   const hasDims = Boolean(sig.logoWidth && sig.logoHeight)
-  const logoDimAttrs = hasDims ? ` width="${sig.logoWidth}" height="${sig.logoHeight}"` : ""
+  const logoDimAttrs = hasDims
+    ? ` width="${sig.logoWidth}" height="${sig.logoHeight}"`
+    : ` height="${LOGO_MAX_HEIGHT}"`
   const logoDimStyle = hasDims
     ? `width:${sig.logoWidth}px;height:${sig.logoHeight}px;`
-    : "max-height:56px;max-width:200px;"
+    : `height:${LOGO_MAX_HEIGHT}px;width:auto;max-width:${LOGO_MAX_WIDTH}px;max-height:${LOGO_MAX_HEIGHT}px;`
   const logo = sig.logoUrl
     ? `<div style="margin-bottom:8px;"><img src="${esc(sig.logoUrl)}" alt="${esc(sig.company || sig.fullName || "Logo")}"${logoDimAttrs} style="display:block;${logoDimStyle}" /></div>`
     : ""

@@ -3,6 +3,7 @@ import { put } from "@vercel/blob"
 import sharp from "sharp"
 
 import { getActingUser } from "@/lib/auth-helpers"
+import { LOGO_MAX_HEIGHT, LOGO_MAX_WIDTH } from "@/lib/email/signature-render"
 import { randomId } from "@/lib/library-helpers"
 
 export const dynamic = "force-dynamic"
@@ -11,13 +12,13 @@ export const runtime = "nodejs"
 const ALLOWED = ["image/png", "image/jpeg", "image/webp", "image/gif", "image/svg+xml"]
 const MAX_BYTES = 4 * 1024 * 1024 // 4MB
 
-// The signature logo renders in a 200×56px box in the email. We normalize the
+// The signature logo renders in a fixed box in the email. We normalize the
 // upload to 2× that footprint so it stays crisp on HiDPI/retina clients (the
 // #1 cause of "fine in preview, fuzzy in the sent email"). Email clients — and
 // Gmail's image proxy — resample the logo poorly when it arrives much larger
 // than its display size, so we pre-size it here instead.
-const MAX_DISPLAY_W = 200
-const MAX_DISPLAY_H = 56
+const MAX_DISPLAY_W = LOGO_MAX_WIDTH
+const MAX_DISPLAY_H = LOGO_MAX_HEIGHT
 const DPR = 2
 
 /**

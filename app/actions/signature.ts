@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache"
 import { getActingUser } from "@/lib/auth-helpers"
 import { db } from "@/lib/db"
 import { emailSignatures, workspaceSettings } from "@/lib/db/schema"
+import { ensureLogoDimensions } from "@/lib/email/signature"
 import { randomId } from "@/lib/library-helpers"
 import { APP_ROUTES } from "@/lib/routes"
 
@@ -26,11 +27,12 @@ export type SignatureInfo = {
 /** The current user's signature, prefilled from their account + company on first use. */
 export async function getMySignature(): Promise<SignatureInfo> {
   const { user, workspaceId } = await getActingUser()
-  const [row] = await db
+  const [existing] = await db
     .select()
     .from(emailSignatures)
     .where(eq(emailSignatures.userId, user.id))
     .limit(1)
+  const row = existing ? await ensureLogoDimensions(existing) : undefined
 
   if (row) {
     return {
