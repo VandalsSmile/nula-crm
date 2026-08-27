@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache"
 import { getActingUser } from "@/lib/auth-helpers"
 import { db } from "@/lib/db"
 import { emailSignatures, workspaceSettings } from "@/lib/db/schema"
-import { ensureLogoDimensions } from "@/lib/email/signature"
+import { ensureLogoNormalized } from "@/lib/email/signature"
 import { randomId } from "@/lib/library-helpers"
 import { APP_ROUTES } from "@/lib/routes"
 
@@ -32,7 +32,7 @@ export async function getMySignature(): Promise<SignatureInfo> {
     .from(emailSignatures)
     .where(eq(emailSignatures.userId, user.id))
     .limit(1)
-  const row = existing ? await ensureLogoDimensions(existing) : undefined
+  const row = existing ? await ensureLogoNormalized(existing) : undefined
 
   if (row) {
     return {
@@ -84,7 +84,13 @@ export async function updateMySignature(input: Partial<SignatureInfo>): Promise<
   if (input.phone !== undefined) set.phone = input.phone.trim()
   if (input.email !== undefined) set.email = input.email.trim()
   if (input.website !== undefined) set.website = input.website.trim()
-  if (input.logoUrl !== undefined) set.logoUrl = input.logoUrl.trim()
+  if (input.logoUrl !== undefined) {
+    const url = input.logoUrl.trim()
+    set.logoUrl = url
+    // Uploads go through /api/signature/logo, which already resizes the image, so
+    // a logo saved here is normalized. Clearing it resets the flag.
+    set.logoNormalized = url.length > 0
+  }
   if (input.logoWidth !== undefined) set.logoWidth = Math.max(0, Math.round(input.logoWidth))
   if (input.logoHeight !== undefined) set.logoHeight = Math.max(0, Math.round(input.logoHeight))
   if (input.tagline !== undefined) set.tagline = input.tagline.trim()
