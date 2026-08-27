@@ -141,7 +141,10 @@ export function SignatureSettings() {
                 ) : null}
               </div>
             </div>
-            <FieldDescription>PNG, JPG, WEBP, GIF, or SVG up to 4MB.</FieldDescription>
+            <FieldDescription>
+              PNG, JPG, WEBP, GIF, or SVG up to 4MB. Logos are automatically resized to a
+              consistent size (max 180×48px) so they look right in every email client.
+            </FieldDescription>
           </div>
 
           <FieldGroup>
@@ -202,7 +205,7 @@ export function SignatureSettings() {
                   src={logoUrl}
                   alt="Logo"
                   {...(logoWidth && logoHeight ? { width: logoWidth, height: logoHeight } : {})}
-                  className="mb-2 max-h-14 max-w-[200px] object-contain"
+                  className="mb-2 max-h-12 max-w-[180px] object-contain object-left"
                 />
               ) : null}
               {preview.fullName ? <div className="font-semibold text-foreground">{preview.fullName}</div> : null}
