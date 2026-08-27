@@ -25,6 +25,8 @@ export function SignatureSettings() {
 
   const enabled = (edits.enabled ?? data?.enabled ?? true) as boolean
   const logoUrl = text("logoUrl")
+  const logoWidth = (edits.logoWidth ?? data?.logoWidth ?? 0) as number
+  const logoHeight = (edits.logoHeight ?? data?.logoHeight ?? 0) as number
   const dirty = Object.keys(edits).length > 0
 
   async function handleLogoFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -36,9 +38,14 @@ export function SignatureSettings() {
       const body = new FormData()
       body.append("file", file)
       const res = await fetch("/api/signature/logo", { method: "POST", body })
-      const d = (await res.json()) as { url?: string; error?: string }
+      const d = (await res.json()) as { url?: string; width?: number; height?: number; error?: string }
       if (!res.ok || !d.url) throw new Error(d.error ?? "Upload failed")
-      setField("logoUrl", d.url)
+      setEdits((prev) => ({
+        ...prev,
+        logoUrl: d.url,
+        logoWidth: d.width ?? 0,
+        logoHeight: d.height ?? 0,
+      }))
       toast.success("Logo uploaded — remember to Save")
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not upload logo")
@@ -123,7 +130,11 @@ export function SignatureSettings() {
                   {logoUrl ? "Change logo" : "Upload logo"}
                 </Button>
                 {logoUrl ? (
-                  <Button variant="ghost" onClick={() => setField("logoUrl", "")} disabled={logoBusy}>
+                  <Button
+                    variant="ghost"
+                    onClick={() => setEdits((prev) => ({ ...prev, logoUrl: "", logoWidth: 0, logoHeight: 0 }))}
+                    disabled={logoBusy}
+                  >
                     <Trash2 data-icon="inline-start" />
                     Remove
                   </Button>
@@ -187,7 +198,12 @@ export function SignatureSettings() {
             <div className="border-t pt-3 text-sm leading-relaxed">
               {logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={logoUrl} alt="Logo" className="mb-2 max-h-14 max-w-[200px] object-contain" />
+                <img
+                  src={logoUrl}
+                  alt="Logo"
+                  {...(logoWidth && logoHeight ? { width: logoWidth, height: logoHeight } : {})}
+                  className="mb-2 max-h-14 max-w-[200px] object-contain"
+                />
               ) : null}
               {preview.fullName ? <div className="font-semibold text-foreground">{preview.fullName}</div> : null}
               {roleLine ? <div className="text-muted-foreground">{roleLine}</div> : null}
