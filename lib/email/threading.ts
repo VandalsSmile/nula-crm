@@ -189,8 +189,9 @@ export async function logReplyToRoute(
     contactFullName(contact.firstName, contact.lastName) || contact.name || contact.email || from
 
   const subject = payload.subject?.trim() ?? ""
+  const messageRowId = randomId("msg")
   await db.insert(messages).values({
-    id: randomId("msg"),
+    id: messageRowId,
     userId: workspaceId,
     contactId: route.contactId,
     direction: "inbound",
@@ -219,6 +220,8 @@ export async function logReplyToRoute(
     message: subject ? `Received reply: "${subject}"` : "Received email reply",
     contactId: route.contactId,
     actorId: "mailbox",
+    refType: "message",
+    refId: messageRowId,
   })
 
   // Best-effort: email the user who owns this conversation with a link to view it.

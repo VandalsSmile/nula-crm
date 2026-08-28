@@ -192,6 +192,8 @@ export function mapActivity(
     companyId: company.companyId ?? "",
     companyName: company.companyName ?? "",
     actorName: labelForUserId(labels, row.actorId),
+    refType: row.refType ?? "",
+    refId: row.refId ?? "",
     at: iso(row.at) ?? "",
   }
 }

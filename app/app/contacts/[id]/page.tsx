@@ -37,8 +37,15 @@ export async function generateMetadata({
   )
 }
 
-export default async function ContactPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ContactPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ email?: string }>
+}) {
   const { id } = await params
+  const { email: initialEmailId } = await searchParams
   const workspaceId = await getWorkspaceId()
   const [contact, activities, deals, tasks, bookings, messages, allTags, allGroups, intelligenceEnabled] =
     await Promise.all([
@@ -70,6 +77,7 @@ export default async function ContactPage({ params }: { params: Promise<{ id: st
       allGroups={allGroups}
       intelligenceEnabled={intelligenceEnabled}
       enrichment={enrichment}
+      initialEmailId={initialEmailId ?? ""}
     />
   )
 }

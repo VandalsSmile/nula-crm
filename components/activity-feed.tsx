@@ -21,6 +21,7 @@ import {
 import Link from "next/link"
 
 import { type Activity } from "@/lib/crm-types"
+import { activityHref } from "@/lib/activity-link"
 import { relativeTime } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import { companyPath, contactPath } from "@/lib/routes"
@@ -70,6 +71,7 @@ export function ActivityFeed({
     <ol className="flex flex-col">
       {items.map((a, i) => {
         const { icon: Icon, className } = config[a.type] ?? defaultConfig
+        const href = activityHref(a, showContext)
         return (
           <li key={a.id} className="flex gap-3">
             <div className="flex flex-col items-center">
@@ -79,7 +81,16 @@ export function ActivityFeed({
               {i < items.length - 1 ? <span className="w-px flex-1 bg-border" /> : null}
             </div>
             <div className="flex flex-col pb-5">
-              <p className="text-sm leading-snug text-muted-foreground">{a.message}</p>
+              {href ? (
+                <Link
+                  href={href}
+                  className="text-sm font-medium leading-snug text-foreground/90 hover:text-primary hover:underline"
+                >
+                  {a.message}
+                </Link>
+              ) : (
+                <p className="text-sm leading-snug text-muted-foreground">{a.message}</p>
+              )}
               {showContext && (a.contactName || a.companyName) ? (
                 <span className="text-xs text-foreground/70">
                   {a.contactName ? (

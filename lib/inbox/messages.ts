@@ -111,6 +111,8 @@ export async function ingestInboundMessage(
     message: `Inbound ${payload.channel} message received`,
     contactId: contact.id,
     actorId: "inbox",
+    refType: "message",
+    refId: message.id,
   })
 
   return { messageId: message.id, contactId: contact.id }
