@@ -80,8 +80,9 @@ export async function sendMessage(input: {
     status = "skipped"
   }
 
+  const messageRowId = randomId("msg")
   await db.insert(messages).values({
-    id: randomId("msg"),
+    id: messageRowId,
     userId: workspaceId,
     contactId: input.contactId,
     direction: "outbound",
@@ -107,6 +108,8 @@ export async function sendMessage(input: {
       : `Sent ${input.channel} message`,
     contactId: input.contactId,
     actorId: user.id,
+    // Link the "Sent email" activity to the message so the feed can open it.
+    ...(input.channel === "email" ? { refType: "message", refId: messageRowId } : {}),
   })
 
   revalidatePath(APP_ROUTES.inbox)
