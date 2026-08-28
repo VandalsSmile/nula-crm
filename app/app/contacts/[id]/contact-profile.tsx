@@ -50,6 +50,7 @@ export function ContactProfile({
   allGroups,
   intelligenceEnabled = false,
   enrichment = null,
+  initialEmailId = "",
 }: {
   contact: Contact
   activities: Activity[]
@@ -61,6 +62,8 @@ export function ContactProfile({
   allGroups: Group[]
   intelligenceEnabled?: boolean
   enrichment?: EnrichmentView | null
+  /** When set (from ?email=<id>), open that email on load — e.g. from the activity feed. */
+  initialEmailId?: string
 }) {
   const router = useRouter()
   const [editOpen, setEditOpen] = useState(false)
@@ -75,6 +78,15 @@ export function ContactProfile({
   const [note, setNote] = useState("")
   const [enrichBusy, setEnrichBusy] = useState(false)
   const [pending, startTransition] = useTransition()
+
+  // Deep-link from the activity feed (?email=<id>): open that email. Synced during
+  // render (React's recommended alternative to an effect) so it also fires when the
+  // param changes while already on this page.
+  const [deepLinkedEmailId, setDeepLinkedEmailId] = useState("")
+  if (initialEmailId && initialEmailId !== deepLinkedEmailId) {
+    setDeepLinkedEmailId(initialEmailId)
+    setViewEmail(emails.find((m) => m.id === initialEmailId) ?? null)
+  }
 
   async function handleEnrich() {
     setEnrichBusy(true)
@@ -401,7 +413,7 @@ export function ContactProfile({
         </Card>
       ) : null}
 
-      <Card>
+      <Card id="emails" className="scroll-mt-24">
         <CardHeader className="flex-row items-center justify-between gap-4">
           <CardTitle className="flex items-center gap-2">
             <Mail className="size-4 text-muted-foreground" />

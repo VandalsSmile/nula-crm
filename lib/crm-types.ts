@@ -305,6 +305,9 @@ export type Activity = {
   companyId: string
   companyName: string
   actorName: string
+  /** Underlying record this activity points to (e.g. "message" + a message id). */
+  refType: string
+  refId: string
   at: string
 }
 

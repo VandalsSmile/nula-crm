@@ -129,8 +129,9 @@ export async function logMailboxEmail(
   }
 
   const subject = payload.subject?.trim() ?? ""
+  const messageRowId = randomId("msg")
   await db.insert(messages).values({
-    id: randomId("msg"),
+    id: messageRowId,
     userId: workspaceId,
     contactId: contact.id,
     direction,
@@ -157,6 +158,8 @@ export async function logMailboxEmail(
     contactId: contact.id,
     // Outbound is attributable to the connected user; inbound comes from outside.
     actorId: direction === "outbound" ? connection.userId : "mailbox",
+    refType: "message",
+    refId: messageRowId,
   })
 
   return { status: "logged", contactId: contact.id, direction }

@@ -268,6 +268,10 @@ export const activities = pgTable("activities", {
   message: text("message").notNull(),
   contactId: text("contactId").notNull().default(""),
   actorId: text("actorId").notNull().default(""),
+  // Optional pointer to the record this activity is about (e.g. refType
+  // "message" + the message row id), so the feed can link to it.
+  refType: text("refType").notNull().default(""),
+  refId: text("refId").notNull().default(""),
   at: timestamp("at").notNull().defaultNow(),
 })
 
