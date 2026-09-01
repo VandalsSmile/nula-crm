@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { recordPurchase } from "@/app/actions/contacts"
+import { useWriteGuard } from "@/lib/use-write-guard"
 
 export function RecordPurchaseDialog({
   open,
@@ -27,6 +28,7 @@ export function RecordPurchaseDialog({
   contactId: string
 }) {
   const router = useRouter()
+  const guardWrite = useWriteGuard()
   const [saving, setSaving] = useState(false)
   const [product, setProduct] = useState("")
   const [amount, setAmount] = useState("")
@@ -36,6 +38,7 @@ export function RecordPurchaseDialog({
       toast.error("Product or service is required")
       return
     }
+    if (!guardWrite()) return
     setSaving(true)
     try {
       await recordPurchase({

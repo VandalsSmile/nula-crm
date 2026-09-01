@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { createLocation, updateLocation } from "@/app/actions/locations"
 import { lookupZip } from "@/app/actions/geo"
+import { useWriteGuard } from "@/lib/use-write-guard"
 import type { Location } from "@/lib/crm-types"
 
 type LocationFormValue = {
@@ -47,6 +48,7 @@ export function LocationFormDialog({
   onSaved?: (location: Location) => void
 }) {
   const router = useRouter()
+  const guardWrite = useWriteGuard()
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<LocationFormValue>(EMPTY)
 
@@ -92,6 +94,7 @@ export function LocationFormDialog({
       toast.error("Pick a company first")
       return
     }
+    if (!guardWrite()) return
     setSaving(true)
     try {
       const saved = location

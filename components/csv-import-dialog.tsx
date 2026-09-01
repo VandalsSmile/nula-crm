@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { importContactsFromCsv } from "@/app/actions/contacts"
+import { useWriteGuard } from "@/lib/use-write-guard"
 
 export function CsvImportDialog({
   open,
@@ -25,9 +26,11 @@ export function CsvImportDialog({
 }) {
   const router = useRouter()
   const inputRef = useRef<HTMLInputElement>(null)
+  const guardWrite = useWriteGuard()
   const [loading, setLoading] = useState(false)
 
   async function handleFile(file: File) {
+    if (!guardWrite()) return
     setLoading(true)
     try {
       const text = await file.text()

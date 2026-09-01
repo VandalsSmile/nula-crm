@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { ContactSelect } from "@/components/contact-select"
 import { createBooking, updateBooking } from "@/app/actions/bookings"
+import { useWriteGuard } from "@/lib/use-write-guard"
 import type { Booking } from "@/lib/crm-types"
 
 function toLocalInput(iso: string | null): string {
@@ -68,6 +69,7 @@ export function BookingFormDialog({
   onSaved?: () => void
 }) {
   const router = useRouter()
+  const guardWrite = useWriteGuard()
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<FormState>(() => makeForm(booking, defaultStartAt, defaultContactId))
 
@@ -83,6 +85,7 @@ export function BookingFormDialog({
       toast.error("Title is required")
       return
     }
+    if (!guardWrite()) return
     setSaving(true)
     try {
       const payload = {

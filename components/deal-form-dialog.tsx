@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { createDeal, updateDeal, type DealInput } from "@/app/actions/deals"
+import { useWriteGuard } from "@/lib/use-write-guard"
 import { DEAL_STAGES, type Deal } from "@/lib/crm-types"
 
 export function DealFormDialog({
@@ -37,6 +38,7 @@ export function DealFormDialog({
   deal?: Deal | null
 }) {
   const router = useRouter()
+  const guardWrite = useWriteGuard()
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
     title: "",
@@ -71,6 +73,7 @@ export function DealFormDialog({
       toast.error("Deal title is required")
       return
     }
+    if (!guardWrite()) return
     setSaving(true)
     try {
       const payload = {

@@ -20,6 +20,7 @@ import { CompanySelect } from "@/components/company-select"
 import { LocationSelect } from "@/components/location-select"
 import { TagPicker } from "@/components/tag-picker"
 import { useSessionUser } from "@/lib/session-context"
+import { useWriteGuard } from "@/lib/use-write-guard"
 import { createContact } from "@/app/actions/contacts"
 import { lookupZip } from "@/app/actions/geo"
 import type { Company } from "@/lib/crm-types"
@@ -76,6 +77,7 @@ export function AddContactDialog({
 }) {
   const router = useRouter()
   const me = useSessionUser()
+  const guardWrite = useWriteGuard()
   const [saving, setSaving] = useState(false)
   const [showMore, setShowMore] = useState(false)
   const [form, setForm] = useState<ContactForm>(() => makeForm(me.id, defaultCompany))
@@ -111,6 +113,7 @@ export function AddContactDialog({
       toast.error("Enter a first name or a company name")
       return
     }
+    if (!guardWrite()) return
     setSaving(true)
     try {
       await createContact(form)

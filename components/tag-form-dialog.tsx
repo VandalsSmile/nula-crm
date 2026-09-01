@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { createTag, updateTag } from "@/app/actions/tags"
+import { useWriteGuard } from "@/lib/use-write-guard"
 import type { Tag } from "@/lib/crm-types"
 
 export function TagFormDialog({
@@ -31,6 +32,7 @@ export function TagFormDialog({
   onSaved?: (tag: Tag) => void
 }) {
   const router = useRouter()
+  const guardWrite = useWriteGuard()
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({ name: "", description: "", color: "#4F3DF5" })
 
@@ -55,6 +57,7 @@ export function TagFormDialog({
       toast.error("Tag name is required")
       return
     }
+    if (!guardWrite()) return
     setSaving(true)
     try {
       const saved = tag ? await updateTag(tag.id, form) : await createTag(form)
