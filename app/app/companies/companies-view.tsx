@@ -28,6 +28,7 @@ import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog"
 import { ViewToggle } from "@/components/view-toggle"
 import { backfillCompaniesFromContacts, deleteCompany } from "@/app/actions/companies"
 import { useViewMode } from "@/hooks/use-view-mode"
+import { useWriteGuard } from "@/lib/use-write-guard"
 import { companyPath } from "@/lib/routes"
 import type { Company } from "@/lib/crm-types"
 
@@ -45,6 +46,7 @@ export function CompaniesView({
   const [backfilling, setBackfilling] = useState(false)
   const [view, setView] = useViewMode("companies")
   const [, startTransition] = useTransition()
+  const guardWrite = useWriteGuard()
 
   // Surface the newest companies up top so it's easy to find the one you just
   // added among many similarly-named ones. Only worth showing once the list is
@@ -88,7 +90,7 @@ export function CompaniesView({
         actions={
           <div className="flex items-center gap-2">
             <ViewToggle mode={view} onChange={setView} />
-            <Button onClick={() => setAddOpen(true)}>
+            <Button onClick={() => guardWrite() && setAddOpen(true)}>
               <Plus data-icon="inline-start" />
               Add company
             </Button>

@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { createCompany, updateCompany } from "@/app/actions/companies"
 import { lookupZip } from "@/app/actions/geo"
+import { useWriteGuard } from "@/lib/use-write-guard"
 import type { Company } from "@/lib/crm-types"
 
 type CompanyFormValue = {
@@ -56,6 +57,7 @@ export function CompanyFormDialog({
   onSaved?: (company: Company) => void
 }) {
   const router = useRouter()
+  const guardWrite = useWriteGuard()
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<CompanyFormValue>(EMPTY)
 
@@ -100,6 +102,9 @@ export function CompanyFormDialog({
       toast.error("Company name is required")
       return
     }
+    // Bail out early with a clear upgrade prompt when the trial has ended, rather
+    // than letting the server action throw a redacted, cryptic error.
+    if (!guardWrite()) return
     setSaving(true)
     try {
       const saved = company ? await updateCompany(company.id, form) : await createCompany(form)

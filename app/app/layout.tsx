@@ -53,6 +53,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     jobTitle: profile.jobTitle,
     image: session.user.image ?? null,
     isSuperAdmin: isSuperAdminEmail(session.user.email),
+    // Writes are blocked once the trial ends with no paid/comped plan; expose it
+    // so client write UIs can prompt an upgrade instead of hitting a server error.
+    canWrite: !trial.isExpired,
   }
 
   return (
