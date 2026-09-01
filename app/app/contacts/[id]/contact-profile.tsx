@@ -35,6 +35,7 @@ import { deleteDeal } from "@/app/actions/deals"
 import { NulaIntelligenceCard } from "@/components/enrichment/nula-intelligence-card"
 import { EmailViewDialog } from "@/components/email-view-dialog"
 import { enrichContact, type EnrichmentView } from "@/app/actions/enrichment"
+import { useWriteGuard } from "@/lib/use-write-guard"
 import { formatDateTime } from "@/lib/format"
 import { formatRevenue, type Activity, type Booking, type Contact, type Deal, type Group, type Message, type Tag, type Task } from "@/lib/crm-types"
 import { APP_ROUTES, companyPath } from "@/lib/routes"
@@ -78,6 +79,7 @@ export function ContactProfile({
   const [note, setNote] = useState("")
   const [enrichBusy, setEnrichBusy] = useState(false)
   const [pending, startTransition] = useTransition()
+  const guardWrite = useWriteGuard()
 
   // Deep-link from the activity feed (?email=<id>): open that email. Synced during
   // render (React's recommended alternative to an effect) so it also fires when the
@@ -114,6 +116,7 @@ export function ContactProfile({
 
   function saveNote() {
     if (!note.trim()) return
+    if (!guardWrite()) return
     startTransition(async () => {
       try {
         await addContactNote(contact.id, note)

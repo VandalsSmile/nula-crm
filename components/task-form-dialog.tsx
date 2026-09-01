@@ -26,6 +26,7 @@ import {
 import { ContactSelect } from "@/components/contact-select"
 import { AssigneeField } from "@/components/assignee-field"
 import { createTask, updateTask } from "@/app/actions/tasks"
+import { useWriteGuard } from "@/lib/use-write-guard"
 import { TASK_PRIORITIES, type Task, type TaskPriority } from "@/lib/crm-types"
 
 function toLocalInput(iso: string | null): string {
@@ -77,6 +78,7 @@ export function TaskFormDialog({
   onSaved?: () => void
 }) {
   const router = useRouter()
+  const guardWrite = useWriteGuard()
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<FormState>(() => makeForm(task, defaultContactId, defaultDueAt))
 
@@ -93,6 +95,7 @@ export function TaskFormDialog({
       toast.error("Task title is required")
       return
     }
+    if (!guardWrite()) return
     setSaving(true)
     try {
       const dueAt = form.due ? new Date(form.due).toISOString() : null

@@ -5,11 +5,10 @@ import { eq } from "drizzle-orm"
 import { getActingUser, getWorkspaceId } from "@/lib/auth-helpers"
 import { db } from "@/lib/db"
 import { workspaceSettings } from "@/lib/db/schema"
-import { isEntitled } from "@/lib/trial"
+import { isEntitled, TRIAL_ENDED_MESSAGE } from "@/lib/trial"
 
-/** Message shown when a workspace tries to make changes without an active plan. */
-export const TRIAL_ENDED_MESSAGE =
-  "Your Nula trial has ended. Upgrade in Settings → Plan to keep making changes."
+// Re-exported for existing importers; the source of truth is the pure trial module.
+export { TRIAL_ENDED_MESSAGE }
 
 /**
  * Whether the workspace currently has write access — paid, comped, or an

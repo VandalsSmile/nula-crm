@@ -1,6 +1,15 @@
 /** Length of the free trial for new workspaces. */
 export const TRIAL_DAYS = 7
 
+/**
+ * Message shown when a workspace tries to make changes without an active plan.
+ * Lives here (a pure, client-safe module) so both server guards and client UI
+ * can show the same text — important because Next.js redacts thrown server-action
+ * error messages in production, so the client must supply this itself.
+ */
+export const TRIAL_ENDED_MESSAGE =
+  "Your Nula trial has ended. Upgrade in Settings → Plan to keep making changes."
+
 /** The moment a trial started `from` should end. */
 export function trialEndDate(from: Date = new Date()): Date {
   return new Date(from.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000)

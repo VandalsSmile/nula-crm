@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CAMPAIGN_TEMPLATES } from "@/lib/crm-defaults"
+import { useWriteGuard } from "@/lib/use-write-guard"
 import { APP_ROUTES } from "@/lib/routes"
 import { campaignStatusLabel, type Campaign, type Group } from "@/lib/crm-types"
 import {
@@ -29,6 +30,7 @@ export function CampaignsView({
   groups: Group[]
 }) {
   const router = useRouter()
+  const guardWrite = useWriteGuard()
   const [pending, startTransition] = useTransition()
   const [deleteTarget, setDeleteTarget] = useState<Campaign | null>(null)
 
@@ -37,6 +39,7 @@ export function CampaignsView({
   }
 
   function createNew(kind: "broadcast" | "sequence") {
+    if (!guardWrite()) return
     startTransition(async () => {
       try {
         const { id } = await createCampaign({ kind })
@@ -48,6 +51,7 @@ export function CampaignsView({
   }
 
   function createFromTemplate(templateId: string) {
+    if (!guardWrite()) return
     startTransition(async () => {
       try {
         const result = await createCampaignFromTemplate(templateId)

@@ -27,6 +27,7 @@ import { CompanySelect } from "@/components/company-select"
 import { LocationSelect } from "@/components/location-select"
 import { updateContact, type ContactInput } from "@/app/actions/contacts"
 import { lookupZip } from "@/app/actions/geo"
+import { useWriteGuard } from "@/lib/use-write-guard"
 import { LIFECYCLE_STAGES, type Contact } from "@/lib/crm-types"
 
 export function EditContactDialog({
@@ -39,6 +40,7 @@ export function EditContactDialog({
   contact: Contact
 }) {
   const router = useRouter()
+  const guardWrite = useWriteGuard()
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<ContactInput>({
     firstName: "",
@@ -106,6 +108,7 @@ export function EditContactDialog({
       toast.error("Enter a first name or a company name")
       return
     }
+    if (!guardWrite()) return
     setSaving(true)
     try {
       await updateContact(contact.id, form)
