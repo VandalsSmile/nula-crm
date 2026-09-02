@@ -295,6 +295,20 @@ export const messages = pgTable("messages", {
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 
+/** Files (PDF, DOCX, images, …) attached to a contact. Stored in Vercel Blob. */
+export const contactDocuments = pgTable("contact_documents", {
+  id: text("id").primaryKey(),
+  userId: text("userId").notNull(),
+  contactId: text("contactId").notNull(),
+  fileName: text("fileName").notNull().default(""),
+  mimeType: text("mimeType").notNull().default(""),
+  sizeBytes: integer("sizeBytes").notNull().default(0),
+  url: text("url").notNull().default(""),
+  pathname: text("pathname").notNull().default(""),
+  uploadedBy: text("uploadedBy").notNull().default(""),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
 /**
  * Maps a per-contact Reply-To token (reply+{token}@inbox…) back to its
  * workspace + contact so a contact's reply is captured and threaded without any
