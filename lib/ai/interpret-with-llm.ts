@@ -7,6 +7,7 @@ import {
 } from "@/lib/ai/interpreter"
 
 const VALID_INTENTS: AiIntent[] = [
+  "search_crm",
   "search_contacts",
   "add_to_group",
   "apply_tag",
@@ -46,10 +47,16 @@ function normalizeLlmResult(raw: LlmInterpretation, command: string): Interprete
     requiresApproval: raw.requiresApproval ?? true,
   }
 
+  const params = raw.params ?? {}
+  // Search always needs the text to look up; fall back to the raw command.
+  if (raw.intent === "search_crm" && !params.query?.trim()) {
+    params.query = command.trim()
+  }
+
   return {
     intent: raw.intent,
-    params: raw.params ?? {},
-    requiresApproval: raw.requiresApproval ?? preview.requiresApproval,
+    params,
+    requiresApproval: raw.intent === "search_crm" ? false : raw.requiresApproval ?? preview.requiresApproval,
     preview,
   }
 }
@@ -62,8 +69,8 @@ export async function interpretCommandAsync(command: string): Promise<Interprete
         content: `You interpret natural-language CRM commands for a small business CRM.
 Return JSON only with this shape:
 {
-  "intent": "search_contacts" | "add_to_group" | "apply_tag" | "normalize_tags" | "find_duplicates" | "create_reactivation_campaign" | "summarize_conversion" | "draft_follow_up" | "unknown",
-  "params": { "groupName"?: string, "tagName"?: string, "product"?: string, "days"?: string, "topic"?: string, "filter"?: string },
+  "intent": "search_crm" | "search_contacts" | "add_to_group" | "apply_tag" | "normalize_tags" | "find_duplicates" | "create_reactivation_campaign" | "summarize_conversion" | "draft_follow_up" | "unknown",
+  "params": { "query"?: string, "groupName"?: string, "tagName"?: string, "product"?: string, "days"?: string, "topic"?: string, "filter"?: string },
   "requiresApproval": boolean,
   "preview": {
     "title": string,
@@ -72,6 +79,10 @@ Return JSON only with this shape:
     "warnings": string[]
   }
 }
+
+Intent guidance:
+- Use "search_crm" when the user is looking something up or asking to find/show a specific record — a person, company, deal, group, or tag (e.g. "find John", "acme corp", "who is jane@x.com", "show the widget deal"). Put the search text in params.query. Never requires approval.
+- Use the action intents (add_to_group, apply_tag, normalize_tags, create_reactivation_campaign, etc.) only for changes.
 
 Safety rules:
 - Bulk edits, deletes, sends, opt-in changes, lifecycle moves, campaigns, merges, exports require approval (requiresApproval: true).
