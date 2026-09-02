@@ -3,6 +3,7 @@ import {
   activities,
   campaigns,
   companies,
+  contactDocuments,
   contactGroups,
   contacts,
   contactTags,
@@ -22,6 +23,7 @@ import {
   mapCampaign,
   mapCompany,
   mapContact,
+  mapContactDocument,
   mapDeal,
   mapGroup,
   mapLocation,
@@ -29,7 +31,7 @@ import {
   mapTask,
   mapBooking,
 } from "@/lib/mappers"
-import type { Booking, Company, Contact, DashboardStats, Deal, InboxConversation, Location, Message, ReportData, Task } from "@/lib/crm-types"
+import type { Booking, Company, Contact, ContactDocument, DashboardStats, Deal, InboxConversation, Location, Message, ReportData, Task } from "@/lib/crm-types"
 import { LIFECYCLE_STAGES } from "@/lib/crm-types"
 import { getWorkspaceUserLabels, labelForUserId } from "@/lib/workspace-users"
 
@@ -652,6 +654,24 @@ export async function getMessagesForContact(contactId: string): Promise<Message[
     status: m.status,
     createdAt: m.createdAt.toISOString(),
   }))
+}
+
+export async function getDocumentsForContact(contactId: string): Promise<ContactDocument[]> {
+  const { workspaceId, scopeIds } = await getWorkspaceScope()
+  const [rows, users] = await Promise.all([
+    db
+      .select()
+      .from(contactDocuments)
+      .where(
+        and(
+          eq(contactDocuments.contactId, contactId),
+          workspaceUserIdMatches(contactDocuments.userId, scopeIds),
+        ),
+      )
+      .orderBy(desc(contactDocuments.createdAt)),
+    getWorkspaceUserLabels(workspaceId),
+  ])
+  return rows.map((d) => mapContactDocument(d, users))
 }
 
 export async function getWorkspaceBusinessType(workspaceId: string) {

@@ -5,6 +5,7 @@ import type {
   CampaignType,
   Company,
   Contact,
+  ContactDocument,
   CustomerStatus,
   Deal,
   DealStage,
@@ -24,6 +25,7 @@ import type {
   bookings,
   campaigns,
   companies,
+  contactDocuments,
   contacts,
   deals,
   groups,
@@ -43,6 +45,24 @@ type GroupRow = typeof groups.$inferSelect
 type ActivityRow = typeof activities.$inferSelect
 type DealRow = typeof deals.$inferSelect
 type CampaignRow = typeof campaigns.$inferSelect
+type ContactDocumentRow = typeof contactDocuments.$inferSelect
+
+export function mapContactDocument(
+  row: ContactDocumentRow,
+  users?: UserLabelMap,
+): ContactDocument {
+  return {
+    id: row.id,
+    contactId: row.contactId,
+    fileName: row.fileName,
+    mimeType: row.mimeType,
+    sizeBytes: row.sizeBytes,
+    url: row.url,
+    pathname: row.pathname,
+    uploadedByName: row.uploadedBy ? labelForUserId(users, row.uploadedBy) : "",
+    createdAt: iso(row.createdAt) ?? "",
+  }
+}
 
 export function mapTag(row: TagRow): Tag {
   return {

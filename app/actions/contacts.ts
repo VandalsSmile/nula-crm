@@ -3,10 +3,13 @@
 import { and, eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
+import { del } from "@vercel/blob"
+
 import { db } from "@/lib/db"
 import {
   activities,
   campaignSends,
+  contactDocuments,
   contactGroups,
   contactTags,
   contacts,
@@ -225,6 +228,13 @@ export async function recordPurchase(input: {
 export async function deleteContact(id: string): Promise<void> {
   const { scopeIds } = await getActingWriter()
 
+  // Grab attached document URLs first so we can clean up Blob storage after the
+  // rows are gone (Blob deletes are external calls, not part of the transaction).
+  const docs = await db
+    .select({ url: contactDocuments.url })
+    .from(contactDocuments)
+    .where(and(eq(contactDocuments.contactId, id), workspaceUserIdMatches(contactDocuments.userId, scopeIds)))
+
   // Delete the contact and every row that references it in one transaction so we
   // never leave orphaned links, deals, messages, or scheduled campaign sends.
   await db.transaction(async (tx) => {
@@ -240,12 +250,24 @@ export async function deleteContact(id: string): Promise<void> {
       .delete(deals)
       .where(and(eq(deals.contactId, id), workspaceUserIdMatches(deals.userId, scopeIds)))
     await tx
+      .delete(contactDocuments)
+      .where(and(eq(contactDocuments.contactId, id), workspaceUserIdMatches(contactDocuments.userId, scopeIds)))
+    await tx
       .delete(activities)
       .where(and(eq(activities.contactId, id), workspaceUserIdMatches(activities.userId, scopeIds)))
     await tx
       .delete(contacts)
       .where(and(eq(contacts.id, id), workspaceUserIdMatches(contacts.userId, scopeIds)))
   })
+
+  const urls = docs.map((d) => d.url).filter(Boolean)
+  if (urls.length > 0) {
+    try {
+      await del(urls)
+    } catch {
+      // Best-effort; orphaned blobs are harmless and can be swept later.
+    }
+  }
 
   revalidatePath(APP_ROUTES.contacts)
   revalidatePath(APP_ROUTES.dashboard)

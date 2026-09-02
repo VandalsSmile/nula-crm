@@ -33,11 +33,12 @@ import { addContactNote } from "@/app/actions/activities"
 import { deleteContact } from "@/app/actions/contacts"
 import { deleteDeal } from "@/app/actions/deals"
 import { NulaIntelligenceCard } from "@/components/enrichment/nula-intelligence-card"
+import { ContactDocuments } from "@/components/contact-documents"
 import { EmailViewDialog } from "@/components/email-view-dialog"
 import { enrichContact, type EnrichmentView } from "@/app/actions/enrichment"
 import { useWriteGuard } from "@/lib/use-write-guard"
 import { formatDateTime } from "@/lib/format"
-import { formatRevenue, type Activity, type Booking, type Contact, type Deal, type Group, type Message, type Tag, type Task } from "@/lib/crm-types"
+import { formatRevenue, type Activity, type Booking, type Contact, type ContactDocument, type Deal, type Group, type Message, type Tag, type Task } from "@/lib/crm-types"
 import { APP_ROUTES, companyPath } from "@/lib/routes"
 
 export function ContactProfile({
@@ -47,6 +48,7 @@ export function ContactProfile({
   tasks,
   bookings,
   emails = [],
+  documents = [],
   allTags,
   allGroups,
   intelligenceEnabled = false,
@@ -59,6 +61,7 @@ export function ContactProfile({
   tasks: Task[]
   bookings: Booking[]
   emails?: Message[]
+  documents?: ContactDocument[]
   allTags: Tag[]
   allGroups: Group[]
   intelligenceEnabled?: boolean
@@ -466,6 +469,8 @@ export function ContactProfile({
           )}
         </CardContent>
       </Card>
+
+      <ContactDocuments contactId={contact.id} documents={documents} />
 
       <Card>
         <CardHeader>

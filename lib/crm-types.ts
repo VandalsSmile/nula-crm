@@ -102,6 +102,7 @@ export const ACTIVITY_TYPES = [
   "appointment_booked",
   "purchase_made",
   "note_added",
+  "document_uploaded",
   "campaign_entered",
   "campaign_completed",
   "tag_added",
@@ -362,6 +363,18 @@ export type Message = {
   subject: string
   body: string
   status: string
+  createdAt: string
+}
+
+export type ContactDocument = {
+  id: string
+  contactId: string
+  fileName: string
+  mimeType: string
+  sizeBytes: number
+  url: string
+  pathname: string
+  uploadedByName: string
   createdAt: string
 }
 

@@ -6,6 +6,7 @@ import {
   getBookingsForContact,
   getContactById,
   getDealsForContact,
+  getDocumentsForContact,
   getGroups,
   getMessagesForContact,
   getTags,
@@ -47,7 +48,7 @@ export default async function ContactPage({
   const { id } = await params
   const { email: initialEmailId } = await searchParams
   const workspaceId = await getWorkspaceId()
-  const [contact, activities, deals, tasks, bookings, messages, allTags, allGroups, intelligenceEnabled] =
+  const [contact, activities, deals, tasks, bookings, messages, documents, allTags, allGroups, intelligenceEnabled] =
     await Promise.all([
       getContactById(id),
       getActivitiesForContact(id),
@@ -55,6 +56,7 @@ export default async function ContactPage({
       getTasksForContact(id),
       getBookingsForContact(id),
       getMessagesForContact(id),
+      getDocumentsForContact(id),
       getTags(),
       getGroups(),
       isModuleEnabled(workspaceId, MODULE_IDS.b2bIntelligence),
@@ -73,6 +75,7 @@ export default async function ContactPage({
       tasks={tasks}
       bookings={bookings}
       emails={emails}
+      documents={documents}
       allTags={allTags}
       allGroups={allGroups}
       intelligenceEnabled={intelligenceEnabled}

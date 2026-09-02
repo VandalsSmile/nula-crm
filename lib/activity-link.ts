@@ -17,6 +17,9 @@ export function activityHref(a: Activity, showContext: boolean): string | null {
   if (a.refType === "message" && a.refId && a.contactId) {
     return `${contactPath(a.contactId)}?email=${encodeURIComponent(a.refId)}`
   }
+  if (a.refType === "document" && a.contactId) {
+    return `${contactPath(a.contactId)}#documents`
+  }
   if (EMAIL_TYPES.has(a.type) && a.contactId) {
     return `${contactPath(a.contactId)}#emails`
   }
