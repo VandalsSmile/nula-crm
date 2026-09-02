@@ -31,8 +31,9 @@ import {
   mapTask,
   mapBooking,
 } from "@/lib/mappers"
-import type { Booking, Company, Contact, ContactDocument, DashboardStats, Deal, InboxConversation, Location, Message, ReportData, Task } from "@/lib/crm-types"
-import { LIFECYCLE_STAGES } from "@/lib/crm-types"
+import type { AiSearchHit, Booking, Company, Contact, ContactDocument, DashboardStats, Deal, InboxConversation, Location, Message, ReportData, Task } from "@/lib/crm-types"
+import { contactFullName, LIFECYCLE_STAGES } from "@/lib/crm-types"
+import { APP_ROUTES, companyPath, contactPath, groupPath } from "@/lib/routes"
 import { getWorkspaceUserLabels, labelForUserId } from "@/lib/workspace-users"
 
 async function contactLabels() {
@@ -672,6 +673,135 @@ export async function getDocumentsForContact(contactId: string): Promise<Contact
     getWorkspaceUserLabels(workspaceId),
   ])
   return rows.map((d) => mapContactDocument(d, users))
+}
+
+/**
+ * Lightweight cross-entity text search used by the AI command bar to return
+ * clickable links to matching records (contacts, companies, deals, groups, tags).
+ * Workspace-scoped; each category is capped so the dropdown stays snappy.
+ */
+export async function searchWorkspace(query: string): Promise<AiSearchHit[]> {
+  const q = query.trim()
+  if (q.length < 2) return []
+  const { scopeIds } = await getWorkspaceScope()
+  const pattern = `%${q}%`
+
+  const [contactRows, companyRows, dealRows, groupRows, tagRows] = await Promise.all([
+    db
+      .select({
+        id: contacts.id,
+        firstName: contacts.firstName,
+        lastName: contacts.lastName,
+        name: contacts.name,
+        email: contacts.email,
+        companyName: contacts.companyName,
+      })
+      .from(contacts)
+      .where(
+        and(
+          workspaceUserIdMatches(contacts.userId, scopeIds),
+          or(
+            ilike(contacts.firstName, pattern),
+            ilike(contacts.lastName, pattern),
+            ilike(contacts.name, pattern),
+            ilike(contacts.email, pattern),
+            ilike(contacts.phone, pattern),
+            ilike(contacts.companyName, pattern),
+          )!,
+        ),
+      )
+      .orderBy(desc(contacts.lastActivityAt))
+      .limit(6),
+    db
+      .select({ id: companies.id, name: companies.name, city: companies.city, state: companies.state })
+      .from(companies)
+      .where(
+        and(
+          workspaceUserIdMatches(companies.userId, scopeIds),
+          or(ilike(companies.name, pattern), ilike(companies.website, pattern), ilike(companies.city, pattern))!,
+        ),
+      )
+      .orderBy(companies.name)
+      .limit(5),
+    db
+      .select({
+        id: deals.id,
+        title: deals.title,
+        stage: deals.stage,
+        contactId: deals.contactId,
+        firstName: contacts.firstName,
+        lastName: contacts.lastName,
+        contactName: contacts.name,
+      })
+      .from(deals)
+      .leftJoin(contacts, eq(contacts.id, deals.contactId))
+      .where(
+        and(
+          workspaceUserIdMatches(deals.userId, scopeIds),
+          or(ilike(deals.title, pattern), ilike(deals.offerInterest, pattern))!,
+        ),
+      )
+      .orderBy(desc(deals.updatedAt))
+      .limit(5),
+    db
+      .select({ id: groups.id, name: groups.name, description: groups.description })
+      .from(groups)
+      .where(and(workspaceUserIdMatches(groups.userId, scopeIds), ilike(groups.name, pattern)))
+      .orderBy(groups.name)
+      .limit(4),
+    db
+      .select({ id: tags.id, name: tags.name })
+      .from(tags)
+      .where(and(workspaceUserIdMatches(tags.userId, scopeIds), ilike(tags.name, pattern)))
+      .orderBy(tags.name)
+      .limit(4),
+  ])
+
+  const hits: AiSearchHit[] = []
+
+  for (const c of contactRows) {
+    const label = contactFullName(c.firstName, c.lastName) || c.name || c.email || "Unnamed contact"
+    hits.push({
+      type: "contact",
+      id: c.id,
+      label,
+      subtitle: [c.companyName, c.email].filter(Boolean).join(" · ") || "Contact",
+      href: contactPath(c.id),
+    })
+  }
+  for (const co of companyRows) {
+    hits.push({
+      type: "company",
+      id: co.id,
+      label: co.name || "Unnamed company",
+      subtitle: [co.city, co.state].filter(Boolean).join(", ") || "Company",
+      href: companyPath(co.id),
+    })
+  }
+  for (const d of dealRows) {
+    const who = contactFullName(d.firstName ?? "", d.lastName ?? "") || d.contactName || ""
+    hits.push({
+      type: "deal",
+      id: d.id,
+      label: d.title || "Untitled deal",
+      subtitle: [`Deal · ${d.stage}`, who].filter(Boolean).join(" · "),
+      href: d.contactId ? contactPath(d.contactId) : APP_ROUTES.deals,
+    })
+  }
+  for (const g of groupRows) {
+    hits.push({
+      type: "group",
+      id: g.id,
+      label: g.name,
+      subtitle: g.description?.trim() || "Group",
+      href: groupPath(g.id),
+    })
+  }
+  for (const t of tagRows) {
+    hits.push({ type: "tag", id: t.id, label: t.name, subtitle: "Tag", href: APP_ROUTES.tags })
+  }
+
+  return hits
 }
 
 export async function getWorkspaceBusinessType(workspaceId: string) {

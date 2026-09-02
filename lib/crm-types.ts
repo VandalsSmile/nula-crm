@@ -312,6 +312,14 @@ export type Activity = {
   at: string
 }
 
+export type AiSearchHit = {
+  type: "contact" | "company" | "deal" | "group" | "tag"
+  id: string
+  label: string
+  subtitle: string
+  href: string
+}
+
 export type AiActionPreview = {
   title: string
   description: string

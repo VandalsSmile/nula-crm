@@ -1,6 +1,7 @@
 import type { AiActionPreview } from "@/lib/crm-types"
 
 export type AiIntent =
+  | "search_crm"
   | "search_contacts"
   | "add_to_group"
   | "apply_tag"
@@ -115,9 +116,9 @@ export function interpretCommand(command: string): InterpretedCommand {
 
   if (/facebook.*never booked|leads.*never booked|show.*leads/.test(text)) {
     return {
-      intent: "search_contacts",
+      intent: "search_crm",
       requiresApproval: false,
-      params: { filter: "never_booked" },
+      params: { query: command.trim(), filter: "never_booked" },
       preview: {
         ...basePreview("Search contacts", "Find contacts matching your criteria.", false),
         criteria: ["Filter by source and lifecycle stage"],
@@ -143,12 +144,12 @@ export function interpretCommand(command: string): InterpretedCommand {
   }
 
   return {
-    intent: "unknown",
+    intent: "search_crm",
     requiresApproval: false,
-    params: {},
+    params: { query: command.trim() },
     preview: {
-      ...basePreview("Search CRM", `I'll search your CRM for: "${command}"`, false),
-      criteria: ["Natural language search across contacts, tags, and groups"],
+      ...basePreview("Search Nula", `Searching your CRM for: "${command}"`, false),
+      criteria: ["Search contacts, companies, deals, groups, and tags"],
     },
   }
 }

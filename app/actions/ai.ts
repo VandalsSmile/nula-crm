@@ -25,9 +25,10 @@ import {
   getContacts,
   getInactiveCustomers,
   searchContactsByProductKeyword,
+  searchWorkspace,
 } from "@/lib/queries"
 import { slugifyTag } from "@/lib/crm-defaults"
-import type { AiActionPreview } from "@/lib/crm-types"
+import type { AiActionPreview, AiSearchHit } from "@/lib/crm-types"
 
 async function ensureGroup(workspaceId: string, scopeIds: string[], name: string) {
   const slug = slugifyTag(name)
@@ -205,6 +206,7 @@ async function executeAiActionInternal(
   let impactCount = 0
   let undoPayload: Record<string, unknown> | null = null
   let resultExtra: Record<string, unknown> = {}
+  let hits: AiSearchHit[] | undefined
 
   if (intent === "add_to_group") {
     const groupName = params.groupName ?? preview.title.replace(/^Add contacts to /, "")
@@ -368,10 +370,14 @@ async function executeAiActionInternal(
     summary = draft
   }
 
-  if (intent === "search_contacts" || intent === "unknown") {
-    const all = await getContacts()
-    impactCount = all.filter((c) => c.lifecycleStage === "New Lead" || c.lifecycleStage === "Interested").length
-    summary = `Found ${impactCount} contacts matching your search criteria.`
+  if (intent === "search_crm" || intent === "search_contacts" || intent === "unknown") {
+    const query = (params.query ?? "").trim()
+    hits = query ? await searchWorkspace(query) : []
+    impactCount = hits.length
+    resultExtra = { hits }
+    summary = hits.length
+      ? `Found ${hits.length} result${hits.length === 1 ? "" : "s"} in Nula${query ? ` for "${query}"` : ""}.`
+      : `No matches in Nula${query ? ` for "${query}"` : ""}.`
   }
 
   await db
@@ -391,7 +397,7 @@ async function executeAiActionInternal(
   revalidatePath(APP_ROUTES.groups)
   revalidatePath(APP_ROUTES.ai)
 
-  return { summary, impactCount }
+  return { summary, impactCount, hits }
 }
 
 export async function undoLastAiAction() {

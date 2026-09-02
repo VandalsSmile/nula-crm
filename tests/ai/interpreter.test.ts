@@ -36,9 +36,18 @@ describe("interpretCommand (regex fallback)", () => {
     expect(result.requiresApproval).toBe(false)
   })
 
-  it("falls back to unknown for unrecognized input", () => {
-    const result = interpretCommand("asdfghjkl")
-    expect(result.intent).toBe("unknown")
+  it("falls back to CRM search for unrecognized/lookup input, carrying the query", () => {
+    const result = interpretCommand("acme corp")
+    expect(result.intent).toBe("search_crm")
+    expect(result.requiresApproval).toBe(false)
+    expect(result.params.query).toBe("acme corp")
+  })
+
+  it("routes 'show me leads' to CRM search (read-only, with query)", () => {
+    const result = interpretCommand("show me leads who never booked")
+    expect(result.intent).toBe("search_crm")
+    expect(result.requiresApproval).toBe(false)
+    expect(result.params.query).toBeTruthy()
   })
 })
 
