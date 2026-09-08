@@ -10,6 +10,7 @@ import { requireActiveWorkspace } from "@/lib/entitlements"
 import { getMessagesForContact } from "@/lib/queries"
 import { randomId } from "@/lib/library-helpers"
 import { getWorkspaceEmailConfig, sendEmailViaResend } from "@/lib/email/sender"
+import { parseEmailList } from "@/lib/email/addresses"
 import { appendSignature } from "@/lib/email/signature"
 import {
   ensureReplyRoute,
@@ -30,11 +31,17 @@ export async function sendMessage(input: {
   channel: "email" | "sms"
   subject?: string
   body: string
+  cc?: string[]
+  bcc?: string[]
 }): Promise<{ ok: boolean; status: string }> {
   const { user, workspaceId, scopeIds } = await requireRole("Admin", "Member")
   await requireActiveWorkspace(workspaceId)
   const body = input.body?.trim()
   if (!body) throw new Error("Message body is required")
+
+  // Normalize Cc/Bcc to valid, deduped addresses (email channel only).
+  const ccList = input.channel === "email" ? parseEmailList((input.cc ?? []).join(",")) : []
+  const bccList = input.channel === "email" ? parseEmailList((input.bcc ?? []).join(",")) : []
 
   const [contact] = await db
     .select()
@@ -70,6 +77,8 @@ export async function sendMessage(input: {
           html,
           text,
           replyTo: replyAddressForToken(route.token),
+          cc: ccList,
+          bcc: bccList,
           headers: { "Message-ID": messageId },
         })
         status = result.ok ? "sent" : "failed"
@@ -91,6 +100,8 @@ export async function sendMessage(input: {
     body,
     status,
     messageId,
+    cc: ccList.join(", "),
+    bcc: bccList.join(", "),
     threadId: threadIdForContact(input.contactId),
   })
 

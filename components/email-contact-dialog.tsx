@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { sendMessage } from "@/app/actions/messages"
+import { invalidEmailTokens, parseEmailList } from "@/lib/email/addresses"
 
 /**
  * Compose and send an email to a contact. Available to any CRM user (send is
@@ -40,6 +41,9 @@ export function EmailContactDialog({
   const router = useRouter()
   const [subject, setSubject] = useState("")
   const [body, setBody] = useState("")
+  const [cc, setCc] = useState("")
+  const [bcc, setBcc] = useState("")
+  const [showCcBcc, setShowCcBcc] = useState(false)
   const [sending, setSending] = useState(false)
 
   const hasEmail = Boolean(contactEmail?.trim())
@@ -50,6 +54,11 @@ export function EmailContactDialog({
       toast.error("Message body is required")
       return
     }
+    const badCc = [...invalidEmailTokens(cc), ...invalidEmailTokens(bcc)]
+    if (badCc.length > 0) {
+      toast.error(`Check these addresses: ${badCc.slice(0, 3).join(", ")}`)
+      return
+    }
     setSending(true)
     try {
       const res = await sendMessage({
@@ -57,6 +66,8 @@ export function EmailContactDialog({
         channel: "email",
         subject: subject.trim() || undefined,
         body,
+        cc: parseEmailList(cc),
+        bcc: parseEmailList(bcc),
       })
       if (res.status === "sent") {
         toast.success(`Email sent to ${contactName}`)
@@ -69,6 +80,9 @@ export function EmailContactDialog({
       }
       setSubject("")
       setBody("")
+      setCc("")
+      setBcc("")
+      setShowCcBcc(false)
       onOpenChange(false)
       router.refresh()
     } catch (err) {
@@ -93,9 +107,45 @@ export function EmailContactDialog({
         <div className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1">
           <FieldGroup>
             <Field>
-              <FieldLabel>To</FieldLabel>
+              <div className="flex items-center justify-between gap-2">
+                <FieldLabel>To</FieldLabel>
+                {!showCcBcc ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowCcBcc(true)}
+                    className="text-xs font-medium text-primary hover:underline"
+                    disabled={!hasEmail || sending}
+                  >
+                    Add Cc/Bcc
+                  </button>
+                ) : null}
+              </div>
               <Input value={contactEmail || "No email on file"} readOnly disabled />
             </Field>
+            {showCcBcc ? (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field>
+                  <FieldLabel htmlFor="email-cc">Cc</FieldLabel>
+                  <Input
+                    id="email-cc"
+                    value={cc}
+                    onChange={(e) => setCc(e.target.value)}
+                    placeholder="name@example.com, …"
+                    disabled={!hasEmail || sending}
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="email-bcc">Bcc</FieldLabel>
+                  <Input
+                    id="email-bcc"
+                    value={bcc}
+                    onChange={(e) => setBcc(e.target.value)}
+                    placeholder="name@example.com, …"
+                    disabled={!hasEmail || sending}
+                  />
+                </Field>
+              </div>
+            ) : null}
             <Field>
               <FieldLabel htmlFor="email-subject">Subject</FieldLabel>
               <Input
