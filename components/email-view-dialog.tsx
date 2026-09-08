@@ -34,6 +34,9 @@ export function EmailViewDialog({
         .join(" · ")
     : ""
 
+  const cc = email?.cc?.trim()
+  const bcc = email?.bcc?.trim()
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh]">
@@ -41,6 +44,12 @@ export function EmailViewDialog({
           <DialogTitle>{email?.subject?.trim() || "(no subject)"}</DialogTitle>
           <DialogDescription>{meta}</DialogDescription>
         </DialogHeader>
+        {cc || bcc ? (
+          <div className="-mt-1 flex flex-col gap-0.5 text-xs text-muted-foreground">
+            {cc ? <span>Cc: {cc}</span> : null}
+            {bcc ? <span>Bcc: {bcc}</span> : null}
+          </div>
+        ) : null}
         <div className="-mx-1 min-h-0 flex-1 overflow-y-auto whitespace-pre-line px-1 text-sm leading-relaxed">
           {email?.body?.trim() ? email.body : "(no content)"}
         </div>

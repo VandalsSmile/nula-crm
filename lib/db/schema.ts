@@ -287,6 +287,8 @@ export const messages = pgTable("messages", {
   externalId: text("externalId").notNull().default(""),
   fromEmail: text("fromEmail").notNull().default(""),
   toEmail: text("toEmail").notNull().default(""),
+  cc: text("cc").notNull().default(""),
+  bcc: text("bcc").notNull().default(""),
   // Threading (RFC headers + a resolved conversation id).
   messageId: text("messageId").notNull().default(""),
   inReplyTo: text("inReplyTo").notNull().default(""),

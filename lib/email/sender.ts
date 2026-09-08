@@ -85,6 +85,8 @@ export async function sendEmailViaResend(
     html: string
     text?: string
     replyTo?: string
+    cc?: string[]
+    bcc?: string[]
     headers?: Record<string, string>
   },
 ): Promise<{ ok: boolean; error?: string }> {
@@ -103,6 +105,8 @@ export async function sendEmailViaResend(
         html: params.html,
         text: params.text ?? "",
         ...(params.replyTo ? { reply_to: params.replyTo } : {}),
+        ...(params.cc?.length ? { cc: params.cc } : {}),
+        ...(params.bcc?.length ? { bcc: params.bcc } : {}),
         ...(params.headers ? { headers: params.headers } : {}),
       }),
     })

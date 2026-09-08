@@ -653,6 +653,8 @@ export async function getMessagesForContact(contactId: string): Promise<Message[
     subject: m.subject,
     body: m.body,
     status: m.status,
+    cc: m.cc,
+    bcc: m.bcc,
     createdAt: m.createdAt.toISOString(),
   }))
 }

@@ -371,6 +371,8 @@ export type Message = {
   subject: string
   body: string
   status: string
+  cc: string
+  bcc: string
   createdAt: string
 }
 
