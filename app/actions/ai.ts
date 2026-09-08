@@ -201,7 +201,13 @@ async function executeAiActionInternal(
   preview: AiActionPreview,
 ) {
   const { user, workspaceId, scopeIds } = await getActingUser()
-  await requireActiveWorkspace(workspaceId)
+  // Read-only CRM search stays available after the trial ends (it changes
+  // nothing); every other AI action still requires an active plan.
+  const isReadonlySearch =
+    intent === "search_crm" || intent === "search_contacts" || intent === "unknown"
+  if (!isReadonlySearch) {
+    await requireActiveWorkspace(workspaceId)
+  }
   let summary = "Done."
   let impactCount = 0
   let undoPayload: Record<string, unknown> | null = null
