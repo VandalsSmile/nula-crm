@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Download, MoreHorizontal, Pencil, Plus, Search, Trash2, Upload } from "lucide-react"
+import { Download, MoreHorizontal, Pencil, Plus, Search, Trash2, Upload, Users } from "lucide-react"
 import { toast } from "sonner"
 
 import { PageHeader } from "@/components/page-header"
@@ -27,8 +27,13 @@ import {
 } from "@/components/ui/table"
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
@@ -39,10 +44,12 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { deleteContact, exportContactsCsv } from "@/app/actions/contacts"
+import { addContactToGroup, removeContactFromGroup } from "@/app/actions/groups"
 import { EmailContactDialog } from "@/components/email-contact-dialog"
 import { Building2, Mail, Phone, UserRound } from "lucide-react"
-import { type Company, type Contact } from "@/lib/crm-types"
+import { type Company, type Contact, type Group } from "@/lib/crm-types"
 import { useViewMode } from "@/hooks/use-view-mode"
+import { useWriteGuard } from "@/lib/use-write-guard"
 import { APP_ROUTES, contactPath } from "@/lib/routes"
 
 const ALL_COMPANIES = "__all__"
@@ -50,13 +57,16 @@ const ALL_COMPANIES = "__all__"
 export function ContactsView({
   contacts,
   companies,
+  groups = [],
   selectedCompanyId,
 }: {
   contacts: Contact[]
   companies: Company[]
+  groups?: Group[]
   selectedCompanyId: string
 }) {
   const router = useRouter()
+  const guardWrite = useWriteGuard()
   const searchParams = useSearchParams()
   const currentQuery = searchParams.get("q") ?? ""
   const [search, setSearch] = useState(currentQuery)
@@ -75,7 +85,57 @@ export function ContactsView({
   const [emailContact, setEmailContact] = useState<Contact | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Contact | null>(null)
   const [view, setView] = useViewMode("contacts")
-  const [, startTransition] = useTransition()
+  const [pending, startTransition] = useTransition()
+
+  function toggleGroup(contact: Contact, group: Group, isMember: boolean) {
+    if (!guardWrite()) return
+    startTransition(async () => {
+      try {
+        if (isMember) {
+          await removeContactFromGroup(contact.id, group.id)
+          toast.success(`Removed ${contact.fullName} from ${group.name}`)
+        } else {
+          await addContactToGroup(contact.id, group.id)
+          toast.success(`Added ${contact.fullName} to ${group.name}`)
+        }
+        router.refresh()
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Could not update group")
+      }
+    })
+  }
+
+  // Shared "Add to group" submenu for both the grid and table row menus.
+  function groupSubmenu(contact: Contact) {
+    return (
+      <DropdownMenuSub>
+        <DropdownMenuSubTrigger>
+          <Users />
+          Add to group
+        </DropdownMenuSubTrigger>
+        <DropdownMenuSubContent className="max-h-72 overflow-y-auto">
+          {groups.length === 0 ? (
+            <DropdownMenuItem render={<Link href={APP_ROUTES.groups} />}>Create a group…</DropdownMenuItem>
+          ) : (
+            groups.map((group) => {
+              const isMember = contact.groups.some((g) => g.id === group.id)
+              return (
+                <DropdownMenuCheckboxItem
+                  key={group.id}
+                  checked={isMember}
+                  closeOnClick={false}
+                  disabled={pending}
+                  onCheckedChange={() => toggleGroup(contact, group, isMember)}
+                >
+                  {group.name}
+                </DropdownMenuCheckboxItem>
+              )
+            })
+          )}
+        </DropdownMenuSubContent>
+      </DropdownMenuSub>
+    )
+  }
 
   useEffect(() => {
     const handle = setTimeout(() => {
@@ -231,6 +291,8 @@ export function ContactsView({
                       <Pencil />
                       Edit
                     </DropdownMenuItem>
+                    {groupSubmenu(contact)}
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(contact)}>
                       <Trash2 />
                       Delete
@@ -325,6 +387,8 @@ export function ContactsView({
                               <Pencil />
                               Edit
                             </DropdownMenuItem>
+                            {groupSubmenu(contact)}
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(contact)}>
                               <Trash2 />
                               Delete
