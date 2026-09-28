@@ -162,6 +162,9 @@ export const groups = pgTable("groups", {
   description: text("description").notNull().default(""),
   type: text("type").notNull().default("audience"),
   isSystem: boolean("isSystem").notNull().default(false),
+  // Target-list ownership + visibility ('shared' | 'private'). Audiences stay shared.
+  ownerId: text("ownerId").notNull().default(""),
+  visibility: text("visibility").notNull().default("shared"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 

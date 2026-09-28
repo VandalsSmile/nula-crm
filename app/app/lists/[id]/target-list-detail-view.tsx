@@ -3,10 +3,11 @@
 import { useMemo, useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Mail, Plus, Search, Trash2, UserPlus } from "lucide-react"
+import { ArrowLeft, Globe, Lock, Mail, Plus, Search, Trash2, UserPlus } from "lucide-react"
 import { toast } from "sonner"
 
 import { PageHeader } from "@/components/page-header"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -37,6 +38,7 @@ import { EmailContactDialog } from "@/components/email-contact-dialog"
 import {
   addContactsToTargetList,
   removeFromTargetList,
+  setTargetListVisibility,
   setTargetMemberNote,
   setTargetMemberOwner,
   setTargetMemberStatus,
@@ -106,12 +108,52 @@ export function TargetListDetailView({
         </Link>
         <PageHeader
           title={list.name}
-          description={list.description || "Work through this list and track outreach per contact."}
+          description={
+            [list.ownerName ? `Owned by ${list.ownerName}` : null, list.description]
+              .filter(Boolean)
+              .join(" · ") || "Work through this list and track outreach per contact."
+          }
           actions={
-            <Button onClick={() => guardWrite() && setAddOpen(true)}>
-              <UserPlus data-icon="inline-start" />
-              Add contacts
-            </Button>
+            <div className="flex items-center gap-2">
+              {list.canManage ? (
+                <Select
+                  value={list.visibility}
+                  onValueChange={(v) => run(() => setTargetListVisibility(list.id, v ?? "shared"))}
+                >
+                  <SelectTrigger className="h-9 w-[132px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="shared">
+                      <span className="flex items-center gap-2">
+                        <Globe className="size-3.5" /> Shared
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="private">
+                      <span className="flex items-center gap-2">
+                        <Lock className="size-3.5" /> Private
+                      </span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Badge variant="secondary" className="gap-1">
+                  {list.visibility === "private" ? (
+                    <>
+                      <Lock className="size-3" /> Private
+                    </>
+                  ) : (
+                    <>
+                      <Globe className="size-3" /> Shared
+                    </>
+                  )}
+                </Badge>
+              )}
+              <Button onClick={() => guardWrite() && setAddOpen(true)}>
+                <UserPlus data-icon="inline-start" />
+                Add contacts
+              </Button>
+            </div>
           }
         />
       </div>

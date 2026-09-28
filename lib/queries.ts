@@ -17,7 +17,8 @@ import {
   workspaceSettings,
 } from "@/lib/db/schema"
 import { and, desc, eq, ilike, inArray, lte, ne, or, sql } from "drizzle-orm"
-import { getWorkspaceScope, workspaceUserIdMatches } from "@/lib/auth-helpers"
+import { getActingUser, getWorkspaceScope, workspaceUserIdMatches } from "@/lib/auth-helpers"
+import { canManageTeam } from "@/lib/roles"
 import {
   mapActivity,
   mapCampaign,
@@ -256,7 +257,12 @@ export async function getTags() {
 export async function getGroups() {
   const { scopeIds } = await getWorkspaceScope()
   const [groupRows, memberCounts] = await Promise.all([
-    db.select().from(groups).where(workspaceUserIdMatches(groups.userId, scopeIds)).orderBy(groups.name),
+    // Audiences only — target lists live under /app/lists, not the Groups UI.
+    db
+      .select()
+      .from(groups)
+      .where(and(workspaceUserIdMatches(groups.userId, scopeIds), ne(groups.type, TARGET_LIST_TYPE)))
+      .orderBy(groups.name),
     db
       .select({
         groupId: contactGroups.groupId,
@@ -292,42 +298,55 @@ export async function getGroupById(id: string) {
 
 /** Sales outbound "target lists" (groups typed 'target_list') with outreach progress. */
 export async function getTargetLists(): Promise<TargetList[]> {
-  const { scopeIds } = await getWorkspaceScope()
+  const { user, workspaceId, scopeIds, role } = await getActingUser()
+  const isAdmin = canManageTeam(role)
   const listRows = await db
     .select()
     .from(groups)
     .where(and(workspaceUserIdMatches(groups.userId, scopeIds), eq(groups.type, TARGET_LIST_TYPE)))
     .orderBy(groups.name)
-  if (listRows.length === 0) return []
 
-  const counts = await db
-    .select({
-      groupId: contactGroups.groupId,
-      total: sql<number>`count(*)::int`,
-      worked: sql<number>`(count(*) filter (where ${contactGroups.status} <> 'new'))::int`,
-      responded: sql<number>`(count(*) filter (where ${contactGroups.status} in ('responded','meeting','won')))::int`,
-      won: sql<number>`(count(*) filter (where ${contactGroups.status} = 'won'))::int`,
-    })
-    .from(contactGroups)
-    .innerJoin(contacts, eq(contacts.id, contactGroups.contactId))
-    .where(
-      and(
-        workspaceUserIdMatches(contacts.userId, scopeIds),
-        inArray(
-          contactGroups.groupId,
-          listRows.map((l) => l.id),
+  // Private lists are visible only to their owner and to Owners/Admins.
+  const visibleRows = listRows.filter(
+    (l) => isAdmin || l.visibility !== "private" || l.ownerId === user.id,
+  )
+  if (visibleRows.length === 0) return []
+
+  const [counts, users] = await Promise.all([
+    db
+      .select({
+        groupId: contactGroups.groupId,
+        total: sql<number>`count(*)::int`,
+        worked: sql<number>`(count(*) filter (where ${contactGroups.status} <> 'new'))::int`,
+        responded: sql<number>`(count(*) filter (where ${contactGroups.status} in ('responded','meeting','won')))::int`,
+        won: sql<number>`(count(*) filter (where ${contactGroups.status} = 'won'))::int`,
+      })
+      .from(contactGroups)
+      .innerJoin(contacts, eq(contacts.id, contactGroups.contactId))
+      .where(
+        and(
+          workspaceUserIdMatches(contacts.userId, scopeIds),
+          inArray(
+            contactGroups.groupId,
+            visibleRows.map((l) => l.id),
+          ),
         ),
-      ),
-    )
-    .groupBy(contactGroups.groupId)
+      )
+      .groupBy(contactGroups.groupId),
+    getWorkspaceUserLabels(workspaceId),
+  ])
 
   const byId = new Map(counts.map((c) => [c.groupId, c]))
-  return listRows.map((l) => {
+  return visibleRows.map((l) => {
     const c = byId.get(l.id)
     return {
       id: l.id,
       name: l.name,
       description: l.description,
+      visibility: l.visibility === "private" ? "private" : "shared",
+      ownerId: l.ownerId,
+      ownerName: l.ownerId ? labelForUserId(users, l.ownerId) : "",
+      canManage: isAdmin || l.ownerId === user.id,
       memberCount: c?.total ?? 0,
       workedCount: c?.worked ?? 0,
       respondedCount: c?.responded ?? 0,
@@ -340,13 +359,16 @@ export async function getTargetLists(): Promise<TargetList[]> {
 export async function getTargetListById(
   id: string,
 ): Promise<{ list: TargetList; members: TargetListMember[] } | null> {
-  const { workspaceId, scopeIds } = await getWorkspaceScope()
+  const { user, workspaceId, scopeIds, role } = await getActingUser()
+  const isAdmin = canManageTeam(role)
   const [group] = await db
     .select()
     .from(groups)
     .where(and(eq(groups.id, id), workspaceUserIdMatches(groups.userId, scopeIds)))
     .limit(1)
-  if (!group) return null
+  if (!group || group.type !== TARGET_LIST_TYPE) return null
+  // A private list is hidden from everyone but its owner and Owners/Admins.
+  if (group.visibility === "private" && !isAdmin && group.ownerId !== user.id) return null
 
   const [rows, users] = await Promise.all([
     db
@@ -388,6 +410,10 @@ export async function getTargetListById(
     id: group.id,
     name: group.name,
     description: group.description,
+    visibility: group.visibility === "private" ? "private" : "shared",
+    ownerId: group.ownerId,
+    ownerName: group.ownerId ? labelForUserId(users, group.ownerId) : "",
+    canManage: isAdmin || group.ownerId === user.id,
     memberCount: members.length,
     workedCount: members.filter((m) => isWorkedStatus(m.status)).length,
     respondedCount: members.filter((m) => isRespondedStatus(m.status)).length,

@@ -252,10 +252,17 @@ export function isRespondedStatus(status: string): boolean {
   return status === "responded" || status === "meeting" || status === "won"
 }
 
+export type ListVisibility = "shared" | "private"
+
 export type TargetList = {
   id: string
   name: string
   description: string
+  visibility: ListVisibility
+  ownerId: string
+  ownerName: string
+  /** Whether the current viewer may change this list's visibility (owner or admin). */
+  canManage: boolean
   memberCount: number
   workedCount: number
   respondedCount: number
