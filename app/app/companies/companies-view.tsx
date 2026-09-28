@@ -3,11 +3,12 @@
 import { useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Building2, Clock, Globe, MapPin, MoreHorizontal, Pencil, Plus, Sparkles, Trash2, Users } from "lucide-react"
+import { Building2, Clock, Globe, Loader2, MapPin, MoreHorizontal, Pencil, Plus, Sparkles, Trash2, Users, Wand2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { PageHeader } from "@/components/page-header"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Table,
@@ -26,7 +27,7 @@ import {
 import { CompanyFormDialog } from "@/components/company-form-dialog"
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog"
 import { ViewToggle } from "@/components/view-toggle"
-import { backfillCompaniesFromContacts, deleteCompany } from "@/app/actions/companies"
+import { addCompanyByWebsite, backfillCompaniesFromContacts, deleteCompany } from "@/app/actions/companies"
 import { useViewMode } from "@/hooks/use-view-mode"
 import { useWriteGuard } from "@/lib/use-write-guard"
 import { companyPath } from "@/lib/routes"
@@ -44,9 +45,32 @@ export function CompaniesView({
   const [editCompany, setEditCompany] = useState<Company | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Company | null>(null)
   const [backfilling, setBackfilling] = useState(false)
+  const [website, setWebsite] = useState("")
+  const [fetching, setFetching] = useState(false)
   const [view, setView] = useViewMode("companies")
   const [, startTransition] = useTransition()
   const guardWrite = useWriteGuard()
+
+  async function handleAddByWebsite() {
+    const url = website.trim()
+    if (!url) return
+    if (!guardWrite()) return
+    setFetching(true)
+    try {
+      const { company, pulled } = await addCompanyByWebsite(url)
+      toast.success(
+        pulled.length
+          ? `Added ${company.name} — pulled in ${pulled.join(", ")}`
+          : `Added ${company.name}`,
+      )
+      setWebsite("")
+      router.push(companyPath(company.id))
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not add company")
+    } finally {
+      setFetching(false)
+    }
+  }
 
   // Surface the newest companies up top so it's easy to find the one you just
   // added among many similarly-named ones. Only worth showing once the list is
@@ -97,6 +121,45 @@ export function CompaniesView({
           </div>
         }
       />
+
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="flex flex-col gap-2 py-4">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <Wand2 className="size-4 text-primary" />
+            Add a company by website
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Paste a URL and Nula pulls in the name, phone, and location automatically.
+          </p>
+          <form
+            className="flex flex-col gap-2 sm:flex-row"
+            onSubmit={(e) => {
+              e.preventDefault()
+              handleAddByWebsite()
+            }}
+          >
+            <div className="relative flex-1">
+              <Globe className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
+                placeholder="acme.com"
+                className="h-10 pl-9"
+                disabled={fetching}
+                aria-label="Company website"
+              />
+            </div>
+            <Button type="submit" disabled={fetching || !website.trim()}>
+              {fetching ? (
+                <Loader2 className="animate-spin" data-icon="inline-start" />
+              ) : (
+                <Wand2 data-icon="inline-start" />
+              )}
+              {fetching ? "Fetching…" : "Fetch & add"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
       {unlinkedCount > 0 ? (
         <Card className="border-primary/20 bg-primary/5">

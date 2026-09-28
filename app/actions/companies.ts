@@ -12,6 +12,19 @@ import { mapCompany } from "@/lib/mappers"
 import type { Company } from "@/lib/crm-types"
 import { getCompanies } from "@/lib/queries"
 import { APP_ROUTES, companyPath } from "@/lib/routes"
+import { fetchBrand, normalizeUrl } from "@/lib/brand-fetch"
+
+/** Derive a readable company name from a domain, e.g. "acme-corp.com" → "Acme Corp". */
+function nameFromHost(host: string): string {
+  const root = host.replace(/^www\./, "").split(".")[0] ?? host
+  return (
+    root
+      .split(/[-_]/)
+      .filter(Boolean)
+      .map((w) => w[0]!.toUpperCase() + w.slice(1))
+      .join(" ") || host
+  )
+}
 
 export type CompanyInput = {
   name: string
@@ -62,6 +75,72 @@ export async function createCompany(input: CompanyInput): Promise<Company> {
 
   revalidatePath(APP_ROUTES.companies)
   return mapCompany(row, 0)
+}
+
+export type WebsiteAddResult = { company: Company; pulled: string[] }
+
+/**
+ * Create a company from just a website URL: Nula fetches the site and pulls in
+ * the name, phone, and location where available (best-effort — an unreachable
+ * site still creates the company from the domain). Available to any writer; no
+ * paid module required.
+ */
+export async function addCompanyByWebsite(rawUrl: string): Promise<WebsiteAddResult> {
+  const { workspaceId } = await getActingWriter()
+
+  let normalized: string
+  try {
+    normalized = normalizeUrl(rawUrl)
+  } catch {
+    throw new Error("Enter a valid website URL")
+  }
+  const host = new URL(normalized).host.replace(/^www\./, "")
+
+  let name = nameFromHost(host)
+  let website = normalized
+  let phone = ""
+  let city = ""
+  let state = ""
+  const pulled: string[] = []
+
+  try {
+    // We don't store a logo on the company, so persistence is a no-op.
+    const brand = await fetchBrand(normalized, async () => "")
+    if (brand.suggestedName?.trim()) {
+      name = brand.suggestedName.trim()
+      pulled.push("name")
+    }
+    if (brand.siteUrl) website = brand.siteUrl
+    if (brand.phone?.trim()) {
+      phone = brand.phone.trim()
+      pulled.push("phone")
+    }
+    if (brand.location?.trim()) {
+      const [c, s] = brand.location.split(",").map((p) => p.trim())
+      city = c ?? ""
+      state = s ?? ""
+      pulled.push("location")
+    }
+  } catch {
+    // Unreachable/blocked site — fall back to a company from the domain only.
+  }
+
+  const [row] = await db
+    .insert(companies)
+    .values({
+      id: randomId("co"),
+      userId: workspaceId,
+      name,
+      website,
+      phone,
+      city,
+      state,
+      notes: `Added from ${host}`,
+    })
+    .returning()
+
+  revalidatePath(APP_ROUTES.companies)
+  return { company: mapCompany(row, 0), pulled }
 }
 
 export async function updateCompany(id: string, input: Partial<CompanyInput>): Promise<Company> {
