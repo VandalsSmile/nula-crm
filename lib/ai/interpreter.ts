@@ -3,6 +3,7 @@ import type { AiActionPreview } from "@/lib/crm-types"
 export type AiIntent =
   | "search_crm"
   | "search_contacts"
+  | "create_company"
   | "add_to_group"
   | "apply_tag"
   | "normalize_tags"
@@ -54,6 +55,32 @@ export function interpretCommand(command: string): InterpretedCommand {
       preview: {
         ...basePreview("Find duplicate contacts", "Search for contacts with matching email or phone.", false),
         criteria: ["Match on email", "Match on normalized phone"],
+      },
+    }
+  }
+
+  // "add company acme.com" / "create a company called Acme (acme.com)".
+  if (/^(?:add|create)\s+(?:a\s+|an\s+)?(?:company|account|organization|org)\b/.test(text)) {
+    const rest = command
+      .trim()
+      .replace(/^(?:add|create)\s+(?:a\s+|an\s+)?(?:company|account|organization|org)\b/i, "")
+      .trim()
+    const urlMatch = rest.match(/\b((?:https?:\/\/)?[a-z0-9-]+(?:\.[a-z]{2,})+(?:\/\S*)?)\b/i)
+    const website = urlMatch?.[1] ?? ""
+    let name = rest.replace(/\([^)]*\)/g, " ")
+    if (website) name = name.replace(website, " ")
+    name = name.replace(/^(?:called|named|for|:)\s+/i, "").replace(/[.,]+$/, "").trim()
+    return {
+      intent: "create_company",
+      requiresApproval: false,
+      params: { name, website },
+      preview: {
+        ...basePreview(
+          "Add company",
+          website ? `Add ${website} and pull in its details.` : `Add company ${name || "(needs a name)"}.`,
+          false,
+        ),
+        criteria: website ? ["Fetch the website", "Pull in name, phone, location"] : ["Create a company record"],
       },
     }
   }

@@ -15,7 +15,8 @@ import {
 } from "@/lib/db/schema"
 import { getActingUser, workspaceUserIdMatches } from "@/lib/auth-helpers"
 import { requireActiveWorkspace } from "@/lib/entitlements"
-import { APP_ROUTES } from "@/lib/routes"
+import { APP_ROUTES, companyPath } from "@/lib/routes"
+import { addCompanyByWebsite, createCompany } from "@/app/actions/companies"
 import { interpretCommandAsync } from "@/lib/ai/interpret-with-llm"
 import { chatCompletion } from "@/lib/ai/llm"
 import { productKeywordsForIntent, type AiIntent } from "@/lib/ai/interpreter"
@@ -374,6 +375,34 @@ async function executeAiActionInternal(
     const draft = await generateFollowUpDraft(topic)
     resultExtra = { draft }
     summary = draft
+  }
+
+  if (intent === "create_company") {
+    const website = params.website?.trim()
+    const name = params.name?.trim()
+    if (website) {
+      const { company, pulled } = await addCompanyByWebsite(website)
+      impactCount = 1
+      hits = [
+        {
+          type: "company",
+          id: company.id,
+          label: company.name,
+          subtitle: pulled.length ? `Company · pulled ${pulled.join(", ")}` : "Company",
+          href: companyPath(company.id),
+        },
+      ]
+      summary = `Added ${company.name}.`
+    } else if (name) {
+      const company = await createCompany({ name })
+      impactCount = 1
+      hits = [{ type: "company", id: company.id, label: company.name, subtitle: "Company", href: companyPath(company.id) }]
+      summary = `Added ${company.name}.`
+    } else {
+      hits = []
+      summary = "Tell me the company name or website to add."
+    }
+    resultExtra = { hits }
   }
 
   if (intent === "search_crm" || intent === "search_contacts" || intent === "unknown") {

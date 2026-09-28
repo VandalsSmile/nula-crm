@@ -9,6 +9,7 @@ import {
 const VALID_INTENTS: AiIntent[] = [
   "search_crm",
   "search_contacts",
+  "create_company",
   "add_to_group",
   "apply_tag",
   "normalize_tags",
@@ -53,10 +54,13 @@ function normalizeLlmResult(raw: LlmInterpretation, command: string): Interprete
     params.query = command.trim()
   }
 
+  // These read-only / single-create intents never need an approval dialog.
+  const noApproval = raw.intent === "search_crm" || raw.intent === "create_company"
+
   return {
     intent: raw.intent,
     params,
-    requiresApproval: raw.intent === "search_crm" ? false : raw.requiresApproval ?? preview.requiresApproval,
+    requiresApproval: noApproval ? false : raw.requiresApproval ?? preview.requiresApproval,
     preview,
   }
 }
@@ -69,8 +73,8 @@ export async function interpretCommandAsync(command: string): Promise<Interprete
         content: `You interpret natural-language CRM commands for a small business CRM.
 Return JSON only with this shape:
 {
-  "intent": "search_crm" | "search_contacts" | "add_to_group" | "apply_tag" | "normalize_tags" | "find_duplicates" | "create_reactivation_campaign" | "summarize_conversion" | "draft_follow_up" | "unknown",
-  "params": { "query"?: string, "groupName"?: string, "tagName"?: string, "product"?: string, "days"?: string, "topic"?: string, "filter"?: string },
+  "intent": "search_crm" | "search_contacts" | "create_company" | "add_to_group" | "apply_tag" | "normalize_tags" | "find_duplicates" | "create_reactivation_campaign" | "summarize_conversion" | "draft_follow_up" | "unknown",
+  "params": { "query"?: string, "name"?: string, "website"?: string, "groupName"?: string, "tagName"?: string, "product"?: string, "days"?: string, "topic"?: string, "filter"?: string },
   "requiresApproval": boolean,
   "preview": {
     "title": string,
@@ -82,6 +86,7 @@ Return JSON only with this shape:
 
 Intent guidance:
 - Use "search_crm" when the user is looking something up or asking to find/show a specific record — a person, company, deal, group, or tag (e.g. "find John", "acme corp", "who is jane@x.com", "show the widget deal"). Put the search text in params.query. Never requires approval.
+- Use "create_company" when the user asks to add/create a company, account, or organization — especially with a website URL (e.g. "add company acme.com", "create an account for Acme"). Put any URL in params.website and any name in params.name. Never requires approval.
 - Use the action intents (add_to_group, apply_tag, normalize_tags, create_reactivation_campaign, etc.) only for changes.
 
 Safety rules:
