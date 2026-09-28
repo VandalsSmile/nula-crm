@@ -177,6 +177,11 @@ export const contactGroups = pgTable("contact_groups", {
   groupId: text("groupId").notNull(),
   addedAt: timestamp("addedAt").notNull().defaultNow(),
   addedBy: text("addedBy").notNull().default(""),
+  // Outreach tracking for sales "target lists" (groups typed 'target_list').
+  status: text("status").notNull().default("new"),
+  ownerId: text("ownerId").notNull().default(""),
+  lastTouchedAt: timestamp("lastTouchedAt"),
+  note: text("note").notNull().default(""),
 })
 
 export const deals = pgTable("deals", {

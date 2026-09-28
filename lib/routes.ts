@@ -9,6 +9,7 @@ export const APP_ROUTES = {
   calendar: `${APP_BASE}/calendar`,
   deals: `${APP_BASE}/deals`,
   groups: `${APP_BASE}/groups`,
+  lists: `${APP_BASE}/lists`,
   tags: `${APP_BASE}/tags`,
   campaigns: `${APP_BASE}/campaigns`,
   inbox: `${APP_BASE}/inbox`,
@@ -46,6 +47,10 @@ export function companyPath(id: string) {
 
 export function groupPath(id: string) {
   return `${APP_BASE}/groups/${id}`
+}
+
+export function targetListPath(id: string) {
+  return `${APP_BASE}/lists/${id}`
 }
 
 /** Accept only same-origin relative paths to prevent open redirects. */

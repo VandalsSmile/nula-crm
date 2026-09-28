@@ -21,6 +21,7 @@ import {
   LogOut,
   ListChecks,
   CalendarDays,
+  Target,
 } from "lucide-react"
 
 import {
@@ -78,6 +79,7 @@ const NAV_SECTIONS: { label?: string; items: { title: string; href: string; icon
     label: "Sales & outreach",
     items: [
       { title: "Deals", href: APP_ROUTES.deals, icon: Briefcase },
+      { title: "Target lists", href: APP_ROUTES.lists, icon: Target },
       { title: "Campaigns", href: APP_ROUTES.campaigns, icon: Megaphone },
       { title: "Inbox", href: APP_ROUTES.inbox, icon: Inbox },
       { title: "Automations", href: APP_ROUTES.automations, icon: Zap },

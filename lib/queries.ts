@@ -31,8 +31,8 @@ import {
   mapTask,
   mapBooking,
 } from "@/lib/mappers"
-import type { AiSearchHit, Booking, Company, Contact, ContactDocument, DashboardStats, Deal, InboxConversation, Location, Message, ReportData, Task } from "@/lib/crm-types"
-import { contactFullName, LIFECYCLE_STAGES } from "@/lib/crm-types"
+import type { AiSearchHit, Booking, Company, Contact, ContactDocument, DashboardStats, Deal, InboxConversation, Location, Message, OutreachStatus, ReportData, TargetList, TargetListMember, Task } from "@/lib/crm-types"
+import { contactFullName, isRespondedStatus, isWorkedStatus, LIFECYCLE_STAGES, OUTREACH_STATUSES, TARGET_LIST_TYPE } from "@/lib/crm-types"
 import { APP_ROUTES, companyPath, contactPath, groupPath } from "@/lib/routes"
 import { getWorkspaceUserLabels, labelForUserId } from "@/lib/workspace-users"
 
@@ -288,6 +288,112 @@ export async function getGroupById(id: string) {
     .where(and(eq(contactGroups.groupId, id), workspaceUserIdMatches(contacts.userId, scopeIds)))
 
   return mapGroup(row, countRow?.count ?? 0)
+}
+
+/** Sales outbound "target lists" (groups typed 'target_list') with outreach progress. */
+export async function getTargetLists(): Promise<TargetList[]> {
+  const { scopeIds } = await getWorkspaceScope()
+  const listRows = await db
+    .select()
+    .from(groups)
+    .where(and(workspaceUserIdMatches(groups.userId, scopeIds), eq(groups.type, TARGET_LIST_TYPE)))
+    .orderBy(groups.name)
+  if (listRows.length === 0) return []
+
+  const counts = await db
+    .select({
+      groupId: contactGroups.groupId,
+      total: sql<number>`count(*)::int`,
+      worked: sql<number>`(count(*) filter (where ${contactGroups.status} <> 'new'))::int`,
+      responded: sql<number>`(count(*) filter (where ${contactGroups.status} in ('responded','meeting','won')))::int`,
+      won: sql<number>`(count(*) filter (where ${contactGroups.status} = 'won'))::int`,
+    })
+    .from(contactGroups)
+    .innerJoin(contacts, eq(contacts.id, contactGroups.contactId))
+    .where(
+      and(
+        workspaceUserIdMatches(contacts.userId, scopeIds),
+        inArray(
+          contactGroups.groupId,
+          listRows.map((l) => l.id),
+        ),
+      ),
+    )
+    .groupBy(contactGroups.groupId)
+
+  const byId = new Map(counts.map((c) => [c.groupId, c]))
+  return listRows.map((l) => {
+    const c = byId.get(l.id)
+    return {
+      id: l.id,
+      name: l.name,
+      description: l.description,
+      memberCount: c?.total ?? 0,
+      workedCount: c?.worked ?? 0,
+      respondedCount: c?.responded ?? 0,
+      wonCount: c?.won ?? 0,
+    }
+  })
+}
+
+/** One target list with its members + per-member outreach status. */
+export async function getTargetListById(
+  id: string,
+): Promise<{ list: TargetList; members: TargetListMember[] } | null> {
+  const { workspaceId, scopeIds } = await getWorkspaceScope()
+  const [group] = await db
+    .select()
+    .from(groups)
+    .where(and(eq(groups.id, id), workspaceUserIdMatches(groups.userId, scopeIds)))
+    .limit(1)
+  if (!group) return null
+
+  const [rows, users] = await Promise.all([
+    db
+      .select({
+        contact: contacts,
+        status: contactGroups.status,
+        ownerId: contactGroups.ownerId,
+        lastTouchedAt: contactGroups.lastTouchedAt,
+        note: contactGroups.note,
+      })
+      .from(contactGroups)
+      .innerJoin(contacts, eq(contacts.id, contactGroups.contactId))
+      .where(and(eq(contactGroups.groupId, id), workspaceUserIdMatches(contacts.userId, scopeIds)))
+      .orderBy(desc(contactGroups.addedAt)),
+    getWorkspaceUserLabels(workspaceId),
+  ])
+
+  const members: TargetListMember[] = rows.map((r) => ({
+    contactId: r.contact.id,
+    fullName:
+      contactFullName(r.contact.firstName, r.contact.lastName) ||
+      r.contact.name ||
+      r.contact.email ||
+      "Unnamed contact",
+    companyName: r.contact.companyName,
+    email: r.contact.email,
+    phone: r.contact.phone,
+    lifecycleStage: r.contact.lifecycleStage,
+    status: (OUTREACH_STATUSES as readonly string[]).includes(r.status)
+      ? (r.status as OutreachStatus)
+      : "new",
+    ownerId: r.ownerId,
+    ownerName: r.ownerId ? labelForUserId(users, r.ownerId) : "",
+    lastTouchedAt: r.lastTouchedAt ? r.lastTouchedAt.toISOString() : null,
+    note: r.note,
+  }))
+
+  const list: TargetList = {
+    id: group.id,
+    name: group.name,
+    description: group.description,
+    memberCount: members.length,
+    workedCount: members.filter((m) => isWorkedStatus(m.status)).length,
+    respondedCount: members.filter((m) => isRespondedStatus(m.status)).length,
+    wonCount: members.filter((m) => m.status === "won").length,
+  }
+  return { list, members }
 }
 
 export async function getActivitiesForContact(contactId: string, limit = 30) {
