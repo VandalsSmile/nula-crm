@@ -218,6 +218,64 @@ export type Group = {
   memberCount?: number
 }
 
+/** Group `type` value used for sales outbound "target lists". */
+export const TARGET_LIST_TYPE = "target_list"
+
+/** Outreach progression for a contact within a target list. */
+export const OUTREACH_STATUSES = [
+  "new",
+  "attempted",
+  "contacted",
+  "responded",
+  "meeting",
+  "won",
+  "disqualified",
+] as const
+export type OutreachStatus = (typeof OUTREACH_STATUSES)[number]
+
+export const OUTREACH_STATUS_LABELS: Record<OutreachStatus, string> = {
+  new: "New",
+  attempted: "Attempted",
+  contacted: "Contacted",
+  responded: "Responded",
+  meeting: "Meeting",
+  won: "Won",
+  disqualified: "Disqualified",
+}
+
+/** A member is "worked" once any outreach has happened (past New). */
+export function isWorkedStatus(status: string): boolean {
+  return status !== "new"
+}
+/** Positive engagement: they replied, met, or converted. */
+export function isRespondedStatus(status: string): boolean {
+  return status === "responded" || status === "meeting" || status === "won"
+}
+
+export type TargetList = {
+  id: string
+  name: string
+  description: string
+  memberCount: number
+  workedCount: number
+  respondedCount: number
+  wonCount: number
+}
+
+export type TargetListMember = {
+  contactId: string
+  fullName: string
+  companyName: string
+  email: string
+  phone: string
+  lifecycleStage: string
+  status: OutreachStatus
+  ownerId: string
+  ownerName: string
+  lastTouchedAt: string | null
+  note: string
+}
+
 export type Deal = {
   id: string
   contactId: string
