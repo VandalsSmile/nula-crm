@@ -24,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog"
+import { ViewToggle } from "@/components/view-toggle"
 import {
   Select,
   SelectContent,
@@ -31,10 +32,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { createTargetList, deleteTargetList } from "@/app/actions/target-lists"
+import { useViewMode } from "@/hooks/use-view-mode"
 import { useWriteGuard } from "@/lib/use-write-guard"
 import { targetListPath } from "@/lib/routes"
 import type { ListVisibility, TargetList } from "@/lib/crm-types"
@@ -57,6 +67,7 @@ export function TargetListsView({ lists }: { lists: TargetList[] }) {
   const [visibility, setVisibility] = useState<ListVisibility>("shared")
   const [saving, setSaving] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<TargetList | null>(null)
+  const [view, setView] = useViewMode("lists")
   const [, startTransition] = useTransition()
 
   function openCreate() {
@@ -98,16 +109,42 @@ export function TargetListsView({ lists }: { lists: TargetList[] }) {
     })
   }
 
+  function renderActions(list: TargetList) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button variant="ghost" size="icon-sm">
+              <MoreHorizontal />
+            </Button>
+          }
+        />
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem render={<Link href={targetListPath(list.id)} />}>
+            Open list
+          </DropdownMenuItem>
+          <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(list)}>
+            <Trash2 />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Target lists"
         description="Curated lists for outbound outreach — track who's been worked, who replied, and who converted."
         actions={
-          <Button onClick={openCreate}>
-            <Plus data-icon="inline-start" />
-            New list
-          </Button>
+          <div className="flex items-center gap-2">
+            {lists.length > 0 ? <ViewToggle mode={view} onChange={setView} /> : null}
+            <Button onClick={openCreate}>
+              <Plus data-icon="inline-start" />
+              New list
+            </Button>
+          </div>
         }
       />
 
@@ -124,7 +161,7 @@ export function TargetListsView({ lists }: { lists: TargetList[] }) {
             </Button>
           </CardContent>
         </Card>
-      ) : (
+      ) : view === "grid" ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {lists.map((list) => (
             <Card key={list.id}>
@@ -148,24 +185,7 @@ export function TargetListsView({ lists }: { lists: TargetList[] }) {
                     <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{list.description}</p>
                   ) : null}
                 </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={
-                      <Button variant="ghost" size="icon-sm">
-                        <MoreHorizontal />
-                      </Button>
-                    }
-                  />
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem render={<Link href={targetListPath(list.id)} />}>
-                      Open list
-                    </DropdownMenuItem>
-                    <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(list)}>
-                      <Trash2 />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                {renderActions(list)}
               </CardHeader>
               <CardContent className="flex flex-col gap-3 text-sm">
                 <Link href={targetListPath(list.id)} className="flex flex-col gap-2">
@@ -186,6 +206,61 @@ export function TargetListsView({ lists }: { lists: TargetList[] }) {
             </Card>
           ))}
         </div>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>List</TableHead>
+                    <TableHead>Owner</TableHead>
+                    <TableHead className="w-48">Progress</TableHead>
+                    <TableHead className="w-32 text-right">Replied · Won</TableHead>
+                    <TableHead className="w-10" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {lists.map((list) => (
+                    <TableRow key={list.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Target className="size-4 shrink-0 text-muted-foreground" />
+                          <Link href={targetListPath(list.id)} className="font-medium hover:underline">
+                            {list.name}
+                          </Link>
+                          {list.visibility === "private" ? (
+                            <Badge variant="secondary" className="shrink-0 gap-1">
+                              <Lock className="size-3" /> Private
+                            </Badge>
+                          ) : null}
+                        </div>
+                        {list.description ? (
+                          <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+                            {list.description}
+                          </p>
+                        ) : null}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{list.ownerName || "—"}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-xs text-muted-foreground">
+                            {list.workedCount} of {list.memberCount} worked
+                          </span>
+                          <ProgressBar value={list.workedCount} total={list.memberCount} />
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right text-muted-foreground">
+                        {list.respondedCount} · {list.wonCount}
+                      </TableCell>
+                      <TableCell>{renderActions(list)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
