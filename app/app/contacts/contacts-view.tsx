@@ -1,9 +1,9 @@
 "use client"
 
-import { useEffect, useState, useTransition } from "react"
+import { useEffect, useState, useTransition, type ReactNode } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Download, MoreHorizontal, Pencil, Plus, Search, Trash2, Upload, Users } from "lucide-react"
+import { Download, MoreHorizontal, Pencil, Plus, Search, Target, Trash2, Upload, Users } from "lucide-react"
 import { toast } from "sonner"
 
 import { PageHeader } from "@/components/page-header"
@@ -47,7 +47,7 @@ import { deleteContact, exportContactsCsv } from "@/app/actions/contacts"
 import { addContactToGroup, removeContactFromGroup } from "@/app/actions/groups"
 import { EmailContactDialog } from "@/components/email-contact-dialog"
 import { Building2, Mail, Phone, UserRound } from "lucide-react"
-import { type Company, type Contact, type Group } from "@/lib/crm-types"
+import { type Company, type Contact, type Group, type TargetList } from "@/lib/crm-types"
 import { useViewMode } from "@/hooks/use-view-mode"
 import { useWriteGuard } from "@/lib/use-write-guard"
 import { APP_ROUTES, contactPath } from "@/lib/routes"
@@ -58,11 +58,13 @@ export function ContactsView({
   contacts,
   companies,
   groups = [],
+  targetLists = [],
   selectedCompanyId,
 }: {
   contacts: Contact[]
   companies: Company[]
   groups?: Group[]
+  targetLists?: TargetList[]
   selectedCompanyId: string
 }) {
   const router = useRouter()
@@ -87,7 +89,7 @@ export function ContactsView({
   const [view, setView] = useViewMode("contacts")
   const [pending, startTransition] = useTransition()
 
-  function toggleGroup(contact: Contact, group: Group, isMember: boolean) {
+  function toggleGroup(contact: Contact, group: { id: string; name: string }, isMember: boolean) {
     if (!guardWrite()) return
     startTransition(async () => {
       try {
@@ -105,19 +107,29 @@ export function ContactsView({
     })
   }
 
-  // Shared "Add to group" submenu for both the grid and table row menus.
-  function groupSubmenu(contact: Contact) {
+  // Groups (audiences) and target lists are kept in separate submenus so the two
+  // concepts don't blur together. Target lists are already visibility-filtered.
+  function membershipSubmenu(
+    contact: Contact,
+    opts: {
+      items: { id: string; name: string }[]
+      label: string
+      icon: ReactNode
+      emptyHref: string
+      emptyLabel: string
+    },
+  ) {
     return (
       <DropdownMenuSub>
         <DropdownMenuSubTrigger>
-          <Users />
-          Add to group
+          {opts.icon}
+          {opts.label}
         </DropdownMenuSubTrigger>
         <DropdownMenuSubContent className="max-h-72 overflow-y-auto">
-          {groups.length === 0 ? (
-            <DropdownMenuItem render={<Link href={APP_ROUTES.groups} />}>Create a group…</DropdownMenuItem>
+          {opts.items.length === 0 ? (
+            <DropdownMenuItem render={<Link href={opts.emptyHref} />}>{opts.emptyLabel}</DropdownMenuItem>
           ) : (
-            groups.map((group) => {
+            opts.items.map((group) => {
               const isMember = contact.groups.some((g) => g.id === group.id)
               return (
                 <DropdownMenuCheckboxItem
@@ -134,6 +146,27 @@ export function ContactsView({
           )}
         </DropdownMenuSubContent>
       </DropdownMenuSub>
+    )
+  }
+
+  function contactMenuSubmenus(contact: Contact) {
+    return (
+      <>
+        {membershipSubmenu(contact, {
+          items: groups,
+          label: "Add to group",
+          icon: <Users />,
+          emptyHref: APP_ROUTES.groups,
+          emptyLabel: "Create a group…",
+        })}
+        {membershipSubmenu(contact, {
+          items: targetLists,
+          label: "Add to list",
+          icon: <Target />,
+          emptyHref: APP_ROUTES.lists,
+          emptyLabel: "Create a list…",
+        })}
+      </>
     )
   }
 
@@ -291,7 +324,7 @@ export function ContactsView({
                       <Pencil />
                       Edit
                     </DropdownMenuItem>
-                    {groupSubmenu(contact)}
+                    {contactMenuSubmenus(contact)}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(contact)}>
                       <Trash2 />
@@ -387,7 +420,7 @@ export function ContactsView({
                               <Pencil />
                               Edit
                             </DropdownMenuItem>
-                            {groupSubmenu(contact)}
+                            {contactMenuSubmenus(contact)}
                             <DropdownMenuSeparator />
                             <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(contact)}>
                               <Trash2 />

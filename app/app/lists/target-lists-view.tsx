@@ -3,10 +3,11 @@
 import { useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Loader2, MoreHorizontal, Plus, Target, Trash2 } from "lucide-react"
+import { Globe, Loader2, Lock, MoreHorizontal, Plus, Target, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { PageHeader } from "@/components/page-header"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -23,13 +24,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { createTargetList, deleteTargetList } from "@/app/actions/target-lists"
 import { useWriteGuard } from "@/lib/use-write-guard"
 import { targetListPath } from "@/lib/routes"
-import type { TargetList } from "@/lib/crm-types"
+import type { ListVisibility, TargetList } from "@/lib/crm-types"
 
 function ProgressBar({ value, total }: { value: number; total: number }) {
   const pct = total > 0 ? Math.round((value / total) * 100) : 0
@@ -46,6 +54,7 @@ export function TargetListsView({ lists }: { lists: TargetList[] }) {
   const [createOpen, setCreateOpen] = useState(false)
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
+  const [visibility, setVisibility] = useState<ListVisibility>("shared")
   const [saving, setSaving] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<TargetList | null>(null)
   const [, startTransition] = useTransition()
@@ -54,6 +63,7 @@ export function TargetListsView({ lists }: { lists: TargetList[] }) {
     if (!guardWrite()) return
     setName("")
     setDescription("")
+    setVisibility("shared")
     setCreateOpen(true)
   }
 
@@ -64,7 +74,7 @@ export function TargetListsView({ lists }: { lists: TargetList[] }) {
     }
     setSaving(true)
     try {
-      const { id } = await createTargetList({ name, description })
+      const { id } = await createTargetList({ name, description, visibility })
       toast.success("Target list created")
       setCreateOpen(false)
       router.push(targetListPath(id))
@@ -125,7 +135,15 @@ export function TargetListsView({ lists }: { lists: TargetList[] }) {
                     <Link href={targetListPath(list.id)} className="truncate hover:underline">
                       {list.name}
                     </Link>
+                    {list.visibility === "private" ? (
+                      <Badge variant="secondary" className="shrink-0 gap-1">
+                        <Lock className="size-3" /> Private
+                      </Badge>
+                    ) : null}
                   </CardTitle>
+                  {list.ownerName ? (
+                    <p className="mt-1 text-xs text-muted-foreground">Owned by {list.ownerName}</p>
+                  ) : null}
                   {list.description ? (
                     <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{list.description}</p>
                   ) : null}
@@ -195,6 +213,26 @@ export function TargetListsView({ lists }: { lists: TargetList[] }) {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Who's on this list and why?"
               />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="list-visibility">Visibility</FieldLabel>
+              <Select value={visibility} onValueChange={(v) => setVisibility(v as ListVisibility)}>
+                <SelectTrigger id="list-visibility">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="shared">
+                    <span className="flex items-center gap-2">
+                      <Globe className="size-3.5" /> Shared — everyone on the team
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="private">
+                    <span className="flex items-center gap-2">
+                      <Lock className="size-3.5" /> Private — you plus Owners/Admins
+                    </span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </Field>
           </FieldGroup>
           <DialogFooter>
