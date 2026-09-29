@@ -18,6 +18,14 @@ export type BrandResult = {
   phone: string | null
   /** City and state formatted for the client profile location field, or null. */
   location: string | null
+  /** Street address (line 1) from schema.org PostalAddress, or null. */
+  street: string | null
+  /** City from schema.org PostalAddress, or null. */
+  city: string | null
+  /** Normalized 2-letter state/region from schema.org PostalAddress, or null. */
+  state: string | null
+  /** Postal/ZIP code from schema.org PostalAddress, or null. */
+  zip: string | null
 }
 
 const UA =
@@ -125,9 +133,39 @@ function isPlausibleEmail(email: string): boolean {
   return !JUNK_EMAIL_LOCAL.test(local)
 }
 
-function isPlausiblePhone(phone: string): boolean {
-  const digits = phone.replace(/\D/g, "")
-  return digits.length >= 10 && digits.length <= 15
+/**
+ * Normalize a raw phone value (from a `tel:` link, schema.org, or microdata)
+ * into a clean, consistent string. Extension / DTMF-pause suffixes (`,`, `;`,
+ * `ext`, `x`) are stripped BEFORE their digits can merge into the main number —
+ * the source of "munged" numbers like `tel:+13125550199,,123`. US/CA numbers
+ * are formatted as `(AAA) BBB-CCCC`; other numbers are returned as `+<digits>`.
+ * Returns null when no plausible number can be derived.
+ */
+export function normalizePhone(raw: string | null | undefined): string | null {
+  if (!raw) return null
+  let s = String(raw)
+  try {
+    s = decodeURIComponent(s)
+  } catch {
+    // Not valid percent-encoding — keep the raw string.
+  }
+  // Drop everything from the first extension / pause marker onward so those
+  // digits don't get concatenated onto the real number.
+  s = s.split(/[;,]/)[0] ?? s
+  s = s.replace(/\s*(?:ext|extension|x)\.?\s*\d+\s*$/i, "")
+
+  const digits = s.replace(/\D/g, "")
+  if (digits.length < 10 || digits.length > 15) return null
+
+  if (digits.length === 10) {
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
+  }
+  if (digits.length === 11 && digits.startsWith("1")) {
+    const d = digits.slice(1)
+    return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`
+  }
+  // International or non-NANP number: keep every digit behind a leading +.
+  return `+${digits}`
 }
 
 /** Collect email addresses from mailto links, schema.org, and microdata. */
@@ -157,9 +195,8 @@ function contactEmails(html: string): string[] {
 function contactPhones(html: string): string[] {
   const out: string[] = []
   const push = (raw: string | null) => {
-    if (!raw) return
-    const phone = decodeURIComponent(raw).replace(/[^\d+().\-\s]/g, "").trim()
-    if (isPlausiblePhone(phone) && !out.includes(phone)) out.push(phone)
+    const phone = normalizePhone(raw)
+    if (phone && !out.includes(phone)) out.push(phone)
   }
 
   const tel = html.matchAll(/href\s*=\s*["']tel:([^"']+)/gi)
@@ -205,13 +242,17 @@ function walkJsonLd(node: unknown, emails: string[], phones: string[]): void {
     if (isPlausibleEmail(email) && !emails.includes(email)) emails.push(email)
   }
   if (typeof obj.telephone === "string") {
-    const phone = obj.telephone.trim()
-    if (isPlausiblePhone(phone) && !phones.includes(phone)) phones.push(phone)
+    const phone = normalizePhone(obj.telephone)
+    if (phone && !phones.includes(phone)) phones.push(phone)
   }
   for (const value of Object.values(obj)) walkJsonLd(value, emails, phones)
 }
 
-type LocationParts = { city: string; state: string }
+type AddressParts = { street: string; city: string; state: string; zip: string }
+
+function strField(v: unknown): string {
+  return typeof v === "string" ? v.replace(/\s+/g, " ").trim() : ""
+}
 
 const US_STATE_ABBREV: Record<string, string> = {
   alabama: "AL",
@@ -281,84 +322,116 @@ function formatCityState(city: string | null | undefined, state: string | null |
   return c ?? (s ? normalizeState(s) : null)
 }
 
-function pushLocation(out: LocationParts[], city: string | null | undefined, state: string | null | undefined) {
-  const formatted = formatCityState(city, state)
-  if (!formatted) return
-  const parts = formatted.split(",").map((p) => p.trim())
-  const candidate = { city: parts[0] ?? "", state: parts[1] ?? "" }
-  if (!candidate.city) return
-  if (!out.some((l) => l.city === candidate.city && l.state === candidate.state)) {
+function pushAddress(out: AddressParts[], parts: AddressParts) {
+  const candidate: AddressParts = {
+    street: parts.street.trim(),
+    city: parts.city.trim(),
+    state: parts.state.trim() ? normalizeState(parts.state) : "",
+    zip: parts.zip.trim(),
+  }
+  // Need at least a city or a street to be a useful address.
+  if (!candidate.city && !candidate.street) return
+  if (
+    !out.some(
+      (a) =>
+        a.street === candidate.street &&
+        a.city === candidate.city &&
+        a.state === candidate.state &&
+        a.zip === candidate.zip,
+    )
+  ) {
     out.push(candidate)
   }
 }
 
-function parseAddressString(raw: string): { city: string; state: string } | null {
+/** Parse a free-text address like "123 Main St, Chicago, IL 60601". */
+export function parseAddressString(raw: string): AddressParts | null {
   const text = raw.replace(/\s+/g, " ").trim()
-  // "123 Main St, Chicago, IL 60601" or "Chicago, Illinois"
-  const match = text.match(/,\s*([^,]+?),\s*([A-Za-z]{2,})\b(?:\s+\d{5}(?:-\d{4})?)?\s*$/)
-  if (match) {
-    return { city: match[1]!.trim(), state: match[2]!.trim() }
+  // Greedy street so the city is the last comma-segment before the state/zip.
+  // e.g. "123 Main St, Suite 5, Chicago, IL 60601"
+  const full = text.match(/^(.*),\s*([^,]+),\s*([A-Za-z]{2,}\.?)\s*(\d{5}(?:-\d{4})?)?\s*$/)
+  if (full) {
+    return {
+      street: full[1]!.trim(),
+      city: full[2]!.trim(),
+      state: full[3]!.replace(/\.$/, "").trim(),
+      zip: (full[4] ?? "").trim(),
+    }
   }
-  const simple = text.match(/^([^,]+),\s*([A-Za-z]{2,}(?:\s+[A-Za-z]{2,})?)\s*$/)
+  // "Chicago, IL 60601" / "Chicago, Illinois"
+  const simple = text.match(/^([^,]+),\s*([A-Za-z]{2,}(?:\s[A-Za-z]+)*?)\.?\s*(\d{5}(?:-\d{4})?)?\s*$/)
   if (simple) {
-    return { city: simple[1]!.trim(), state: simple[2]!.trim() }
+    return { street: "", city: simple[1]!.trim(), state: simple[2]!.trim(), zip: (simple[3] ?? "").trim() }
   }
   return null
 }
 
-function walkJsonLdLocation(node: unknown, locations: LocationParts[]): void {
+function walkJsonLdAddress(node: unknown, out: AddressParts[]): void {
   if (!node || typeof node !== "object") return
   if (Array.isArray(node)) {
-    for (const item of node) walkJsonLdLocation(item, locations)
+    for (const item of node) walkJsonLdAddress(item, out)
     return
   }
   const obj = node as Record<string, unknown>
   const type = typeof obj["@type"] === "string" ? obj["@type"].toLowerCase() : ""
 
-  if (type.includes("postaladdress") || obj.addressLocality || obj.addressRegion) {
-    pushLocation(
-      locations,
-      typeof obj.addressLocality === "string" ? obj.addressLocality : null,
-      typeof obj.addressRegion === "string" ? obj.addressRegion : null,
-    )
+  if (
+    type.includes("postaladdress") ||
+    obj.streetAddress ||
+    obj.addressLocality ||
+    obj.addressRegion ||
+    obj.postalCode
+  ) {
+    pushAddress(out, {
+      street: strField(obj.streetAddress),
+      city: strField(obj.addressLocality),
+      state: strField(obj.addressRegion),
+      zip: strField(obj.postalCode),
+    })
   }
 
   if (obj.address) {
     if (typeof obj.address === "string") {
       const parsed = parseAddressString(obj.address)
-      if (parsed) pushLocation(locations, parsed.city, parsed.state)
+      if (parsed) pushAddress(out, parsed)
     } else {
-      walkJsonLdLocation(obj.address, locations)
+      walkJsonLdAddress(obj.address, out)
     }
   }
 
   if (typeof obj.location === "object" && obj.location) {
-    walkJsonLdLocation(obj.location, locations)
+    walkJsonLdAddress(obj.location, out)
   }
 
   for (const value of Object.values(obj)) {
-    if (value !== obj.address && value !== obj.location) walkJsonLdLocation(value, locations)
+    if (value !== obj.address && value !== obj.location) walkJsonLdAddress(value, out)
   }
 }
 
-/** Collect city/state from schema.org JSON-LD and microdata. */
-function contactLocations(html: string): string[] {
-  const parts: LocationParts[] = []
+/** First value for a microdata itemprop, from `content` or inner text. */
+function microdataValue(html: string, prop: string): string {
+  const tag = html.match(new RegExp(`<[^>]*itemprop\\s*=\\s*["']${prop}["'][^>]*>`, "i"))?.[0]
+  if (!tag) return ""
+  const content = attr(tag, "content")
+  if (content) return content.trim()
+  const after = html.slice(html.indexOf(tag) + tag.length)
+  return after.match(/^\s*([^<]+)/)?.[1]?.trim() ?? ""
+}
 
-  for (const block of jsonLdBlocks(html)) walkJsonLdLocation(block, parts)
+/** Collect postal addresses from schema.org JSON-LD and microdata. */
+export function contactAddresses(html: string): AddressParts[] {
+  const out: AddressParts[] = []
 
-  const localityTags = html.match(/<[^>]*itemprop\s*=\s*["']addressLocality["'][^>]*>/gi) ?? []
-  for (const tag of localityTags) {
-    const city = attr(tag, "content") ?? tag.match(/>([^<]+)</)?.[1]?.trim()
-    if (!city) continue
-    const regionTag = html.match(
-      new RegExp(`itemprop\\s*=\\s*["']addressRegion["'][^>]*>\\s*([^<]+)`, "i"),
-    )
-    const state = regionTag?.[1]?.trim() ?? null
-    pushLocation(parts, city, state)
-  }
+  for (const block of jsonLdBlocks(html)) walkJsonLdAddress(block, out)
 
-  return parts.map((p) => formatCityState(p.city, p.state)).filter((v): v is string => Boolean(v))
+  pushAddress(out, {
+    street: microdataValue(html, "streetAddress"),
+    city: microdataValue(html, "addressLocality"),
+    state: microdataValue(html, "addressRegion"),
+    zip: microdataValue(html, "postalCode"),
+  })
+
+  return out
 }
 
 /** Prefer a same-host canonical or og:url over the raw fetch URL. */
@@ -494,7 +567,8 @@ export async function fetchBrand(
 
   const emails = contactEmails(html)
   const phones = contactPhones(html)
-  const locations = contactLocations(html)
+  const addresses = contactAddresses(html)
+  const primary = addresses[0] ?? null
 
   return {
     logoUrl,
@@ -504,6 +578,10 @@ export async function fetchBrand(
     siteUrl: preferredSiteUrl(html, siteUrl),
     email: emails[0] ?? null,
     phone: phones[0] ?? null,
-    location: locations[0] ?? null,
+    location: primary ? formatCityState(primary.city, primary.state) : null,
+    street: primary?.street || null,
+    city: primary?.city || null,
+    state: primary?.state || null,
+    zip: primary?.zip || null,
   }
 }

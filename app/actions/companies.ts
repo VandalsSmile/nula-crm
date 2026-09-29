@@ -99,8 +99,10 @@ export async function addCompanyByWebsite(rawUrl: string): Promise<WebsiteAddRes
   let name = nameFromHost(host)
   let website = normalized
   let phone = ""
+  let address = ""
   let city = ""
   let state = ""
+  let zip = ""
   const pulled: string[] = []
 
   try {
@@ -115,12 +117,11 @@ export async function addCompanyByWebsite(rawUrl: string): Promise<WebsiteAddRes
       phone = brand.phone.trim()
       pulled.push("phone")
     }
-    if (brand.location?.trim()) {
-      const [c, s] = brand.location.split(",").map((p) => p.trim())
-      city = c ?? ""
-      state = s ?? ""
-      pulled.push("location")
-    }
+    if (brand.city?.trim()) city = brand.city.trim()
+    if (brand.state?.trim()) state = brand.state.trim()
+    if (brand.street?.trim()) address = brand.street.trim()
+    if (brand.zip?.trim()) zip = brand.zip.trim()
+    if (address || city || state || zip) pulled.push("address")
   } catch {
     // Unreachable/blocked site — fall back to a company from the domain only.
   }
@@ -133,8 +134,10 @@ export async function addCompanyByWebsite(rawUrl: string): Promise<WebsiteAddRes
       name,
       website,
       phone,
+      address,
       city,
       state,
+      zip,
       notes: `Added from ${host}`,
     })
     .returning()

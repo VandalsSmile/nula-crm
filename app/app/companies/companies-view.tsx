@@ -129,7 +129,7 @@ export function CompaniesView({
             Add a company by website
           </div>
           <p className="text-xs text-muted-foreground">
-            Paste a URL and Nula pulls in the name, phone, and location automatically.
+            Paste a URL and Nula pulls in the name, phone, and address automatically.
           </p>
           <form
             className="flex flex-col gap-2 sm:flex-row"
