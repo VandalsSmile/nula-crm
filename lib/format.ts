@@ -36,6 +36,7 @@ export function relativeTime(iso: string) {
   if (mins < 60) return `${mins}m ago`
   const hours = Math.round(mins / 60)
   if (hours < 24) return `${hours}h ago`
-  const days = Math.round(hours / 24)
-  return `${days}d ago`
+  // Once something is a day or more old, "75d ago" isn't useful — show the
+  // actual date instead. Recent (sub-day) items stay relative for readability.
+  return formatDate(iso)
 }
