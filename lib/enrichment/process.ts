@@ -15,7 +15,7 @@ import { workspaceUserIdMatches } from "@/lib/workspace-scope"
 import { getWorkspaceScopeIds } from "@/lib/workspace-scope"
 import { randomId } from "@/lib/library-helpers"
 import { slugifyTag } from "@/lib/crm-defaults"
-import { contactFullName } from "@/lib/crm-types"
+import { personName } from "@/lib/crm-types"
 import type { EnrichmentSubjectType, NormalizedEnrichment } from "@/lib/enrichment/types"
 import { attributeTagNames, completeNormalized, seniorityLabel } from "@/lib/enrichment/normalize"
 import { computeFitScore } from "@/lib/enrichment/fit-score"
@@ -196,7 +196,7 @@ export async function processEnrichmentResult(
     }
 
     const name =
-      contactFullName(contact.firstName, contact.lastName) || contact.companyName || "This contact"
+      personName(contact.firstName, contact.lastName) || contact.companyName || "This contact"
     const { summary, recommendation } = await generateEnrichmentSummary(name, normalized, fitScore)
 
     await db

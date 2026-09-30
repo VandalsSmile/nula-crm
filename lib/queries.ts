@@ -33,7 +33,7 @@ import {
   mapBooking,
 } from "@/lib/mappers"
 import type { AiSearchHit, Booking, Company, Contact, ContactDocument, DashboardStats, Deal, InboxConversation, Location, Message, OutreachStatus, ReportData, TargetList, TargetListMember, Task } from "@/lib/crm-types"
-import { contactFullName, isRespondedStatus, isWorkedStatus, LIFECYCLE_STAGES, OUTREACH_STATUSES, TARGET_LIST_TYPE } from "@/lib/crm-types"
+import { isRespondedStatus, isWorkedStatus, LIFECYCLE_STAGES, OUTREACH_STATUSES, personName, TARGET_LIST_TYPE } from "@/lib/crm-types"
 import { APP_ROUTES, companyPath, contactPath, groupPath } from "@/lib/routes"
 import { getWorkspaceUserLabels, labelForUserId } from "@/lib/workspace-users"
 
@@ -389,8 +389,9 @@ export async function getTargetListById(
   const members: TargetListMember[] = rows.map((r) => ({
     contactId: r.contact.id,
     fullName:
-      contactFullName(r.contact.firstName, r.contact.lastName) ||
+      personName(r.contact.firstName, r.contact.lastName) ||
       r.contact.name ||
+      r.contact.companyName ||
       r.contact.email ||
       "Unnamed contact",
     companyName: r.contact.companyName,
@@ -894,7 +895,7 @@ export async function searchWorkspace(query: string): Promise<AiSearchHit[]> {
   const hits: AiSearchHit[] = []
 
   for (const c of contactRows) {
-    const label = contactFullName(c.firstName, c.lastName) || c.name || c.email || "Unnamed contact"
+    const label = personName(c.firstName, c.lastName) || c.name || c.companyName || c.email || "Unnamed contact"
     hits.push({
       type: "contact",
       id: c.id,
@@ -913,7 +914,7 @@ export async function searchWorkspace(query: string): Promise<AiSearchHit[]> {
     })
   }
   for (const d of dealRows) {
-    const who = contactFullName(d.firstName ?? "", d.lastName ?? "") || d.contactName || ""
+    const who = personName(d.firstName ?? "", d.lastName ?? "") || d.contactName || ""
     hits.push({
       type: "deal",
       id: d.id,
