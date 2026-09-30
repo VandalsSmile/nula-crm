@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useState } from "react"
 import useSWR from "swr"
-import { Check, Copy, Loader2, Plus, RefreshCw } from "lucide-react"
+import { Ban, Check, CircleCheck, Copy, Loader2, MoreHorizontal, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -28,14 +28,30 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog"
+import {
   createCallSource,
   createEmailSource,
   createWebFormSource,
   createWebhookSource,
+  deleteLeadSourceById,
   getLeadEvents,
   getLeadSourceMetrics,
   getLeadSources,
   retryLeadEvent,
+  updateLeadSourceInfo,
   type LeadEventInfo,
   type LeadSourceInfo,
 } from "@/app/actions/lead-sources"
@@ -143,6 +159,55 @@ export function LeadSourcesSettings() {
   const [hookName, setHookName] = useState("")
   const [hookProvider, setHookProvider] = useState("generic")
   const [hookSigned, setHookSigned] = useState(true)
+
+  const [renameTarget, setRenameTarget] = useState<LeadSourceInfo | null>(null)
+  const [renameValue, setRenameValue] = useState("")
+  const [renaming, setRenaming] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<LeadSourceInfo | null>(null)
+  const [busyId, setBusyId] = useState<string | null>(null)
+
+  function openRename(s: LeadSourceInfo) {
+    setRenameTarget(s)
+    setRenameValue(s.name)
+  }
+
+  async function handleRename() {
+    if (!renameTarget) return
+    if (!renameValue.trim()) {
+      toast.error("Source name is required")
+      return
+    }
+    setRenaming(true)
+    try {
+      await updateLeadSourceInfo(renameTarget.id, { name: renameValue })
+      toast.success("Source renamed")
+      setRenameTarget(null)
+      await mutate()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not rename source")
+    } finally {
+      setRenaming(false)
+    }
+  }
+
+  async function handleToggleEnabled(s: LeadSourceInfo) {
+    setBusyId(s.id)
+    try {
+      await updateLeadSourceInfo(s.id, { enabled: !s.enabled })
+      toast.success(s.enabled ? "Source disabled" : "Source enabled")
+      await mutate()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not update source")
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function handleDeleteSource(s: LeadSourceInfo) {
+    await deleteLeadSourceById(s.id)
+    toast.success(`Deleted ${s.name}`)
+    await mutate()
+  }
 
   async function handleCreateHook() {
     if (!hookName.trim()) {
@@ -258,18 +323,19 @@ export function LeadSourcesSettings() {
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Processed</TableHead>
                   <TableHead className="text-right">Failed</TableHead>
+                  {isAdmin ? <TableHead className="w-10" /> : null}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
+                    <TableCell colSpan={isAdmin ? 7 : 6} className="text-center text-sm text-muted-foreground">
                       Loading…
                     </TableCell>
                   </TableRow>
                 ) : sources.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
+                    <TableCell colSpan={isAdmin ? 7 : 6} className="text-center text-sm text-muted-foreground">
                       No lead sources yet. They appear here after your first lead comes in.
                     </TableCell>
                   </TableRow>
@@ -294,6 +360,42 @@ export function LeadSourcesSettings() {
                           0
                         )}
                       </TableCell>
+                      {isAdmin ? (
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              render={
+                                <Button variant="ghost" size="icon-sm" disabled={busyId === s.id}>
+                                  {busyId === s.id ? (
+                                    <Loader2 className="animate-spin" />
+                                  ) : (
+                                    <MoreHorizontal />
+                                  )}
+                                </Button>
+                              }
+                            />
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openRename(s)}>
+                                <Pencil />
+                                Rename
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleToggleEnabled(s)}>
+                                {s.enabled ? <Ban /> : <CircleCheck />}
+                                {s.enabled ? "Disable" : "Enable"}
+                              </DropdownMenuItem>
+                              {s.channel !== "api" && s.key !== "api" ? (
+                                <DropdownMenuItem
+                                  variant="destructive"
+                                  onClick={() => setDeleteTarget(s)}
+                                >
+                                  <Trash2 />
+                                  Delete
+                                </DropdownMenuItem>
+                              ) : null}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      ) : null}
                     </TableRow>
                   ))
                 )}
@@ -721,6 +823,42 @@ export function LeadSourcesSettings() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={!!renameTarget} onOpenChange={(o) => !o && setRenameTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename lead source</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="rename-source">Source name</Label>
+            <Input
+              id="rename-source"
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenameTarget(null)} disabled={renaming}>
+              Cancel
+            </Button>
+            <Button onClick={handleRename} disabled={renaming || !renameValue.trim()}>
+              {renaming ? <Loader2 className="size-4 animate-spin" /> : <Pencil className="size-4" />}
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDeleteDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Delete lead source?"
+        description={`Remove "${deleteTarget?.name}"? Its intake endpoint will stop accepting new leads. Existing contacts and past events are kept.`}
+        onConfirm={async () => {
+          if (deleteTarget) await handleDeleteSource(deleteTarget)
+        }}
+      />
     </div>
   )
 }

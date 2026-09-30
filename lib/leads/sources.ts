@@ -253,6 +253,42 @@ export async function setApiSourceRequireKey(
   return row
 }
 
+/** Update editable fields of a lead source (name / enabled / messaging). */
+export async function updateLeadSource(
+  workspaceId: string,
+  id: string,
+  patch: { name?: string; enabled?: boolean; successMessage?: string; redirectUrl?: string },
+): Promise<LeadSourceRow | null> {
+  const set: Record<string, unknown> = {}
+  if (patch.name !== undefined) set.name = patch.name.trim()
+  if (patch.enabled !== undefined) set.enabled = patch.enabled
+  if (patch.successMessage !== undefined) set.successMessage = patch.successMessage.trim()
+  if (patch.redirectUrl !== undefined) set.redirectUrl = patch.redirectUrl.trim()
+  if (Object.keys(set).length === 0) {
+    return getLeadSourceById(workspaceId, id)
+  }
+  const [row] = await db
+    .update(leadSources)
+    .set(set)
+    .where(and(eq(leadSources.id, id), eq(leadSources.userId, workspaceId)))
+    .returning()
+  return row ?? null
+}
+
+/** Delete a lead source. The built-in API/Zapier source can't be removed. */
+export async function deleteLeadSource(
+  workspaceId: string,
+  id: string,
+): Promise<{ ok: boolean; name: string }> {
+  const row = await getLeadSourceById(workspaceId, id)
+  if (!row) return { ok: false, name: "" }
+  if (row.key === "api" || row.channel === "api") {
+    throw new Error("The API / Zapier source can't be deleted.")
+  }
+  await db.delete(leadSources).where(and(eq(leadSources.id, id), eq(leadSources.userId, workspaceId)))
+  return { ok: true, name: row.name }
+}
+
 export async function getLeadSourcesForWorkspace(workspaceId: string) {
   return db
     .select()

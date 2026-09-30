@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Globe, Lock, Mail, Plus, Search, Trash2, UserPlus } from "lucide-react"
+import { ArrowLeft, Globe, Lock, Mail, Pencil, Plus, Search, Trash2, UserPlus } from "lucide-react"
 import { toast } from "sonner"
 
 import { PageHeader } from "@/components/page-header"
@@ -11,6 +11,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import {
   Table,
   TableBody,
@@ -42,6 +44,7 @@ import {
   setTargetMemberNote,
   setTargetMemberOwner,
   setTargetMemberStatus,
+  updateTargetList,
 } from "@/app/actions/target-lists"
 import { useWriteGuard } from "@/lib/use-write-guard"
 import { relativeTime } from "@/lib/format"
@@ -81,7 +84,17 @@ export function TargetListDetailView({
   const [pending, startTransition] = useTransition()
   const [emailMember, setEmailMember] = useState<TargetListMember | null>(null)
   const [addOpen, setAddOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
+  const [editName, setEditName] = useState(list.name)
+  const [editDescription, setEditDescription] = useState(list.description)
   const existingIds = useMemo(() => new Set(members.map((m) => m.contactId)), [members])
+
+  function openEdit() {
+    if (!guardWrite()) return
+    setEditName(list.name)
+    setEditDescription(list.description)
+    setEditOpen(true)
+  }
 
   function run(fn: () => Promise<unknown>, okMsg?: string) {
     if (!guardWrite()) return
@@ -149,6 +162,10 @@ export function TargetListDetailView({
                   )}
                 </Badge>
               )}
+              <Button variant="outline" onClick={openEdit}>
+                <Pencil data-icon="inline-start" />
+                Edit
+              </Button>
               <Button onClick={() => guardWrite() && setAddOpen(true)}>
                 <UserPlus data-icon="inline-start" />
                 Add contacts
@@ -282,6 +299,52 @@ export function TargetListDetailView({
           </CardContent>
         </Card>
       )}
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit target list</DialogTitle>
+          </DialogHeader>
+          <FieldGroup>
+            <Field>
+              <FieldLabel htmlFor="edit-list-name">Name</FieldLabel>
+              <Input
+                id="edit-list-name"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                autoFocus
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="edit-list-desc">Description</FieldLabel>
+              <Textarea
+                id="edit-list-desc"
+                rows={2}
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                placeholder="Who's on this list and why?"
+              />
+            </Field>
+          </FieldGroup>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)} disabled={pending}>
+              Cancel
+            </Button>
+            <Button
+              disabled={pending || !editName.trim()}
+              onClick={() =>
+                run(async () => {
+                  await updateTargetList(list.id, { name: editName, description: editDescription })
+                  setEditOpen(false)
+                }, "Target list updated")
+              }
+            >
+              <Pencil data-icon="inline-start" />
+              Save changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AddContactsDialog
         open={addOpen}
