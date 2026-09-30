@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache"
 import { getActingUser, requireRole } from "@/lib/auth-helpers"
 import {
   createLeadSource,
+  deleteLeadSource as deleteLeadSourceRow,
   getLeadEventById,
   getLeadSourceById,
   getLeadSourcesForWorkspace,
@@ -16,6 +17,7 @@ import {
   markLeadEvent,
   regenerateApiKey,
   setApiSourceRequireKey,
+  updateLeadSource as updateLeadSourceRow,
   type LeadChannel,
   type SourceMetric,
 } from "@/lib/leads/sources"
@@ -178,6 +180,30 @@ export async function createWebhookSource(input: {
   })
   revalidatePath("/app/settings")
   return toInfo(row)
+}
+
+/** Rename / re-message / enable-disable a lead source. Admin-only. */
+export async function updateLeadSourceInfo(
+  id: string,
+  input: { name?: string; enabled?: boolean; successMessage?: string; redirectUrl?: string },
+): Promise<LeadSourceInfo> {
+  const { workspaceId } = await requireRole("Admin")
+  if (input.name !== undefined && !input.name.trim()) {
+    throw new Error("Source name is required")
+  }
+  const row = await updateLeadSourceRow(workspaceId, id, input)
+  if (!row) throw new Error("Lead source not found")
+  revalidatePath("/app/settings")
+  return toInfo(row)
+}
+
+/** Delete a lead source (except the built-in API / Zapier source). Admin-only. */
+export async function deleteLeadSourceById(id: string): Promise<{ ok: boolean; name: string }> {
+  const { workspaceId } = await requireRole("Admin")
+  const result = await deleteLeadSourceRow(workspaceId, id)
+  if (!result.ok) throw new Error("Lead source not found")
+  revalidatePath("/app/settings")
+  return result
 }
 
 export async function getLeadSourceMetrics(): Promise<Record<string, SourceMetric>> {

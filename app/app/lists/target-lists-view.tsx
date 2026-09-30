@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Globe, Loader2, Lock, MoreHorizontal, Plus, Target, Trash2 } from "lucide-react"
+import { Globe, Loader2, Lock, MoreHorizontal, Pencil, Plus, Target, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { PageHeader } from "@/components/page-header"
@@ -43,7 +43,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { createTargetList, deleteTargetList } from "@/app/actions/target-lists"
+import { createTargetList, deleteTargetList, updateTargetList } from "@/app/actions/target-lists"
 import { useViewMode } from "@/hooks/use-view-mode"
 import { useWriteGuard } from "@/lib/use-write-guard"
 import { targetListPath } from "@/lib/routes"
@@ -61,7 +61,8 @@ function ProgressBar({ value, total }: { value: number; total: number }) {
 export function TargetListsView({ lists }: { lists: TargetList[] }) {
   const router = useRouter()
   const guardWrite = useWriteGuard()
-  const [createOpen, setCreateOpen] = useState(false)
+  const [formOpen, setFormOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [visibility, setVisibility] = useState<ListVisibility>("shared")
@@ -72,25 +73,42 @@ export function TargetListsView({ lists }: { lists: TargetList[] }) {
 
   function openCreate() {
     if (!guardWrite()) return
+    setEditingId(null)
     setName("")
     setDescription("")
     setVisibility("shared")
-    setCreateOpen(true)
+    setFormOpen(true)
   }
 
-  async function handleCreate() {
+  function openEdit(list: TargetList) {
+    if (!guardWrite()) return
+    setEditingId(list.id)
+    setName(list.name)
+    setDescription(list.description)
+    setVisibility(list.visibility)
+    setFormOpen(true)
+  }
+
+  async function handleSave() {
     if (!name.trim()) {
       toast.error("List name is required")
       return
     }
     setSaving(true)
     try {
-      const { id } = await createTargetList({ name, description, visibility })
-      toast.success("Target list created")
-      setCreateOpen(false)
-      router.push(targetListPath(id))
+      if (editingId) {
+        await updateTargetList(editingId, { name, description, visibility })
+        toast.success("Target list updated")
+        setFormOpen(false)
+        router.refresh()
+      } else {
+        const { id } = await createTargetList({ name, description, visibility })
+        toast.success("Target list created")
+        setFormOpen(false)
+        router.push(targetListPath(id))
+      }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not create list")
+      toast.error(err instanceof Error ? err.message : "Could not save list")
     } finally {
       setSaving(false)
     }
@@ -122,6 +140,10 @@ export function TargetListsView({ lists }: { lists: TargetList[] }) {
         <DropdownMenuContent align="end">
           <DropdownMenuItem render={<Link href={targetListPath(list.id)} />}>
             Open list
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => openEdit(list)}>
+            <Pencil />
+            Edit
           </DropdownMenuItem>
           <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(list)}>
             <Trash2 />
@@ -263,10 +285,10 @@ export function TargetListsView({ lists }: { lists: TargetList[] }) {
         </Card>
       )}
 
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+      <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>New target list</DialogTitle>
+            <DialogTitle>{editingId ? "Edit target list" : "New target list"}</DialogTitle>
           </DialogHeader>
           <FieldGroup>
             <Field>
@@ -311,12 +333,12 @@ export function TargetListsView({ lists }: { lists: TargetList[] }) {
             </Field>
           </FieldGroup>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={saving}>
+            <Button variant="outline" onClick={() => setFormOpen(false)} disabled={saving}>
               Cancel
             </Button>
-            <Button onClick={handleCreate} disabled={saving || !name.trim()}>
-              {saving ? <Loader2 className="animate-spin" /> : <Plus />}
-              Create list
+            <Button onClick={handleSave} disabled={saving || !name.trim()}>
+              {saving ? <Loader2 className="animate-spin" /> : editingId ? <Pencil /> : <Plus />}
+              {editingId ? "Save changes" : "Create list"}
             </Button>
           </DialogFooter>
         </DialogContent>

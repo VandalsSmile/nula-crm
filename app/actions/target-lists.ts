@@ -66,6 +66,36 @@ export async function createTargetList(input: {
   return { id: row.id }
 }
 
+/** Rename / re-describe a target list (and optionally change visibility). */
+export async function updateTargetList(
+  listId: string,
+  input: { name?: string; description?: string; visibility?: string },
+): Promise<{ ok: true }> {
+  const acting = await getActingWriter()
+  const row = await assertListAccess(listId, actingOf(acting))
+
+  const patch: Record<string, string> = {}
+  if (input.name !== undefined) {
+    const name = input.name.trim()
+    if (!name) throw new Error("List name is required")
+    patch.name = name
+    patch.slug = slugifyTag(name)
+  }
+  if (input.description !== undefined) patch.description = input.description.trim()
+  if (input.visibility !== undefined) {
+    // Changing who can see a list is owner/admin only, like setTargetListVisibility.
+    if (!canManageTeam(acting.role) && row.ownerId !== acting.user.id) {
+      throw new Error("Only the list owner or an admin can change who can see it")
+    }
+    patch.visibility = input.visibility === "private" ? "private" : "shared"
+  }
+
+  if (Object.keys(patch).length === 0) return { ok: true }
+  await db.update(groups).set(patch).where(eq(groups.id, listId))
+  revalidateList(listId)
+  return { ok: true }
+}
+
 /** Change a list's visibility. Owner or workspace Owner/Admin only. */
 export async function setTargetListVisibility(
   listId: string,
