@@ -473,8 +473,13 @@ export type SessionUser = {
   image: string | null
 }
 
+/** The person's name from first/last, or "" when neither is set (no fallback). */
+export function personName(first: string, last: string) {
+  return [first, last].filter(Boolean).join(" ").trim()
+}
+
 export function contactFullName(first: string, last: string) {
-  return [first, last].filter(Boolean).join(" ").trim() || "Unnamed contact"
+  return personName(first, last) || "Unnamed contact"
 }
 
 export function initials(name: string): string {

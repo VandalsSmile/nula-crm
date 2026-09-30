@@ -6,7 +6,7 @@ import { and, eq } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { activities, contacts, messageRoutes, messages, user as userTable } from "@/lib/db/schema"
 import { randomId } from "@/lib/library-helpers"
-import { contactFullName } from "@/lib/crm-types"
+import { personName } from "@/lib/crm-types"
 import { getWorkspaceEmailConfig, sendEmailViaResend } from "@/lib/email/sender"
 import { INBOUND_EMAIL_DOMAIN } from "@/lib/email/mailbox"
 
@@ -178,6 +178,7 @@ export async function logReplyToRoute(
       firstName: contacts.firstName,
       lastName: contacts.lastName,
       name: contacts.name,
+      companyName: contacts.companyName,
       email: contacts.email,
     })
     .from(contacts)
@@ -186,7 +187,7 @@ export async function logReplyToRoute(
   if (!contact) return { status: "skipped", reason: "contact not found" }
 
   const contactName =
-    contactFullName(contact.firstName, contact.lastName) || contact.name || contact.email || from
+    personName(contact.firstName, contact.lastName) || contact.name || contact.companyName || contact.email || from
 
   const subject = payload.subject?.trim() ?? ""
   const messageRowId = randomId("msg")
