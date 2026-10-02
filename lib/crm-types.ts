@@ -482,6 +482,42 @@ export function contactFullName(first: string, last: string) {
   return personName(first, last) || "Unnamed contact"
 }
 
+/** Derive a readable name from an email, e.g. "jane.doe@acme.com" → "Jane Doe". */
+export function nameFromEmail(email: string | null | undefined): string {
+  const local = (email ?? "").split("@")[0]?.replace(/\+.*$/, "").trim() ?? ""
+  if (!local) return ""
+  return local
+    .split(/[._-]+/)
+    .filter(Boolean)
+    .map((w) => (/^\d+$/.test(w) ? w : w.charAt(0).toUpperCase() + w.slice(1)))
+    .join(" ")
+}
+
+/**
+ * Best display label for a contact across the app. Prefers a real person name,
+ * then a free-text name, then the company, then a name derived from the email,
+ * then the raw email — only falling back to the generic label as a last resort.
+ */
+export function contactDisplayLabel(
+  c: {
+    firstName?: string | null
+    lastName?: string | null
+    name?: string | null
+    companyName?: string | null
+    email?: string | null
+  },
+  fallback = "Unnamed contact",
+): string {
+  return (
+    personName(c.firstName ?? "", c.lastName ?? "") ||
+    (c.name ?? "").trim() ||
+    (c.companyName ?? "").trim() ||
+    nameFromEmail(c.email) ||
+    (c.email ?? "").trim() ||
+    fallback
+  )
+}
+
 export function initials(name: string): string {
   return name
     .split(/\s+/)

@@ -7,6 +7,7 @@ import { processLeadIntake } from "@/lib/leads/intake"
 import { resolveSourceByPublicKey, type LeadChannel } from "@/lib/leads/sources"
 import { logMailboxEmail, resolveEmailConnectionByToken } from "@/lib/email/mailbox"
 import { logReplyToRoute, resolveReplyRoute } from "@/lib/email/threading"
+import { nameFromEmail } from "@/lib/crm-types"
 
 export const runtime = "nodejs"
 
@@ -278,7 +279,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: "Unknown inbound address" }, { status: 404 })
   }
   const workspaceId = source.userId
-  const [firstName, ...rest] = (name || email.split("@")[0]).split(/\s+/)
+  const [firstName, ...rest] = (name || nameFromEmail(email) || email.split("@")[0]).split(/\s+/)
 
   try {
     // 1) Lead pipeline: create/update the contact, score, tag, route.
