@@ -5,6 +5,7 @@ import { and, eq, sql } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { activities, contacts, emailConnections, messages } from "@/lib/db/schema"
 import { getWorkspaceScopeIds, workspaceUserIdMatches } from "@/lib/workspace-scope"
+import { nameFromEmail } from "@/lib/crm-types"
 import { randomId } from "@/lib/library-helpers"
 
 export const INBOUND_EMAIL_DOMAIN =
@@ -110,14 +111,19 @@ export async function logMailboxEmail(
     if (connection.mode !== "all") {
       return { status: "skipped", reason: "no matching contact" }
     }
-    const firstName = counterparty.split("@")[0] || counterparty
+    // Use the sender's display name for an inbound email; otherwise derive a
+    // readable name from the counterparty's email address.
+    const display =
+      (direction === "inbound" ? payload.fromName?.trim() : "") ||
+      nameFromEmail(counterparty) ||
+      counterparty
     const [created] = await db
       .insert(contacts)
       .values({
         id: randomId("ct"),
         userId: workspaceId,
-        firstName,
-        name: firstName,
+        firstName: display,
+        name: display,
         email: counterparty,
         source: "email-log",
         lifecycleStage: "New Lead",

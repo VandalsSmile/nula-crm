@@ -33,7 +33,7 @@ import {
   mapBooking,
 } from "@/lib/mappers"
 import type { AiSearchHit, Booking, Company, Contact, ContactDocument, DashboardStats, Deal, InboxConversation, Location, Message, OutreachStatus, ReportData, TargetList, TargetListMember, Task } from "@/lib/crm-types"
-import { isRespondedStatus, isWorkedStatus, LIFECYCLE_STAGES, OUTREACH_STATUSES, personName, TARGET_LIST_TYPE } from "@/lib/crm-types"
+import { contactDisplayLabel, isRespondedStatus, isWorkedStatus, LIFECYCLE_STAGES, OUTREACH_STATUSES, personName, TARGET_LIST_TYPE } from "@/lib/crm-types"
 import { APP_ROUTES, companyPath, contactPath, groupPath } from "@/lib/routes"
 import { getWorkspaceUserLabels, labelForUserId } from "@/lib/workspace-users"
 
@@ -756,8 +756,7 @@ export async function getInboxConversations(): Promise<InboxConversation[]> {
     }
     byContact.set(contact.id, {
       contactId: contact.id,
-      contactName:
-        contact.name || [contact.firstName, contact.lastName].filter(Boolean).join(" ") || "Unnamed contact",
+      contactName: contactDisplayLabel(contact),
       contactEmail: contact.email,
       lastMessage: msg.body,
       lastDirection: msg.direction,

@@ -7,6 +7,7 @@ import { db } from "@/lib/db"
 import { activities, contacts, messages } from "@/lib/db/schema"
 import { workspaceUserIdMatches, getWorkspaceScopeIds } from "@/lib/workspace-scope"
 import { sharedWorkspaceId } from "@/lib/workspace-scope"
+import { nameFromEmail } from "@/lib/crm-types"
 import { randomId } from "@/lib/library-helpers"
 
 export const inboundMessageSchema = z.object({
@@ -55,7 +56,8 @@ async function findOrCreateContact(
     if (existing) return existing
   }
 
-  const firstName = payload.name?.trim() || email || payload.phone?.trim() || "Website visitor"
+  const firstName =
+    payload.name?.trim() || nameFromEmail(email) || payload.phone?.trim() || "Website visitor"
   const [created] = await db
     .insert(contacts)
     .values({

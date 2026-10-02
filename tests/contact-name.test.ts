@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { contactFullName, personName } from "@/lib/crm-types"
+import { contactDisplayLabel, contactFullName, nameFromEmail, personName } from "@/lib/crm-types"
 
 describe("personName", () => {
   it("joins first/last and returns empty (falsy) when neither is set", () => {
@@ -16,6 +16,32 @@ describe("contactFullName", () => {
   it("still falls back to 'Unnamed contact' for standalone display", () => {
     expect(contactFullName("Ada", "Lovelace")).toBe("Ada Lovelace")
     expect(contactFullName("", "")).toBe("Unnamed contact")
+  })
+})
+
+describe("nameFromEmail", () => {
+  it("derives a readable name from the local part", () => {
+    expect(nameFromEmail("jane.doe@acme.com")).toBe("Jane Doe")
+    expect(nameFromEmail("john_smith@x.io")).toBe("John Smith")
+    expect(nameFromEmail("mary-jane@x.io")).toBe("Mary Jane")
+    expect(nameFromEmail("info@x.io")).toBe("Info")
+    expect(nameFromEmail("sales+leads@x.io")).toBe("Sales")
+    expect(nameFromEmail("")).toBe("")
+    expect(nameFromEmail(null)).toBe("")
+  })
+})
+
+describe("contactDisplayLabel (inbox / shared naming)", () => {
+  it("never shows the generic fallback when an email or company exists", () => {
+    // The inbox 'Unnamed' regression: email-only contact now reads as a name.
+    expect(
+      contactDisplayLabel({ firstName: "", lastName: "", name: "", companyName: "", email: "jane.doe@acme.com" }),
+    ).toBe("Jane Doe")
+    expect(
+      contactDisplayLabel({ firstName: "", lastName: "", name: "", companyName: "Acme", email: "" }),
+    ).toBe("Acme")
+    expect(contactDisplayLabel({ firstName: "Ada", lastName: "Lovelace", email: "a@b.com" })).toBe("Ada Lovelace")
+    expect(contactDisplayLabel({})).toBe("Unnamed contact")
   })
 })
 
