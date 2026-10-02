@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
+import { MessageBody, messagePreview } from "@/components/message-body"
 import { cn } from "@/lib/utils"
 import { relativeTime } from "@/lib/format"
 import { loadConversation, sendMessage } from "@/app/actions/messages"
@@ -99,7 +100,7 @@ export function InboxView({ conversations }: { conversations: InboxConversation[
                     </div>
                     <span className="truncate text-xs text-muted-foreground">
                       {c.lastDirection === "outbound" ? "You: " : ""}
-                      {c.lastMessage}
+                      {messagePreview(c.lastMessage)}
                     </span>
                   </button>
                 </li>
@@ -134,7 +135,7 @@ export function InboxView({ conversations }: { conversations: InboxConversation[
                     {m.subject ? (
                       <p className="mb-0.5 text-xs font-semibold opacity-80">{m.subject}</p>
                     ) : null}
-                    <p className="whitespace-pre-line">{m.body}</p>
+                    <MessageBody body={m.body} />
                     <p
                       className={cn(
                         "mt-1 text-[10px]",
@@ -156,7 +157,13 @@ export function InboxView({ conversations }: { conversations: InboxConversation[
                 <Textarea
                   value={reply}
                   onChange={(e) => setReply(e.target.value)}
-                  placeholder="Type a reply…"
+                  onKeyDown={(e) => {
+                    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                      e.preventDefault()
+                      handleSend()
+                    }
+                  }}
+                  placeholder="Type a reply…  (⌘/Ctrl + Enter to send)"
                   rows={2}
                   className="flex-1"
                 />

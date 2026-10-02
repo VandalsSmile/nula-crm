@@ -11,6 +11,7 @@ import { getMessagesForContact } from "@/lib/queries"
 import { randomId } from "@/lib/library-helpers"
 import { getWorkspaceEmailConfig, sendEmailViaResend } from "@/lib/email/sender"
 import { parseEmailList } from "@/lib/email/addresses"
+import { htmlToPlainText, sanitizeEmailHtml } from "@/lib/email/sanitize"
 import { appendSignature } from "@/lib/email/signature"
 import {
   ensureReplyRoute,
@@ -20,6 +21,14 @@ import {
 } from "@/lib/email/threading"
 import { APP_ROUTES } from "@/lib/routes"
 import type { Message } from "@/lib/crm-types"
+
+/** Escape plain-text so it's safe to drop into the HTML email body. */
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+}
 
 export async function loadConversation(contactId: string): Promise<Message[]> {
   await requireRole("Admin", "Member")
@@ -36,8 +45,19 @@ export async function sendMessage(input: {
 }): Promise<{ ok: boolean; status: string }> {
   const { user, workspaceId, scopeIds } = await requireRole("Admin", "Member")
   await requireActiveWorkspace(workspaceId)
-  const body = input.body?.trim()
-  if (!body) throw new Error("Message body is required")
+
+  // The composer can submit rich HTML or plain text. Derive a plain-text version
+  // for validation + the email's text alternative, and keep sanitized HTML for
+  // sending and storage so the conversation can show formatting.
+  const rawBody = input.body ?? ""
+  const isHtml = /<[a-z][\s\S]*>/i.test(rawBody)
+  const plainBody = (isHtml ? htmlToPlainText(rawBody) : rawBody).trim()
+  if (!plainBody) throw new Error("Message body is required")
+  const safeHtml = isHtml
+    ? sanitizeEmailHtml(rawBody)
+    : `<p>${escapeHtml(plainBody).replace(/\n/g, "<br>")}</p>`
+  // What we persist on the message row (HTML keeps formatting; text stays text).
+  const storedBody = isHtml ? safeHtml : plainBody
 
   // Normalize Cc/Bcc to valid, deduped addresses (email channel only).
   const ccList = input.channel === "email" ? parseEmailList((input.cc ?? []).join(",")) : []
@@ -66,11 +86,7 @@ export async function sendMessage(input: {
         const route = await ensureReplyRoute(workspaceId, input.contactId, user.id)
         messageId = generateMessageId()
         // Append the author's saved signature to the email they send.
-        const { html, text } = await appendSignature(
-          user.id,
-          `<p>${body.replace(/\n/g, "<br>")}</p>`,
-          body,
-        )
+        const { html, text } = await appendSignature(user.id, safeHtml, plainBody)
         const result = await sendEmailViaResend(config, {
           to: contact.email,
           subject: input.subject || "Message from Nula",
@@ -97,7 +113,7 @@ export async function sendMessage(input: {
     direction: "outbound",
     channel: input.channel,
     subject: input.subject ?? "",
-    body,
+    body: storedBody,
     status,
     messageId,
     cc: ccList.join(", "),
