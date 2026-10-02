@@ -10,14 +10,15 @@ import { PageHeader } from "@/components/page-header"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { MessageBody, messagePreview } from "@/components/message-body"
+import { RichTextEditor } from "@/components/rich-text-editor"
 import { cn } from "@/lib/utils"
 import { relativeTime } from "@/lib/format"
 import { contactPath } from "@/lib/routes"
 import { initials } from "@/lib/crm-types"
+import { htmlToPlainText } from "@/lib/email/sanitize"
 import { loadConversation, sendMessage } from "@/app/actions/messages"
 import type { InboxConversation, Message } from "@/lib/crm-types"
 
@@ -74,8 +75,10 @@ export function InboxView({ conversations }: { conversations: InboxConversation[
 
   const activeConv = conversations.find((c) => c.contactId === selected) ?? null
 
+  const replyText = htmlToPlainText(reply).trim()
+
   function handleSend() {
-    if (!reply.trim() || !selected) return
+    if (!replyText || !selected) return
     // Email-only for now (SMS is hidden until we ship a provider).
     const channel = "email" as const
     startSending(async () => {
@@ -251,24 +254,30 @@ export function InboxView({ conversations }: { conversations: InboxConversation[
                   )}
                 </div>
 
-                <div className="flex items-end gap-2 border-t p-3">
-                  <Textarea
+                <div
+                  className="flex flex-col gap-2 border-t p-3"
+                  onKeyDown={(e) => {
+                    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                      e.preventDefault()
+                      handleSend()
+                    }
+                  }}
+                >
+                  <RichTextEditor
                     value={reply}
-                    onChange={(e) => setReply(e.target.value)}
-                    onKeyDown={(e) => {
-                      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-                        e.preventDefault()
-                        handleSend()
-                      }
-                    }}
-                    placeholder="Type a reply…  (⌘/Ctrl + Enter to send)"
-                    rows={2}
-                    className="flex-1"
+                    onChange={setReply}
+                    placeholder="Type a reply…"
+                    contentClassName="min-h-20 max-h-48 overflow-y-auto"
                   />
-                  <Button onClick={handleSend} disabled={sending || !reply.trim()}>
-                    {sending ? <Loader2 className="animate-spin" /> : <Send />}
-                    Send
-                  </Button>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="hidden text-xs text-muted-foreground sm:inline">
+                      ⌘/Ctrl + Enter to send
+                    </span>
+                    <Button className="ml-auto" onClick={handleSend} disabled={sending || !replyText}>
+                      {sending ? <Loader2 className="animate-spin" /> : <Send />}
+                      Send
+                    </Button>
+                  </div>
                 </div>
               </>
             ) : (
