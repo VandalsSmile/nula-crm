@@ -15,10 +15,11 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { RichTextEditor } from "@/components/rich-text-editor"
 import { sendMessage } from "@/app/actions/messages"
 import { invalidEmailTokens, parseEmailList } from "@/lib/email/addresses"
+import { htmlToPlainText } from "@/lib/email/sanitize"
 
 /**
  * Compose and send an email to a contact. Available to any CRM user (send is
@@ -47,10 +48,12 @@ export function EmailContactDialog({
   const [sending, setSending] = useState(false)
 
   const hasEmail = Boolean(contactEmail?.trim())
+  const bodyText = htmlToPlainText(body).trim()
+  const canSend = hasEmail && !sending && bodyText.length > 0
 
   async function handleSend() {
     if (!hasEmail) return
-    if (!body.trim()) {
+    if (!bodyText) {
       toast.error("Message body is required")
       return
     }
@@ -94,7 +97,16 @@ export function EmailContactDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh]">
+      <DialogContent
+        className="flex max-h-[85vh] flex-col sm:max-w-2xl"
+        onKeyDown={(e) => {
+          // ⌘/Ctrl + Enter sends from anywhere in the composer.
+          if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && canSend) {
+            e.preventDefault()
+            void handleSend()
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Email {contactName}</DialogTitle>
           <DialogDescription>
@@ -153,33 +165,36 @@ export function EmailContactDialog({
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 placeholder="Subject"
+                autoFocus
                 disabled={!hasEmail || sending}
               />
             </Field>
             <Field>
-              <FieldLabel htmlFor="email-body">Message</FieldLabel>
-              <Textarea
-                id="email-body"
+              <FieldLabel>Message</FieldLabel>
+              <RichTextEditor
                 value={body}
-                onChange={(e) => setBody(e.target.value)}
+                onChange={setBody}
                 placeholder={`Write to ${contactName}…`}
-                rows={7}
-                // Cap growth so the box scrolls internally instead of expanding
+                // Cap growth so the editor scrolls internally instead of pushing
                 // the dialog past the viewport.
-                className="max-h-[40vh]"
-                disabled={!hasEmail || sending}
+                className="[&_.rte-content]:max-h-[40vh] [&_.rte-content]:overflow-y-auto"
               />
             </Field>
           </FieldGroup>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={sending}>
-            Cancel
-          </Button>
-          <Button onClick={handleSend} disabled={sending || !hasEmail || !body.trim()}>
-            {sending ? <Loader2 className="animate-spin" /> : <Send />}
-            Send email
-          </Button>
+        <DialogFooter className="items-center sm:justify-between">
+          <span className="hidden text-xs text-muted-foreground sm:inline">
+            Tip: press ⌘/Ctrl + Enter to send
+          </span>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={sending}>
+              Cancel
+            </Button>
+            <Button onClick={handleSend} disabled={!canSend}>
+              {sending ? <Loader2 className="animate-spin" /> : <Send />}
+              Send email
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

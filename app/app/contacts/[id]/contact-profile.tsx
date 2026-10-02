@@ -35,6 +35,7 @@ import { deleteDeal } from "@/app/actions/deals"
 import { NulaIntelligenceCard } from "@/components/enrichment/nula-intelligence-card"
 import { ContactDocuments } from "@/components/contact-documents"
 import { EmailViewDialog } from "@/components/email-view-dialog"
+import { messagePreview } from "@/components/message-body"
 import { enrichContact, type EnrichmentView } from "@/app/actions/enrichment"
 import { useWriteGuard } from "@/lib/use-write-guard"
 import { formatDateTime } from "@/lib/format"
@@ -455,8 +456,8 @@ export function ContactProfile({
                       </span>
                     </div>
                     {m.body ? (
-                      <p className="line-clamp-2 whitespace-pre-line text-sm text-muted-foreground">
-                        {m.body}
+                      <p className="line-clamp-2 text-sm text-muted-foreground">
+                        {messagePreview(m.body)}
                       </p>
                     ) : null}
                     {m.direction === "outbound" && !["sent", "logged"].includes(m.status) ? (

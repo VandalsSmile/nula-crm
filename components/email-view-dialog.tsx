@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { MessageBody } from "@/components/message-body"
 import { formatDateTime } from "@/lib/format"
 import type { Message } from "@/lib/crm-types"
 
@@ -50,8 +51,8 @@ export function EmailViewDialog({
             {bcc ? <span>Bcc: {bcc}</span> : null}
           </div>
         ) : null}
-        <div className="-mx-1 min-h-0 flex-1 overflow-y-auto whitespace-pre-line px-1 text-sm leading-relaxed">
-          {email?.body?.trim() ? email.body : "(no content)"}
+        <div className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1">
+          <MessageBody body={email?.body} />
         </div>
         <DialogFooter showCloseButton />
       </DialogContent>
