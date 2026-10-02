@@ -16,11 +16,14 @@ export function RichTextEditor({
   onChange,
   placeholder,
   className,
+  contentClassName,
 }: {
   value: string
   onChange: (html: string) => void
   placeholder?: string
   className?: string
+  /** Overrides the editable area's sizing (defaults to a tall `min-h-48`). */
+  contentClassName?: string
 }) {
   const ref = useRef<HTMLDivElement>(null)
 
@@ -116,11 +119,12 @@ export function RichTextEditor({
         onInput={(e) => onChange((e.target as HTMLDivElement).innerHTML)}
         suppressContentEditableWarning
         className={cn(
-          "rte-content min-h-48 max-w-none px-3 py-2.5 text-sm leading-relaxed outline-none",
+          "rte-content max-w-none px-3 py-2.5 text-sm leading-relaxed outline-none",
           "[&_h2]:mb-1 [&_h2]:mt-2 [&_h2]:text-lg [&_h2]:font-semibold",
           "[&_a]:text-primary [&_a]:underline",
           "[&_ul]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-1 [&_ol]:list-decimal [&_ol]:pl-5",
           "[&_p]:my-1.5",
+          contentClassName ?? "min-h-48",
         )}
       />
     </div>
