@@ -39,7 +39,7 @@ import { messagePreview } from "@/components/message-body"
 import { enrichContact, type EnrichmentView } from "@/app/actions/enrichment"
 import { useWriteGuard } from "@/lib/use-write-guard"
 import { formatDateTime } from "@/lib/format"
-import { formatRevenue, type Activity, type Booking, type Contact, type ContactDocument, type Deal, type Group, type Message, type Tag, type Task } from "@/lib/crm-types"
+import { formatRevenue, type Activity, type Booking, type Contact, type ContactDocument, type Deal, type Group, type Message, type Tag, type TargetList, type Task } from "@/lib/crm-types"
 import { APP_ROUTES, companyPath } from "@/lib/routes"
 
 export function ContactProfile({
@@ -52,6 +52,7 @@ export function ContactProfile({
   documents = [],
   allTags,
   allGroups,
+  targetLists = [],
   intelligenceEnabled = false,
   enrichment = null,
   initialEmailId = "",
@@ -65,6 +66,7 @@ export function ContactProfile({
   documents?: ContactDocument[]
   allTags: Tag[]
   allGroups: Group[]
+  targetLists?: TargetList[]
   intelligenceEnabled?: boolean
   enrichment?: EnrichmentView | null
   /** When set (from ?email=<id>), open that email on load — e.g. from the activity feed. */
@@ -292,7 +294,12 @@ export function ContactProfile({
             <CardTitle>Tags & groups</CardTitle>
           </CardHeader>
           <CardContent>
-            <ContactRelationsEditor contact={contact} allTags={allTags} allGroups={allGroups} />
+            <ContactRelationsEditor
+              contact={contact}
+              allTags={allTags}
+              allGroups={allGroups}
+              targetLists={targetLists}
+            />
           </CardContent>
         </Card>
       </div>

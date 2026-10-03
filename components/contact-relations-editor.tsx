@@ -21,10 +21,14 @@ import {
   removeContactFromGroup,
 } from "@/app/actions/groups"
 import {
+  addContactsToTargetList,
+  removeFromTargetList,
+} from "@/app/actions/target-lists"
+import {
   addTagToContact,
   removeTagFromContact,
 } from "@/app/actions/tags"
-import type { Contact, Group, Tag } from "@/lib/crm-types"
+import { TARGET_LIST_TYPE, type Contact, type Group, type Tag, type TargetList } from "@/lib/crm-types"
 
 const CREATE_TAG = "__create_tag__"
 
@@ -32,10 +36,12 @@ export function ContactRelationsEditor({
   contact,
   allTags,
   allGroups,
+  targetLists = [],
 }: {
   contact: Contact
   allTags: Tag[]
   allGroups: Group[]
+  targetLists?: TargetList[]
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -43,9 +49,15 @@ export function ContactRelationsEditor({
   // Bumped after each pick to remount the picker so its trigger resets to the
   // "Add tag" placeholder instead of retaining the chosen value.
   const [tagPickerKey, setTagPickerKey] = useState(0)
+  const [listPickerKey, setListPickerKey] = useState(0)
 
   const availableTags = allTags.filter((t) => !contact.tags.some((ct) => ct.id === t.id))
+  // `contact.groups` includes target lists (both are rows in `groups`); keep the
+  // two concepts separate in the UI.
+  const audienceGroups = contact.groups.filter((g) => g.type !== TARGET_LIST_TYPE)
+  const memberLists = contact.groups.filter((g) => g.type === TARGET_LIST_TYPE)
   const availableGroups = allGroups.filter((g) => !contact.groups.some((cg) => cg.id === g.id))
+  const availableLists = targetLists.filter((l) => !memberLists.some((ml) => ml.id === l.id))
 
   function addTag(tagId: string | null) {
     if (!tagId) return
@@ -103,6 +115,32 @@ export function ContactRelationsEditor({
     })
   }
 
+  function addToList(listId: string | null) {
+    setListPickerKey((k) => k + 1)
+    if (!listId) return
+    const name = targetLists.find((l) => l.id === listId)?.name ?? "the list"
+    startTransition(async () => {
+      try {
+        await addContactsToTargetList(listId, [contact.id])
+        toast.success(`Added to ${name}`)
+        router.refresh()
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Could not add to list")
+      }
+    })
+  }
+
+  function removeFromList(listId: string) {
+    startTransition(async () => {
+      try {
+        await removeFromTargetList(listId, contact.id)
+        router.refresh()
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Could not remove from list")
+      }
+    })
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div>
@@ -146,8 +184,8 @@ export function ContactRelationsEditor({
       <div>
         <p className="mb-2 text-xs font-medium text-muted-foreground">Groups</p>
         <div className="flex flex-wrap gap-1.5">
-          {contact.groups.length ? (
-            contact.groups.map((g) => (
+          {audienceGroups.length ? (
+            audienceGroups.map((g) => (
               <Badge key={g.id} variant="secondary" className="gap-1 pr-1">
                 {g.name}
                 <button
@@ -175,6 +213,46 @@ export function ContactRelationsEditor({
                 {availableGroups.map((g) => (
                   <SelectItem key={g.id} value={g.id}>
                     {g.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ) : null}
+      </div>
+
+      <div>
+        <p className="mb-2 text-xs font-medium text-muted-foreground">Target lists</p>
+        <div className="flex flex-wrap gap-1.5">
+          {memberLists.length ? (
+            memberLists.map((l) => (
+              <Badge key={l.id} variant="secondary" className="gap-1 pr-1">
+                {l.name}
+                <button
+                  type="button"
+                  className="rounded-sm p-0.5 hover:bg-muted"
+                  disabled={pending}
+                  onClick={() => removeFromList(l.id)}
+                  aria-label={`Remove from ${l.name}`}
+                >
+                  <X className="size-3" />
+                </button>
+              </Badge>
+            ))
+          ) : (
+            <span className="text-sm text-muted-foreground">Not on any list</span>
+          )}
+        </div>
+        {availableLists.length > 0 ? (
+          <div className="mt-2 flex items-center gap-2">
+            <Select key={listPickerKey} onValueChange={addToList}>
+              <SelectTrigger className="h-8 w-44">
+                <SelectValue placeholder="Add to list" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableLists.map((l) => (
+                  <SelectItem key={l.id} value={l.id}>
+                    {l.name}
                   </SelectItem>
                 ))}
               </SelectContent>

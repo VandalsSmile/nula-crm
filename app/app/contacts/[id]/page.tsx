@@ -10,6 +10,7 @@ import {
   getGroups,
   getMessagesForContact,
   getTags,
+  getTargetLists,
   getTasksForContact,
 } from "@/lib/queries"
 import { appPageMetadata } from "@/lib/seo"
@@ -48,7 +49,7 @@ export default async function ContactPage({
   const { id } = await params
   const { email: initialEmailId } = await searchParams
   const workspaceId = await getWorkspaceId()
-  const [contact, activities, deals, tasks, bookings, messages, documents, allTags, allGroups, intelligenceEnabled] =
+  const [contact, activities, deals, tasks, bookings, messages, documents, allTags, allGroups, targetLists, intelligenceEnabled] =
     await Promise.all([
       getContactById(id),
       getActivitiesForContact(id),
@@ -59,6 +60,7 @@ export default async function ContactPage({
       getDocumentsForContact(id),
       getTags(),
       getGroups(),
+      getTargetLists(),
       isModuleEnabled(workspaceId, MODULE_IDS.b2bIntelligence),
     ])
   if (!contact) notFound()
@@ -78,6 +80,7 @@ export default async function ContactPage({
       documents={documents}
       allTags={allTags}
       allGroups={allGroups}
+      targetLists={targetLists}
       intelligenceEnabled={intelligenceEnabled}
       enrichment={enrichment}
       initialEmailId={initialEmailId ?? ""}
