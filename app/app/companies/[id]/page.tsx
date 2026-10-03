@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 
-import { getCompanyById, getContactsForCompany, getLocationsForCompany } from "@/lib/queries"
+import { getCompanyById, getContactsForCompany, getLocationsForCompany, getTargetLists } from "@/lib/queries"
 import { appPageMetadata } from "@/lib/seo"
 import { companyPath } from "@/lib/routes"
 import { getWorkspaceId } from "@/lib/auth-helpers"
@@ -31,10 +31,11 @@ export async function generateMetadata({
 export default async function CompanyDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const workspaceId = await getWorkspaceId()
-  const [company, contacts, locations, intelligenceEnabled] = await Promise.all([
+  const [company, contacts, locations, targetLists, intelligenceEnabled] = await Promise.all([
     getCompanyById(id),
     getContactsForCompany(id),
     getLocationsForCompany(id),
+    getTargetLists(),
     isModuleEnabled(workspaceId, MODULE_IDS.b2bIntelligence),
   ])
   if (!company) notFound()
@@ -46,6 +47,7 @@ export default async function CompanyDetailPage({ params }: { params: Promise<{ 
       company={company}
       contacts={contacts}
       locations={locations}
+      targetLists={targetLists}
       intelligenceEnabled={intelligenceEnabled}
       enrichment={enrichment}
     />

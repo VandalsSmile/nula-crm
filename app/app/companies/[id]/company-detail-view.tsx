@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Building2, Globe, Mail, MapPin, MapPinned, Merge, Pencil, Phone, Plus, Sparkles, Trash2, UserPlus, UserRound } from "lucide-react"
+import { Building2, Globe, ListChecks, Mail, MapPin, MapPinned, Merge, Pencil, Phone, Plus, Sparkles, Trash2, UserPlus, UserRound } from "lucide-react"
 import { toast } from "sonner"
 
 import { PageHeader } from "@/components/page-header"
@@ -32,25 +32,30 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { deleteCompany } from "@/app/actions/companies"
+import { addContactsToTargetList } from "@/app/actions/target-lists"
 import { NulaIntelligenceCard } from "@/components/enrichment/nula-intelligence-card"
 import { enrichCompany, type EnrichmentView } from "@/app/actions/enrichment"
+import { useWriteGuard } from "@/lib/use-write-guard"
 import { APP_ROUTES, contactPath } from "@/lib/routes"
-import type { Company, Contact, Location } from "@/lib/crm-types"
+import type { Company, Contact, Location, TargetList } from "@/lib/crm-types"
 
 export function CompanyDetailView({
   company,
   contacts,
   locations,
+  targetLists = [],
   intelligenceEnabled = false,
   enrichment = null,
 }: {
   company: Company
   contacts: Contact[]
   locations: Location[]
+  targetLists?: TargetList[]
   intelligenceEnabled?: boolean
   enrichment?: EnrichmentView | null
 }) {
   const router = useRouter()
+  const guardWrite = useWriteGuard()
   const [enrichBusy, setEnrichBusy] = useState(false)
 
   async function handleEnrich() {
@@ -142,6 +147,29 @@ export function CompanyDetailView({
       : `https://${company.website}`
     : ""
 
+  function addCompanyContactsToList(listId: string) {
+    if (!guardWrite()) return
+    const ids = contacts.map((c) => c.id)
+    if (ids.length === 0) {
+      toast.error("Add a contact to this company first")
+      return
+    }
+    const name = targetLists.find((l) => l.id === listId)?.name ?? "the list"
+    startTransition(async () => {
+      try {
+        const { added } = await addContactsToTargetList(listId, ids)
+        toast.success(
+          added > 0
+            ? `Added ${added} ${added === 1 ? "contact" : "contacts"} to ${name}`
+            : `Everyone is already on ${name}`,
+        )
+        router.refresh()
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Could not add to list")
+      }
+    })
+  }
+
   function handleDelete() {
     startTransition(async () => {
       try {
@@ -175,6 +203,31 @@ export function CompanyDetailView({
         description={`${company.contactCount} ${company.contactCount === 1 ? "contact" : "contacts"}`}
         actions={
           <div className="flex gap-2">
+            {contacts.length > 0 ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <Button variant="outline">
+                      <ListChecks data-icon="inline-start" />
+                      Add to list
+                    </Button>
+                  }
+                />
+                <DropdownMenuContent align="end">
+                  {targetLists.length === 0 ? (
+                    <DropdownMenuItem render={<Link href={APP_ROUTES.lists} />}>
+                      Create a target list…
+                    </DropdownMenuItem>
+                  ) : (
+                    targetLists.map((l) => (
+                      <DropdownMenuItem key={l.id} onClick={() => addCompanyContactsToList(l.id)}>
+                        {l.name}
+                      </DropdownMenuItem>
+                    ))
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : null}
             {intelligenceEnabled ? (
               <Button variant="outline" onClick={handleEnrich} disabled={enrichBusy}>
                 <Sparkles data-icon="inline-start" />
