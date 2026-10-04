@@ -74,3 +74,69 @@ export type OutreachProfile = OutreachProfileData & {
 
 /** Input accepted by the save action (whole-profile upsert). */
 export type OutreachProfileInput = Partial<OutreachProfileData> & { name?: string }
+
+// ── Scorecard ────────────────────────────────────────────────────────────────
+
+/** Free, heuristic signals read from a target's website. */
+export type SiteSignals = {
+  hasClearCta: boolean
+  emailCapture: boolean
+  adsEvidence: boolean
+  reviews: boolean
+  blog: boolean
+  multiLocation: boolean
+}
+
+/** Everything the scorecard engine reads about a target (merged from all sources). */
+export type TargetFacts = {
+  name: string
+  companyName: string
+  website: string
+  industry: string
+  city: string
+  state: string
+  employeeCount: number
+  revenueEstimate: string
+  decisionMaker: boolean
+  seniority: string
+  lifecycleStage: string
+  /** High-ticket / high-LTV target (from revenue booked or enrichment). */
+  highValue: boolean
+  tags: string[]
+  site?: SiteSignals
+  /** Manual rep overrides: signalId → matched. Always wins over detection. */
+  manual?: Record<string, boolean>
+}
+
+export type MatchedSignal = {
+  signalId: string
+  label: string
+  weight: number
+  source: SignalSource
+}
+
+export type FitLabel = "Strong" | "Good" | "Fair" | "Weak"
+
+/** The scorecard result for a single target. */
+export type Assessment = {
+  score: number
+  label: FitLabel
+  matched: MatchedSignal[]
+  recommendedApproachId: string
+  recommendedApproachName: string
+  alternativeApproachIds: string[]
+  /** "I noticed ___" — the grounded observation. */
+  observe: string
+  /** "...costing them ___" — the impact. */
+  impact: string
+  rationale: string
+  audience: OutreachAudience
+}
+
+/** A generated cold-email draft. */
+export type OutreachDraft = {
+  subject: string
+  html: string
+  approachId: string
+  approachName: string
+}

@@ -11,7 +11,22 @@ import { randomId } from "@/lib/library-helpers"
 import { APP_ROUTES } from "@/lib/routes"
 import { DEFAULT_BUSINESS_TYPE, type BusinessTypeId } from "@/lib/crm-defaults"
 import { DEFAULT_FORMULA, starterProfile } from "@/lib/outreach/starters"
-import type { OutreachProfile, OutreachProfileData, OutreachProfileInput } from "@/lib/outreach/types"
+import { assessTarget } from "@/lib/outreach/scorecard"
+import { fetchSiteSignals } from "@/lib/outreach/site-signals"
+import { generateOutreachDraft } from "@/lib/outreach/draft"
+import { getContactById, getCompanyById } from "@/lib/queries"
+import type {
+  Assessment,
+  OutreachAudience,
+  OutreachDraft,
+  OutreachProfile,
+  OutreachProfileData,
+  OutreachProfileInput,
+  TargetFacts,
+} from "@/lib/outreach/types"
+import type { Company, Contact } from "@/lib/crm-types"
+
+export type SubjectType = "contact" | "company"
 
 type ProfileRow = typeof outreachProfiles.$inferSelect
 
@@ -102,6 +117,109 @@ export async function saveOutreachProfile(input: OutreachProfileInput): Promise<
 
   revalidatePath(APP_ROUTES.settings)
   return toProfile(updated)
+}
+
+// ── Scorecard + drafting ───────────────────────────────────────────────────────
+
+function contactToFacts(c: Contact): TargetFacts {
+  const seniority = (c.seniority || "").toLowerCase()
+  const decisionMaker = ["owner", "c-level", "vp", "director"].some((s) => seniority.includes(s))
+  return {
+    name: c.fullName,
+    companyName: c.companyName,
+    website: c.websiteUrl,
+    industry: c.industry,
+    city: c.city,
+    state: c.state,
+    employeeCount: 0,
+    revenueEstimate: "",
+    decisionMaker,
+    seniority,
+    lifecycleStage: c.lifecycleStage,
+    // Treat a contact with meaningful booked revenue as a high-value target.
+    highValue: c.totalRevenueCents >= 500000,
+    tags: c.tags.map((t) => t.name),
+  }
+}
+
+function companyToFacts(co: Company): TargetFacts {
+  return {
+    name: co.name,
+    companyName: co.name,
+    website: co.website,
+    industry: co.industry,
+    city: co.city,
+    state: co.state,
+    employeeCount: co.employeeCount,
+    revenueEstimate: co.revenueEstimate,
+    decisionMaker: false,
+    seniority: "",
+    lifecycleStage: "",
+    highValue: /\b(m|b|million|billion)\b/i.test(co.revenueEstimate || ""),
+    tags: [],
+  }
+}
+
+async function buildFacts(
+  subjectType: SubjectType,
+  subjectId: string,
+  manual?: Record<string, boolean>,
+): Promise<TargetFacts> {
+  let facts: TargetFacts
+  if (subjectType === "contact") {
+    const c = await getContactById(subjectId)
+    if (!c) throw new Error("Contact not found")
+    facts = contactToFacts(c)
+  } else {
+    const co = await getCompanyById(subjectId)
+    if (!co) throw new Error("Company not found")
+    facts = companyToFacts(co)
+  }
+  if (manual) facts.manual = manual
+  if (facts.website) {
+    const site = await fetchSiteSignals(facts.website)
+    if (site) facts.site = site
+  }
+  return facts
+}
+
+/** Score a contact/company against the active playbook. Module-gated. */
+export async function assessSubject(
+  subjectType: SubjectType,
+  subjectId: string,
+  audience: OutreachAudience = "sales",
+  manual?: Record<string, boolean>,
+): Promise<Assessment> {
+  const { workspaceId } = await requireModule()
+  const row = (await loadActive(workspaceId)) ?? (await createFromStarter(workspaceId))
+  const profile = toProfile(row)
+  const facts = await buildFacts(subjectType, subjectId, manual)
+  return assessTarget(profile, facts, audience)
+}
+
+/** Draft a grounded cold email for a target using the playbook. Module-gated. */
+export async function draftOutreachEmail(input: {
+  subjectType: SubjectType
+  subjectId: string
+  approachId?: string
+  audience?: OutreachAudience
+  manual?: Record<string, boolean>
+}): Promise<OutreachDraft> {
+  const { workspaceId, user } = await requireModule()
+  const row = (await loadActive(workspaceId)) ?? (await createFromStarter(workspaceId))
+  const profile = toProfile(row)
+  const facts = await buildFacts(input.subjectType, input.subjectId, input.manual)
+  const assessment = assessTarget(profile, facts, input.audience ?? "sales")
+  const approachId = input.approachId || assessment.recommendedApproachId
+  const approach = profile.approaches.find((a) => a.id === approachId) ?? profile.approaches[0]
+  if (!approach) throw new Error("Add an outreach angle to your playbook first.")
+  return generateOutreachDraft({
+    profile,
+    approach,
+    assessment,
+    target: { name: facts.name, companyName: facts.companyName },
+    senderName: user.name,
+  })
 }
 
 /** Reset the active playbook back to the industry starter. Module-gated. */

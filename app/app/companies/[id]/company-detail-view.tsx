@@ -34,6 +34,7 @@ import {
 import { deleteCompany } from "@/app/actions/companies"
 import { addContactsToTargetList } from "@/app/actions/target-lists"
 import { NulaIntelligenceCard } from "@/components/enrichment/nula-intelligence-card"
+import { OutreachScorecardCard } from "@/components/outreach/scorecard-card"
 import { enrichCompany, type EnrichmentView } from "@/app/actions/enrichment"
 import { useWriteGuard } from "@/lib/use-write-guard"
 import { APP_ROUTES, contactPath } from "@/lib/routes"
@@ -292,6 +293,8 @@ export function CompanyDetailView({
               ) : null}
             </CardContent>
           </Card>
+
+          <OutreachScorecardCard subjectType="company" subjectId={company.id} />
 
           <Card>
             <CardHeader className="flex-row items-center justify-between gap-2">
