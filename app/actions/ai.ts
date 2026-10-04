@@ -433,11 +433,10 @@ async function executeAiActionInternal(
             d.html,
           )}`
         }
-        hits = [contact]
         impactCount = 1
       }
     }
-    resultExtra = { hits }
+    // Intentionally no `hits` — the command bar shows this summary inline.
   }
 
   if (intent === "search_crm" || intent === "search_contacts" || intent === "unknown") {

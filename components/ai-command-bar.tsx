@@ -58,12 +58,14 @@ export function AiCommandBar({ className }: { className?: string }) {
   const [requiresApproval, setRequiresApproval] = useState(true)
   const [results, setResults] = useState<AiSearchHit[] | null>(null)
   const [resultQuery, setResultQuery] = useState("")
+  const [summaryResult, setSummaryResult] = useState<string | null>(null)
 
   async function runCommand(text?: string) {
     const value = (text ?? command).trim()
     if (!value) return
     setLoading(true)
     setResults(null)
+    setSummaryResult(null)
     try {
       const result = await interpretAiCommand(value)
       setActionId(result.actionId)
@@ -77,8 +79,12 @@ export function AiCommandBar({ className }: { className?: string }) {
         // A CRM search — show clickable results inline; keep the query visible.
         setResults(result.result.hits)
         setResultQuery(value)
+      } else if (result.result?.summary) {
+        // An advisory answer (e.g. outreach angle / drafted email) — show inline.
+        setSummaryResult(result.result.summary)
+        setCommand("")
       } else {
-        toast.success(result.result?.summary ?? "Done")
+        toast.success("Done")
         router.refresh()
         setCommand("")
       }
@@ -116,7 +122,24 @@ export function AiCommandBar({ className }: { className?: string }) {
             </Button>
           </form>
 
-          {results !== null ? (
+          {summaryResult !== null ? (
+            <div className="overflow-hidden rounded-lg border">
+              <div className="flex items-center justify-between gap-2 border-b bg-muted/40 px-3 py-1.5">
+                <span className="truncate text-xs text-muted-foreground">Nula Advisor</span>
+                <button
+                  type="button"
+                  aria-label="Clear"
+                  onClick={() => setSummaryResult(null)}
+                  className="rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+              <div className="max-h-80 overflow-y-auto whitespace-pre-line px-3 py-2.5 text-sm leading-relaxed">
+                {summaryResult}
+              </div>
+            </div>
+          ) : results !== null ? (
             <div className="overflow-hidden rounded-lg border">
               <div className="flex items-center justify-between gap-2 border-b bg-muted/40 px-3 py-1.5">
                 <span className="truncate text-xs text-muted-foreground">
