@@ -18,6 +18,7 @@ import { EmailConnectionSettings } from "@/components/settings/email-connection-
 import { RoutingRulesSettings } from "@/components/settings/routing-rules-settings"
 import { PlanSettings } from "@/components/settings/plan-settings"
 import { IntelligenceSettings } from "@/components/settings/intelligence-settings"
+import { OutreachAdvisorSettings } from "@/components/settings/outreach-advisor-settings"
 import { SignatureSettings } from "@/components/settings/signature-settings"
 import { getAddonState, type AddonState } from "@/app/actions/billing"
 import { useUrlTab } from "@/hooks/use-url-tab"
@@ -31,6 +32,7 @@ const SETTINGS_TABS = [
   "signature",
   "leads",
   "intelligence",
+  "outreach",
   "plan",
 ] as const
 type SettingsTab = (typeof SETTINGS_TABS)[number]
@@ -75,6 +77,7 @@ export function SettingsView() {
           <TabsTrigger value="signature">Signature</TabsTrigger>
           <TabsTrigger value="leads">Lead sources</TabsTrigger>
           {intelligenceEnabled ? <TabsTrigger value="intelligence">Intelligence</TabsTrigger> : null}
+          {intelligenceEnabled ? <TabsTrigger value="outreach">Outreach Advisor</TabsTrigger> : null}
           <TabsTrigger value="plan">Plan</TabsTrigger>
         </TabsList>
 
@@ -124,6 +127,10 @@ export function SettingsView() {
 
         <TabsContent value="intelligence" className="mt-6" keepMounted>
           <IntelligenceSettings />
+        </TabsContent>
+
+        <TabsContent value="outreach" className="mt-6" keepMounted>
+          <OutreachAdvisorSettings />
         </TabsContent>
 
         <TabsContent value="plan" className="mt-6" keepMounted>

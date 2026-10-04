@@ -1,0 +1,142 @@
+/**
+ * Outreach Advisor — the account-customizable cold-outreach playbook.
+ *
+ * This models the structure of a Sales/BD targeting guide (positioning →
+ * research signals → angles → vertical tailoring → formula → do-not-send) so
+ * each workspace fills it in with their own content. See docs/outreach-advisor.md.
+ *
+ * Part of the upgraded intelligence package (B2B Intelligence add-on).
+ */
+
+export type OutreachAudience = "sales" | "bd"
+
+/** Where a scoring signal is observed from. */
+export const SIGNAL_SOURCES = ["self", "enrichment", "site", "manual"] as const
+export type SignalSource = (typeof SIGNAL_SOURCES)[number]
+
+/** A thing to look for when qualifying a target; contributes to the scorecard. */
+export type OutreachSignal = {
+  id: string
+  label: string
+  description: string
+  /** Contribution to fit; negative = disqualifier. */
+  weight: number
+  source: SignalSource
+  /** Which approach this signal argues for ("" = none). */
+  approachId: string
+  /** How strongly it argues for that approach. */
+  approachWeight: number
+}
+
+/** An outreach angle / play (e.g. "Where is the money leaking?"). */
+export type OutreachApproach = {
+  id: string
+  name: string
+  useWhen: string
+  pointToMake: string
+  conversationStarter: string
+  dontUseWhen: string
+  audiences: OutreachAudience[]
+  /** Optional, verifiable case study / result — only cited when present. */
+  proof: string
+}
+
+/** A vertical the account sells into, with its primary problem + preferred angles. */
+export type OutreachVertical = {
+  id: string
+  label: string
+  primaryProblem: string
+  strongQuestions: string[]
+  preferredApproachIds: string[]
+}
+
+/** One step of the outreach formula (OBSERVE → IMPACT → POV → PROOF → QUESTION). */
+export type FormulaStep = { key: string; label: string; guidance: string }
+
+/** The editable body of a profile (stored as JSONB). */
+export type OutreachProfileData = {
+  positioning: string
+  valueProp: string
+  offerings: string[]
+  verticals: OutreachVertical[]
+  signals: OutreachSignal[]
+  approaches: OutreachApproach[]
+  formula: FormulaStep[]
+  doNotSend: string[]
+}
+
+/** The full profile as surfaced to the UI. */
+export type OutreachProfile = OutreachProfileData & {
+  id: string
+  name: string
+  updatedAt: string
+}
+
+/** Input accepted by the save action (whole-profile upsert). */
+export type OutreachProfileInput = Partial<OutreachProfileData> & { name?: string }
+
+// ── Scorecard ────────────────────────────────────────────────────────────────
+
+/** Free, heuristic signals read from a target's website. */
+export type SiteSignals = {
+  hasClearCta: boolean
+  emailCapture: boolean
+  adsEvidence: boolean
+  reviews: boolean
+  blog: boolean
+  multiLocation: boolean
+}
+
+/** Everything the scorecard engine reads about a target (merged from all sources). */
+export type TargetFacts = {
+  name: string
+  companyName: string
+  website: string
+  industry: string
+  city: string
+  state: string
+  employeeCount: number
+  revenueEstimate: string
+  decisionMaker: boolean
+  seniority: string
+  lifecycleStage: string
+  /** High-ticket / high-LTV target (from revenue booked or enrichment). */
+  highValue: boolean
+  tags: string[]
+  site?: SiteSignals
+  /** Manual rep overrides: signalId → matched. Always wins over detection. */
+  manual?: Record<string, boolean>
+}
+
+export type MatchedSignal = {
+  signalId: string
+  label: string
+  weight: number
+  source: SignalSource
+}
+
+export type FitLabel = "Strong" | "Good" | "Fair" | "Weak"
+
+/** The scorecard result for a single target. */
+export type Assessment = {
+  score: number
+  label: FitLabel
+  matched: MatchedSignal[]
+  recommendedApproachId: string
+  recommendedApproachName: string
+  alternativeApproachIds: string[]
+  /** "I noticed ___" — the grounded observation. */
+  observe: string
+  /** "...costing them ___" — the impact. */
+  impact: string
+  rationale: string
+  audience: OutreachAudience
+}
+
+/** A generated cold-email draft. */
+export type OutreachDraft = {
+  subject: string
+  html: string
+  approachId: string
+  approachName: string
+}

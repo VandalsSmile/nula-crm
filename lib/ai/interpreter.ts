@@ -11,6 +11,8 @@ export type AiIntent =
   | "create_reactivation_campaign"
   | "summarize_conversion"
   | "draft_follow_up"
+  | "outreach_angle"
+  | "draft_outreach"
   | "unknown"
 
 export type InterpretedCommand = {
@@ -113,6 +115,37 @@ export function interpretCommand(command: string): InterpretedCommand {
     }
   }
 
+  // Outreach Advisor: "draft a cold email to Jane", "write outreach to Acme".
+  if (/\b(cold email|cold outreach|outreach email|outreach to|outreach for)\b/.test(text) || (/\b(draft|write|compose)\b/.test(text) && /\boutreach\b/.test(text))) {
+    const target = extractOutreachTarget(command)
+    return {
+      intent: "draft_outreach",
+      requiresApproval: false,
+      params: { query: target, audience: /\bbd\b|business development/i.test(text) ? "bd" : "sales" },
+      preview: {
+        ...basePreview("Draft cold outreach", `Draft a grounded cold email to ${target || "a contact"}.`, false),
+        criteria: ["Scores the target", "Picks the best angle", "Draft only — nothing is sent"],
+      },
+    }
+  }
+
+  // Outreach Advisor: "what's the best angle for Jane?", "how should I approach Acme?".
+  if (
+    (/(best|which|what|right)\b/.test(text) && /\b(angle|approach)\b/.test(text)) ||
+    /\bhow (?:should|do) i (?:reach out|approach)\b/.test(text)
+  ) {
+    const target = extractOutreachTarget(command)
+    return {
+      intent: "outreach_angle",
+      requiresApproval: false,
+      params: { query: target, audience: /\bbd\b|business development/i.test(text) ? "bd" : "sales" },
+      preview: {
+        ...basePreview("Best outreach angle", `Score ${target || "a contact"} and recommend an angle.`, false),
+        criteria: ["Reads your playbook + the target's signals"],
+      },
+    }
+  }
+
   if (/follow.?up email|write.*email/.test(text)) {
     return {
       intent: "draft_follow_up",
@@ -184,6 +217,17 @@ export function interpretCommand(command: string): InterpretedCommand {
 function extractProductKeyword(text: string): string | null {
   const bought = text.match(/\b(?:bought|purchased|buy|buys)\s+([a-z0-9+\s'&-]+)/)
   return bought?.[1]?.replace(/[.!?]+$/, "").trim() || null
+}
+
+/** Pull the target contact/company name out of an outreach command. */
+function extractOutreachTarget(command: string): string {
+  const m =
+    command.match(/\b(?:for|to)\s+(.+)$/i) ||
+    command.match(/\b(?:approach|about)\s+(.+)$/i)
+  return (m?.[1] ?? "")
+    .replace(/[.?!]+$/, "")
+    .replace(/\s+(?:for|as)\s+(?:bd|business development|sales)\s*$/i, "")
+    .trim()
 }
 
 function extractTopic(text: string): string {

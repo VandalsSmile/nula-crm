@@ -36,6 +36,7 @@ import { NulaIntelligenceCard } from "@/components/enrichment/nula-intelligence-
 import { ContactDocuments } from "@/components/contact-documents"
 import { EmailViewDialog } from "@/components/email-view-dialog"
 import { messagePreview } from "@/components/message-body"
+import { OutreachScorecardCard } from "@/components/outreach/scorecard-card"
 import { enrichContact, type EnrichmentView } from "@/app/actions/enrichment"
 import { useWriteGuard } from "@/lib/use-write-guard"
 import { formatDateTime } from "@/lib/format"
@@ -302,6 +303,12 @@ export function ContactProfile({
             />
           </CardContent>
         </Card>
+
+        <OutreachScorecardCard
+          subjectType="contact"
+          subjectId={contact.id}
+          draftRecipient={contact.email ? { name: contact.fullName, email: contact.email } : undefined}
+        />
       </div>
 
       <Card>

@@ -17,6 +17,9 @@ import { getActingUser, workspaceUserIdMatches } from "@/lib/auth-helpers"
 import { requireActiveWorkspace } from "@/lib/entitlements"
 import { APP_ROUTES, companyPath } from "@/lib/routes"
 import { addCompanyByWebsite, createCompany } from "@/app/actions/companies"
+import { assessSubject, draftOutreachEmail } from "@/app/actions/outreach"
+import { isModuleEnabled, MODULE_DISABLED_MESSAGE } from "@/lib/modules"
+import { htmlToPlainText } from "@/lib/email/sanitize"
 import { interpretCommandAsync } from "@/lib/ai/interpret-with-llm"
 import { chatCompletion } from "@/lib/ai/llm"
 import { productKeywordsForIntent, type AiIntent } from "@/lib/ai/interpreter"
@@ -403,6 +406,37 @@ async function executeAiActionInternal(
       summary = "Tell me the company name or website to add."
     }
     resultExtra = { hits }
+  }
+
+  if (intent === "outreach_angle" || intent === "draft_outreach") {
+    const query = (params.query ?? "").trim()
+    if (!(await isModuleEnabled(workspaceId))) {
+      summary = MODULE_DISABLED_MESSAGE
+    } else if (!query) {
+      summary = "Tell me which contact — e.g. “draft a cold email to Jane Doe”."
+    } else {
+      const contact = (await searchWorkspace(query)).find((h) => h.type === "contact")
+      if (!contact) {
+        summary = `Couldn't find a contact matching “${query}”.`
+      } else {
+        const audience = params.audience === "bd" ? "bd" : "sales"
+        if (intent === "outreach_angle") {
+          const a = await assessSubject("contact", contact.id, audience)
+          summary = a.recommendedApproachName
+            ? `Best angle for ${contact.label}: ${a.recommendedApproachName} (${a.label} fit).${
+                a.observe ? ` Open with: "I noticed ${a.observe}."` : ""
+              }`
+            : `${contact.label} is a ${a.label} fit. ${a.rationale}`
+        } else {
+          const d = await draftOutreachEmail({ subjectType: "contact", subjectId: contact.id, audience })
+          summary = `Drafted outreach to ${contact.label} using "${d.approachName}".\n\nSubject: ${d.subject}\n\n${htmlToPlainText(
+            d.html,
+          )}`
+        }
+        impactCount = 1
+      }
+    }
+    // Intentionally no `hits` — the command bar shows this summary inline.
   }
 
   if (intent === "search_crm" || intent === "search_contacts" || intent === "unknown") {

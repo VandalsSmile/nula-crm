@@ -32,16 +32,21 @@ export function EmailContactDialog({
   contactId,
   contactName,
   contactEmail,
+  initialSubject = "",
+  initialBody = "",
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   contactId: string
   contactName: string
   contactEmail: string
+  /** Prefill the composer (e.g. from an Outreach Advisor draft). */
+  initialSubject?: string
+  initialBody?: string
 }) {
   const router = useRouter()
-  const [subject, setSubject] = useState("")
-  const [body, setBody] = useState("")
+  const [subject, setSubject] = useState(initialSubject)
+  const [body, setBody] = useState(initialBody)
   const [cc, setCc] = useState("")
   const [bcc, setBcc] = useState("")
   const [showCcBcc, setShowCcBcc] = useState(false)

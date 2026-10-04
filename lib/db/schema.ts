@@ -1,5 +1,6 @@
 import { pgTable, text, timestamp, boolean, integer, jsonb } from "drizzle-orm/pg-core"
 import type { AiActionPreview } from "@/lib/crm-types"
+import type { OutreachProfileData } from "@/lib/outreach/types"
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -389,6 +390,20 @@ export const leadSources = pgTable("lead_sources", {
     .notNull()
     .default({}),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+/**
+ * Outreach Advisor playbook (upgraded intelligence package). One active profile
+ * per workspace; the editable body lives in `data` as JSONB (OutreachProfileData).
+ */
+export const outreachProfiles = pgTable("outreach_profiles", {
+  id: text("id").primaryKey(),
+  userId: text("userId").notNull(),
+  name: text("name").notNull().default("Outreach playbook"),
+  isActive: boolean("isActive").notNull().default(true),
+  data: jsonb("data").$type<OutreachProfileData>().notNull().default({} as OutreachProfileData),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 })
 
 /** Raw audit + idempotency log for every inbound lead across all channels. */
