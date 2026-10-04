@@ -14,6 +14,7 @@ import { DEFAULT_FORMULA, starterProfile } from "@/lib/outreach/starters"
 import { assessTarget } from "@/lib/outreach/scorecard"
 import { fetchSiteSignals } from "@/lib/outreach/site-signals"
 import { generateOutreachDraft } from "@/lib/outreach/draft"
+import { profileFromText, profileFromWebsite, type ProfileDraftResult } from "@/lib/outreach/setup"
 import { getContactById, getCompanyById } from "@/lib/queries"
 import type {
   Assessment,
@@ -220,6 +221,18 @@ export async function draftOutreachEmail(input: {
     target: { name: facts.name, companyName: facts.companyName },
     senderName: user.name,
   })
+}
+
+/** Draft profile fields from the account's own website. Module-gated. Does not persist. */
+export async function suggestProfileFromWebsite(url: string): Promise<ProfileDraftResult> {
+  await requireModule()
+  return profileFromWebsite(url)
+}
+
+/** Extract a draft playbook from pasted text. Module-gated. Does not persist. */
+export async function suggestProfileFromText(text: string): Promise<ProfileDraftResult> {
+  await requireModule()
+  return profileFromText(text)
 }
 
 /** Reset the active playbook back to the industry starter. Module-gated. */

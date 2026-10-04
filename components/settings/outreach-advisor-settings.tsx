@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import useSWR from "swr"
-import { Loader2, Plus, Rocket, RotateCcw, Trash2 } from "lucide-react"
+import { FileText, Globe, Loader2, Plus, Rocket, RotateCcw, Trash2, Wand2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -24,6 +24,8 @@ import {
   getOutreachProfile,
   resetOutreachProfile,
   saveOutreachProfile,
+  suggestProfileFromText,
+  suggestProfileFromWebsite,
 } from "@/app/actions/outreach"
 import { SIGNAL_SOURCES, type OutreachApproach, type OutreachProfile, type OutreachSignal, type OutreachVertical } from "@/lib/outreach/types"
 import { randomId } from "@/lib/library-helpers"
@@ -88,9 +90,60 @@ function PlaybookEditor({
   const [draft, setDraft] = useState<OutreachProfile>(initial)
   const [saving, setSaving] = useState(false)
   const [resetOpen, setResetOpen] = useState(false)
+  const [websiteUrl, setWebsiteUrl] = useState("")
+  const [importText, setImportText] = useState("")
+  const [busy, setBusy] = useState<"" | "website" | "import">("")
 
   function patch(p: Partial<OutreachProfile>) {
     setDraft((d) => ({ ...d, ...p }))
+  }
+
+  function applyDraft(result: {
+    name?: string
+    positioning?: string
+    valueProp?: string
+    offerings?: string[]
+    doNotSend?: string[]
+    approaches?: OutreachProfile["approaches"]
+  }) {
+    const applied = Object.entries(result).filter(([, v]) => v !== undefined)
+    if (applied.length === 0) {
+      toast.message("Nothing to import", {
+        description: "Connect an AI provider (Settings → Intelligence) to auto-fill from text/website.",
+      })
+      return false
+    }
+    patch(Object.fromEntries(applied))
+    return true
+  }
+
+  async function handleFromWebsite() {
+    if (!websiteUrl.trim()) return
+    setBusy("website")
+    try {
+      const res = await suggestProfileFromWebsite(websiteUrl.trim())
+      if (applyDraft(res)) toast.success("Pulled from your website — review and Save")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not read that site")
+    } finally {
+      setBusy("")
+    }
+  }
+
+  async function handleFromText() {
+    if (!importText.trim()) return
+    setBusy("import")
+    try {
+      const res = await suggestProfileFromText(importText)
+      if (applyDraft(res)) {
+        toast.success("Imported your playbook — review and Save")
+        setImportText("")
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not import")
+    } finally {
+      setBusy("")
+    }
   }
 
   async function handleSave() {
@@ -147,6 +200,57 @@ function PlaybookEditor({
           </Button>
         </div>
       </div>
+
+      {/* Jump-start */}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Wand2 className="size-4 text-primary" />
+            Jump-start your playbook
+          </CardTitle>
+          <CardDescription>
+            Pull from your website or paste an existing outreach guide. We&apos;ll fill in what we can
+            for you to review — nothing saves until you click Save.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <Field>
+            <FieldLabel htmlFor="oa-website">Build from your website</FieldLabel>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Globe className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="oa-website"
+                  value={websiteUrl}
+                  onChange={(e) => setWebsiteUrl(e.target.value)}
+                  placeholder="yourcompany.com"
+                  className="pl-8"
+                />
+              </div>
+              <Button variant="outline" onClick={handleFromWebsite} disabled={busy !== "" || !websiteUrl.trim()}>
+                {busy === "website" ? <Loader2 className="animate-spin" /> : <Globe />}
+                Pull
+              </Button>
+            </div>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="oa-import">Import a playbook (paste a doc/guide)</FieldLabel>
+            <Textarea
+              id="oa-import"
+              rows={3}
+              value={importText}
+              onChange={(e) => setImportText(e.target.value)}
+              placeholder="Paste your existing sales/BD outreach guide here…"
+            />
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={handleFromText} disabled={busy !== "" || !importText.trim()}>
+                {busy === "import" ? <Loader2 className="animate-spin" /> : <FileText />}
+                Import
+              </Button>
+            </div>
+          </Field>
+        </CardContent>
+      </Card>
 
       {/* Positioning */}
       <Card>

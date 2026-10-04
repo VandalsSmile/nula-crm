@@ -3,7 +3,8 @@
 import { useMemo, useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Globe, Lock, Mail, Pencil, Plus, Search, Trash2, UserPlus } from "lucide-react"
+import useSWR from "swr"
+import { ArrowLeft, Globe, Loader2, Lock, Mail, Pencil, PenLine, Plus, Search, Trash2, UserPlus } from "lucide-react"
 import { toast } from "sonner"
 
 import { PageHeader } from "@/components/page-header"
@@ -37,6 +38,8 @@ import {
 } from "@/components/ui/dialog"
 import { OwnerSelect } from "@/components/owner-select"
 import { EmailContactDialog } from "@/components/email-contact-dialog"
+import { getAddonState, type AddonState } from "@/app/actions/billing"
+import { draftOutreachEmail } from "@/app/actions/outreach"
 import {
   addContactsToTargetList,
   removeFromTargetList,
@@ -83,11 +86,31 @@ export function TargetListDetailView({
   const guardWrite = useWriteGuard()
   const [pending, startTransition] = useTransition()
   const [emailMember, setEmailMember] = useState<TargetListMember | null>(null)
+  const [draft, setDraft] = useState<{ subject: string; body: string } | null>(null)
+  const [draftingId, setDraftingId] = useState<string | null>(null)
+  const { data: addon } = useSWR<AddonState>("addon-state", () => getAddonState())
+  const advisorEnabled = Boolean(addon?.module.enabled)
   const [addOpen, setAddOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [editName, setEditName] = useState(list.name)
   const [editDescription, setEditDescription] = useState(list.description)
   const existingIds = useMemo(() => new Set(members.map((m) => m.contactId)), [members])
+
+  function draftForMember(m: TargetListMember) {
+    setDraftingId(m.contactId)
+    startTransition(async () => {
+      try {
+        const d = await draftOutreachEmail({ subjectType: "contact", subjectId: m.contactId })
+        setDraft({ subject: d.subject, body: d.html })
+        setEmailMember(m)
+        toast.success(`Drafted using "${d.approachName}"`)
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Could not draft outreach")
+      } finally {
+        setDraftingId(null)
+      }
+    })
+  }
 
   function openEdit() {
     if (!guardWrite()) return
@@ -266,12 +289,26 @@ export function TargetListDetailView({
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
+                          {advisorEnabled && m.email ? (
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              aria-label={`Draft outreach to ${m.fullName}`}
+                              disabled={draftingId === m.contactId}
+                              onClick={() => draftForMember(m)}
+                            >
+                              {draftingId === m.contactId ? <Loader2 className="animate-spin" /> : <PenLine />}
+                            </Button>
+                          ) : null}
                           <Button
                             variant="ghost"
                             size="icon-sm"
                             aria-label={`Email ${m.fullName}`}
                             disabled={!m.email}
-                            onClick={() => setEmailMember(m)}
+                            onClick={() => {
+                              setDraft(null)
+                              setEmailMember(m)
+                            }}
                           >
                             <Mail />
                           </Button>
@@ -362,11 +399,19 @@ export function TargetListDetailView({
 
       {emailMember ? (
         <EmailContactDialog
+          key={emailMember.contactId + (draft ? ":draft" : "")}
           open={!!emailMember}
-          onOpenChange={(open) => !open && setEmailMember(null)}
+          onOpenChange={(open) => {
+            if (!open) {
+              setEmailMember(null)
+              setDraft(null)
+            }
+          }}
           contactId={emailMember.contactId}
           contactName={emailMember.fullName}
           contactEmail={emailMember.email}
+          initialSubject={draft?.subject ?? ""}
+          initialBody={draft?.body ?? ""}
         />
       ) : null}
     </div>
