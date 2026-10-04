@@ -22,10 +22,12 @@ import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog"
 import { getAddonState, type AddonState } from "@/app/actions/billing"
 import {
   getOutreachProfile,
+  getOutreachStats,
   resetOutreachProfile,
   saveOutreachProfile,
   suggestProfileFromText,
   suggestProfileFromWebsite,
+  type OutreachStats,
 } from "@/app/actions/outreach"
 import { SIGNAL_SOURCES, type OutreachApproach, type OutreachProfile, type OutreachSignal, type OutreachVertical } from "@/lib/outreach/types"
 import { randomId } from "@/lib/library-helpers"
@@ -87,6 +89,7 @@ function PlaybookEditor({
   initial: OutreachProfile
   onSynced: (p: OutreachProfile) => void
 }) {
+  const { data: stats } = useSWR<OutreachStats>("outreach-stats", () => getOutreachStats())
   const [draft, setDraft] = useState<OutreachProfile>(initial)
   const [saving, setSaving] = useState(false)
   const [resetOpen, setResetOpen] = useState(false)
@@ -200,6 +203,53 @@ function PlaybookEditor({
           </Button>
         </div>
       </div>
+
+      {stats && stats.members > 0 ? (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">How your outreach is converting</CardTitle>
+            <CardDescription>
+              Across your target lists — use this to tune the angles and signals below.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              {[
+                { label: "On lists", value: stats.members },
+                {
+                  label: "Worked",
+                  value: `${stats.worked}`,
+                  sub: `${Math.round((stats.worked / stats.members) * 100)}%`,
+                },
+                {
+                  label: "Replied",
+                  value: `${stats.responded}`,
+                  sub: `${Math.round((stats.responded / stats.members) * 100)}%`,
+                },
+                {
+                  label: "Won",
+                  value: `${stats.won}`,
+                  sub: `${Math.round((stats.won / stats.members) * 100)}%`,
+                },
+              ].map((s) => (
+                <div key={s.label} className="rounded-lg border bg-muted/20 p-3">
+                  <p className="text-xs text-muted-foreground">{s.label}</p>
+                  <p className="text-xl font-semibold tabular-nums">
+                    {s.value}
+                    {s.sub ? <span className="ml-1 text-xs font-normal text-muted-foreground">{s.sub}</span> : null}
+                  </p>
+                </div>
+              ))}
+            </div>
+            {stats.goodProspect + stats.badProspect + stats.becameCustomer > 0 ? (
+              <p className="mt-3 text-xs text-muted-foreground">
+                Prospect feedback: {stats.goodProspect} good · {stats.badProspect} poor ·{" "}
+                {stats.becameCustomer} became customers
+              </p>
+            ) : null}
+          </CardContent>
+        </Card>
+      ) : null}
 
       {/* Jump-start */}
       <Card className="border-primary/20 bg-primary/5">

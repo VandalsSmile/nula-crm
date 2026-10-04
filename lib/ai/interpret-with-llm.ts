@@ -17,6 +17,8 @@ const VALID_INTENTS: AiIntent[] = [
   "create_reactivation_campaign",
   "summarize_conversion",
   "draft_follow_up",
+  "outreach_angle",
+  "draft_outreach",
   "unknown",
 ]
 
@@ -55,7 +57,11 @@ function normalizeLlmResult(raw: LlmInterpretation, command: string): Interprete
   }
 
   // These read-only / single-create intents never need an approval dialog.
-  const noApproval = raw.intent === "search_crm" || raw.intent === "create_company"
+  const noApproval =
+    raw.intent === "search_crm" ||
+    raw.intent === "create_company" ||
+    raw.intent === "outreach_angle" ||
+    raw.intent === "draft_outreach"
 
   return {
     intent: raw.intent,
@@ -73,8 +79,8 @@ export async function interpretCommandAsync(command: string): Promise<Interprete
         content: `You interpret natural-language CRM commands for a small business CRM.
 Return JSON only with this shape:
 {
-  "intent": "search_crm" | "search_contacts" | "create_company" | "add_to_group" | "apply_tag" | "normalize_tags" | "find_duplicates" | "create_reactivation_campaign" | "summarize_conversion" | "draft_follow_up" | "unknown",
-  "params": { "query"?: string, "name"?: string, "website"?: string, "groupName"?: string, "tagName"?: string, "product"?: string, "days"?: string, "topic"?: string, "filter"?: string },
+  "intent": "search_crm" | "search_contacts" | "create_company" | "add_to_group" | "apply_tag" | "normalize_tags" | "find_duplicates" | "create_reactivation_campaign" | "summarize_conversion" | "draft_follow_up" | "outreach_angle" | "draft_outreach" | "unknown",
+  "params": { "query"?: string, "name"?: string, "website"?: string, "groupName"?: string, "tagName"?: string, "product"?: string, "days"?: string, "topic"?: string, "filter"?: string, "audience"?: string },
   "requiresApproval": boolean,
   "preview": {
     "title": string,
@@ -87,6 +93,8 @@ Return JSON only with this shape:
 Intent guidance:
 - Use "search_crm" when the user is looking something up or asking to find/show a specific record — a person, company, deal, group, or tag (e.g. "find John", "acme corp", "who is jane@x.com", "show the widget deal"). Put the search text in params.query. Never requires approval.
 - Use "create_company" when the user asks to add/create a company, account, or organization — especially with a website URL (e.g. "add company acme.com", "create an account for Acme"). Put any URL in params.website and any name in params.name. Never requires approval.
+- Use "draft_outreach" when the user asks to draft/write a cold outreach email to someone (e.g. "draft a cold email to Jane", "write outreach for Acme"). Put the target name in params.query. Never requires approval.
+- Use "outreach_angle" when the user asks which angle/approach to use for a prospect (e.g. "what's the best angle for Jane?", "how should I approach Acme?"). Put the target name in params.query. Never requires approval.
 - Use the action intents (add_to_group, apply_tag, normalize_tags, create_reactivation_campaign, etc.) only for changes.
 
 Safety rules:

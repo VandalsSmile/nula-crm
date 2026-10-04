@@ -4,9 +4,11 @@ import { and, desc, eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
 import { db } from "@/lib/db"
-import { outreachProfiles, workspaceSettings } from "@/lib/db/schema"
+import { contactGroups, contacts, enrichmentFeedback, groups, outreachProfiles, workspaceSettings } from "@/lib/db/schema"
+import { workspaceUserIdMatches } from "@/lib/auth-helpers"
 import { getActingWriter } from "@/lib/entitlements"
 import { requireModule } from "@/lib/modules"
+import { isRespondedStatus, isWorkedStatus, TARGET_LIST_TYPE } from "@/lib/crm-types"
 import { randomId } from "@/lib/library-helpers"
 import { APP_ROUTES } from "@/lib/routes"
 import { DEFAULT_BUSINESS_TYPE, type BusinessTypeId } from "@/lib/crm-defaults"
@@ -233,6 +235,63 @@ export async function suggestProfileFromWebsite(url: string): Promise<ProfileDra
 export async function suggestProfileFromText(text: string): Promise<ProfileDraftResult> {
   await requireModule()
   return profileFromText(text)
+}
+
+export type OutreachStats = {
+  members: number
+  worked: number
+  responded: number
+  won: number
+  goodProspect: number
+  badProspect: number
+  becameCustomer: number
+}
+
+/**
+ * Workspace outreach performance (learning loop v1): how target-list contacts are
+ * progressing + prospect-quality feedback. Surfaced in the editor to show whether
+ * the playbook is working. Module-gated.
+ */
+export async function getOutreachStats(): Promise<OutreachStats> {
+  const { scopeIds } = await requireModule()
+
+  const rows = await db
+    .select({ status: contactGroups.status })
+    .from(contactGroups)
+    .innerJoin(groups, eq(groups.id, contactGroups.groupId))
+    .innerJoin(contacts, eq(contacts.id, contactGroups.contactId))
+    .where(
+      and(
+        eq(groups.type, TARGET_LIST_TYPE),
+        workspaceUserIdMatches(groups.userId, scopeIds),
+        workspaceUserIdMatches(contacts.userId, scopeIds),
+      ),
+    )
+
+  let worked = 0
+  let responded = 0
+  let won = 0
+  for (const r of rows) {
+    if (isWorkedStatus(r.status)) worked++
+    if (isRespondedStatus(r.status)) responded++
+    if (r.status === "won") won++
+  }
+
+  const fb = await db
+    .select({ signal: enrichmentFeedback.signal })
+    .from(enrichmentFeedback)
+    .where(workspaceUserIdMatches(enrichmentFeedback.userId, scopeIds))
+  const count = (sig: string) => fb.filter((f) => f.signal === sig).length
+
+  return {
+    members: rows.length,
+    worked,
+    responded,
+    won,
+    goodProspect: count("good_prospect"),
+    badProspect: count("bad_prospect"),
+    becameCustomer: count("became_customer"),
+  }
 }
 
 /** Reset the active playbook back to the industry starter. Module-gated. */
