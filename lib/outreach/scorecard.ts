@@ -67,6 +67,22 @@ function observeFromSignal(m: MatchedSignal): string {
   }
 }
 
+/** The customer-facing "...which may be costing them ___" clause for a signal. */
+function impactFromSignal(m: MatchedSignal): string {
+  switch (m.signalId) {
+    case "weak-website":
+      return "visitors who leave without ever becoming leads"
+    case "running-ads":
+      return "ad spend that doesn't turn into booked customers"
+    case "high-ltv":
+      return "real revenue every time one of those customers slips away"
+    case "multi-channel":
+      return "effort and budget that isn't adding up to results"
+    default:
+      return ""
+  }
+}
+
 /**
  * Transparent, no-ML target scorecard. Sums matched signal weights (like
  * computeFitScore / calculateLeadScore), picks the best-supported angle for the
@@ -119,7 +135,7 @@ export function assessTarget(
     matched[0]
 
   const observe = topSignal ? observeFromSignal(topSignal) : ""
-  const impact = recommendedApproach?.pointToMake ?? ""
+  const impact = topSignal ? impactFromSignal(topSignal) : ""
   const rationale = matched.length
     ? `Matched ${matched.slice(0, 3).map((m) => m.label).join(", ")}${
         recommendedApproach ? ` → ${recommendedApproach.name}` : ""

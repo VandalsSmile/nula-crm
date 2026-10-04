@@ -21,6 +21,17 @@ function firstName(name: string): string {
   return (name || "").trim().split(/\s+/)[0] ?? ""
 }
 
+/** Replace any unfilled {placeholders} in a user-written starter with sensible copy. */
+function fillPlaceholders(s: string, company: string): string {
+  return s
+    .replace(/\{observation\}/gi, "something worth a quick look")
+    .replace(/\{comparable\}/gi, company || "a similar business")
+    .replace(/\{result\}/gi, "a strong result")
+    .replace(/\{[^}]+\}/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim()
+}
+
 function htmlParagraphs(lines: string[]): string {
   return lines
     .filter((l) => l.trim())
@@ -31,12 +42,13 @@ function htmlParagraphs(lines: string[]): string {
 /** Deterministic fallback used when no AI provider is configured. */
 export function templateDraft(args: DraftArgs): OutreachDraft {
   const { approach, assessment, target, profile } = args
+  const company = target.companyName || "your business"
   const hi = firstName(target.name) ? `Hi ${firstName(target.name)},` : "Hi there,"
   const observe = assessment.observe
-    ? `I was looking at ${target.companyName || "your business"} and noticed ${assessment.observe}.`
-    : approach.conversationStarter || "I wanted to reach out with a quick thought."
-  const impact = assessment.impact ? assessment.impact : ""
-  const pov = profile.valueProp || profile.positioning || approach.pointToMake || ""
+    ? `I was looking at ${company} and noticed ${assessment.observe}.`
+    : fillPlaceholders(approach.conversationStarter, company) || "I wanted to share a quick thought."
+  const impact = assessment.impact ? `That often means ${assessment.impact}.` : ""
+  const pov = profile.valueProp || profile.positioning || ""
   const proof = approach.proof ? approach.proof : ""
   const question = "Worth a quick 10 minutes to take a look together?"
 
