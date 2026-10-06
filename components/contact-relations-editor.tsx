@@ -20,10 +20,8 @@ import {
   addContactToGroup,
   removeContactFromGroup,
 } from "@/app/actions/groups"
-import {
-  addContactsToTargetList,
-  removeFromTargetList,
-} from "@/app/actions/target-lists"
+import { removeFromTargetList } from "@/app/actions/target-lists"
+import { AddToListDialog } from "@/components/add-to-list-dialog"
 import {
   addTagToContact,
   removeTagFromContact,
@@ -50,6 +48,7 @@ export function ContactRelationsEditor({
   // "Add tag" placeholder instead of retaining the chosen value.
   const [tagPickerKey, setTagPickerKey] = useState(0)
   const [listPickerKey, setListPickerKey] = useState(0)
+  const [addListTarget, setAddListTarget] = useState<{ id: string; name: string } | null>(null)
 
   const availableTags = allTags.filter((t) => !contact.tags.some((ct) => ct.id === t.id))
   // `contact.groups` includes target lists (both are rows in `groups`); keep the
@@ -115,19 +114,12 @@ export function ContactRelationsEditor({
     })
   }
 
-  function addToList(listId: string | null) {
+  // Opens a dialog that prompts for an optional note before adding to the list.
+  function openAddToList(listId: string | null) {
     setListPickerKey((k) => k + 1)
     if (!listId) return
-    const name = targetLists.find((l) => l.id === listId)?.name ?? "the list"
-    startTransition(async () => {
-      try {
-        await addContactsToTargetList(listId, [contact.id])
-        toast.success(`Added to ${name}`)
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Could not add to list")
-      }
-    })
+    const list = targetLists.find((l) => l.id === listId)
+    if (list) setAddListTarget({ id: list.id, name: list.name })
   }
 
   function removeFromList(listId: string) {
@@ -245,7 +237,7 @@ export function ContactRelationsEditor({
         </div>
         {availableLists.length > 0 ? (
           <div className="mt-2 flex items-center gap-2">
-            <Select key={listPickerKey} onValueChange={addToList}>
+            <Select key={listPickerKey} onValueChange={openAddToList}>
               <SelectTrigger className="h-8 w-44">
                 <SelectValue placeholder="Add to list" />
               </SelectTrigger>
@@ -266,6 +258,17 @@ export function ContactRelationsEditor({
         onOpenChange={setCreateTagOpen}
         onSaved={(tag) => addTag(tag.id)}
       />
+
+      {addListTarget ? (
+        <AddToListDialog
+          open={!!addListTarget}
+          onOpenChange={(o) => !o && setAddListTarget(null)}
+          contactId={contact.id}
+          contactName={contact.fullName}
+          listId={addListTarget.id}
+          listName={addListTarget.name}
+        />
+      ) : null}
     </div>
   )
 }
