@@ -19,7 +19,7 @@ import type {
   TaskStatus,
   Booking,
 } from "@/lib/crm-types"
-import { contactFullName } from "@/lib/crm-types"
+import { contactDisplayLabel } from "@/lib/crm-types"
 import type {
   activities,
   bookings,
@@ -146,10 +146,16 @@ export function mapContact(
       row.name?.split(" ").slice(1).join(" ") ||
       ""
 
-  // Fall back to the company name for company-only contacts (cold outreach where
-  // the person's name isn't known yet).
-  const fullName =
-    firstName || lastName ? contactFullName(firstName, lastName) : row.companyName || "Unnamed contact"
+  // Fall back through company name, then a name derived from the email, then the
+  // raw email — so an email-only or company-only contact never reads as "Unnamed
+  // contact" (cold outreach where the person's name isn't known yet).
+  const fullName = contactDisplayLabel({
+    firstName,
+    lastName,
+    name: row.name,
+    companyName: row.companyName,
+    email: row.email,
+  })
 
   return {
     id: row.id,
