@@ -19,6 +19,7 @@ import { relativeTime } from "@/lib/format"
 import { contactPath } from "@/lib/routes"
 import { initials } from "@/lib/crm-types"
 import { htmlToPlainText } from "@/lib/email/sanitize"
+import { invalidEmailTokens, parseEmailList } from "@/lib/email/addresses"
 import { loadConversation, sendMessage } from "@/app/actions/messages"
 import type { InboxConversation, Message } from "@/lib/crm-types"
 
@@ -28,6 +29,9 @@ export function InboxView({ conversations }: { conversations: InboxConversation[
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
   const [reply, setReply] = useState("")
+  const [cc, setCc] = useState("")
+  const [bcc, setBcc] = useState("")
+  const [showCcBcc, setShowCcBcc] = useState(false)
   const [query, setQuery] = useState("")
   const [sending, startSending] = useTransition()
   const threadRef = useRef<HTMLDivElement>(null)
@@ -79,12 +83,26 @@ export function InboxView({ conversations }: { conversations: InboxConversation[
 
   function handleSend() {
     if (!replyText || !selected) return
+    const badCc = [...invalidEmailTokens(cc), ...invalidEmailTokens(bcc)]
+    if (badCc.length > 0) {
+      toast.error(`Check these addresses: ${badCc.slice(0, 3).join(", ")}`)
+      return
+    }
     // Email-only for now (SMS is hidden until we ship a provider).
     const channel = "email" as const
     startSending(async () => {
       try {
-        const res = await sendMessage({ contactId: selected, channel, body: reply })
+        const res = await sendMessage({
+          contactId: selected,
+          channel,
+          body: reply,
+          cc: parseEmailList(cc),
+          bcc: parseEmailList(bcc),
+        })
         setReply("")
+        setCc("")
+        setBcc("")
+        setShowCcBcc(false)
         toast.success(res.status === "sent" ? "Message sent" : `Message logged (${res.status})`)
         setMessages(await loadConversation(selected))
         router.refresh()
@@ -263,6 +281,24 @@ export function InboxView({ conversations }: { conversations: InboxConversation[
                     }
                   }}
                 >
+                  {showCcBcc ? (
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <Input
+                        value={cc}
+                        onChange={(e) => setCc(e.target.value)}
+                        placeholder="Cc: name@example.com, …"
+                        aria-label="Cc"
+                        className="h-9"
+                      />
+                      <Input
+                        value={bcc}
+                        onChange={(e) => setBcc(e.target.value)}
+                        placeholder="Bcc: name@example.com, …"
+                        aria-label="Bcc"
+                        className="h-9"
+                      />
+                    </div>
+                  ) : null}
                   <RichTextEditor
                     value={reply}
                     onChange={setReply}
@@ -270,9 +306,19 @@ export function InboxView({ conversations }: { conversations: InboxConversation[
                     contentClassName="min-h-20 max-h-48 overflow-y-auto"
                   />
                   <div className="flex items-center justify-between gap-2">
-                    <span className="hidden text-xs text-muted-foreground sm:inline">
-                      ⌘/Ctrl + Enter to send
-                    </span>
+                    {!showCcBcc ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowCcBcc(true)}
+                        className="text-xs font-medium text-primary hover:underline"
+                      >
+                        Add Cc/Bcc
+                      </button>
+                    ) : (
+                      <span className="hidden text-xs text-muted-foreground sm:inline">
+                        ⌘/Ctrl + Enter to send
+                      </span>
+                    )}
                     <Button className="ml-auto" onClick={handleSend} disabled={sending || !replyText}>
                       {sending ? <Loader2 className="animate-spin" /> : <Send />}
                       Send
