@@ -46,6 +46,7 @@ import {
 import { deleteContact, exportContactsCsv } from "@/app/actions/contacts"
 import { addContactToGroup, removeContactFromGroup } from "@/app/actions/groups"
 import { EmailContactDialog } from "@/components/email-contact-dialog"
+import { AddToListDialog } from "@/components/add-to-list-dialog"
 import { Building2, Mail, Phone, UserRound } from "lucide-react"
 import { type Company, type Contact, type Group, type TargetList } from "@/lib/crm-types"
 import { useViewMode } from "@/hooks/use-view-mode"
@@ -86,6 +87,10 @@ export function ContactsView({
   const [editContact, setEditContact] = useState<Contact | null>(null)
   const [emailContact, setEmailContact] = useState<Contact | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Contact | null>(null)
+  const [addListTarget, setAddListTarget] = useState<{
+    contact: Contact
+    list: { id: string; name: string }
+  } | null>(null)
   const [view, setView] = useViewMode("contacts")
   const [pending, startTransition] = useTransition()
 
@@ -117,6 +122,8 @@ export function ContactsView({
       icon: ReactNode
       emptyHref: string
       emptyLabel: string
+      /** When set, adding an item runs this instead of the default add (e.g. to prompt for a note). */
+      onAdd?: (contact: Contact, item: { id: string; name: string }) => void
     },
   ) {
     return (
@@ -137,7 +144,11 @@ export function ContactsView({
                   checked={isMember}
                   closeOnClick={false}
                   disabled={pending}
-                  onCheckedChange={() => toggleGroup(contact, group, isMember)}
+                  onCheckedChange={() =>
+                    !isMember && opts.onAdd
+                      ? opts.onAdd(contact, group)
+                      : toggleGroup(contact, group, isMember)
+                  }
                 >
                   {group.name}
                 </DropdownMenuCheckboxItem>
@@ -165,6 +176,11 @@ export function ContactsView({
           icon: <Target />,
           emptyHref: APP_ROUTES.lists,
           emptyLabel: "Create a list…",
+          // Adding to a target list prompts for an optional note first.
+          onAdd: (c, list) => {
+            if (!guardWrite()) return
+            setAddListTarget({ contact: c, list })
+          },
         })}
       </>
     )
@@ -465,6 +481,16 @@ export function ContactsView({
           if (deleteTarget) await handleDelete(deleteTarget)
         }}
       />
+      {addListTarget ? (
+        <AddToListDialog
+          open={!!addListTarget}
+          onOpenChange={(open) => !open && setAddListTarget(null)}
+          contactId={addListTarget.contact.id}
+          contactName={addListTarget.contact.fullName}
+          listId={addListTarget.list.id}
+          listName={addListTarget.list.name}
+        />
+      ) : null}
     </div>
   )
 }

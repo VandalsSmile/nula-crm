@@ -126,6 +126,7 @@ export async function deleteTargetList(listId: string): Promise<{ ok: true; name
 export async function addContactsToTargetList(
   listId: string,
   contactIds: string[],
+  note?: string,
 ): Promise<{ added: number }> {
   const acting = await getActingWriter()
   const { user, scopeIds } = acting
@@ -139,9 +140,18 @@ export async function addContactsToTargetList(
     .where(and(inArray(contacts.id, contactIds), workspaceUserIdMatches(contacts.userId, scopeIds)))
   if (owned.length === 0) return { added: 0 }
 
+  const trimmedNote = note?.trim() ?? ""
   await db
     .insert(contactGroups)
-    .values(owned.map((c) => ({ contactId: c.id, groupId: listId, addedBy: user.id, status: "new" })))
+    .values(
+      owned.map((c) => ({
+        contactId: c.id,
+        groupId: listId,
+        addedBy: user.id,
+        status: "new",
+        note: trimmedNote,
+      })),
+    )
     .onConflictDoNothing()
 
   revalidateList(listId)
