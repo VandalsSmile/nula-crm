@@ -283,6 +283,17 @@ export type TargetListMember = {
   note: string
 }
 
+/** A single contact's membership in a target list (for the contact profile). */
+export type ContactTargetListMembership = {
+  listId: string
+  listName: string
+  status: OutreachStatus
+  ownerId: string
+  ownerName: string
+  lastTouchedAt: string | null
+  note: string
+}
+
 export type Deal = {
   id: string
   contactId: string

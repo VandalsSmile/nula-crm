@@ -40,7 +40,7 @@ import { OutreachScorecardCard } from "@/components/outreach/scorecard-card"
 import { enrichContact, type EnrichmentView } from "@/app/actions/enrichment"
 import { useWriteGuard } from "@/lib/use-write-guard"
 import { formatDateTime } from "@/lib/format"
-import { formatRevenue, type Activity, type Booking, type Contact, type ContactDocument, type Deal, type Group, type Message, type Tag, type TargetList, type Task } from "@/lib/crm-types"
+import { formatRevenue, type Activity, type Booking, type Contact, type ContactDocument, type ContactTargetListMembership, type Deal, type Group, type Message, type Tag, type TargetList, type Task } from "@/lib/crm-types"
 import { APP_ROUTES, companyPath } from "@/lib/routes"
 
 export function ContactProfile({
@@ -54,6 +54,7 @@ export function ContactProfile({
   allTags,
   allGroups,
   targetLists = [],
+  targetListMemberships = [],
   intelligenceEnabled = false,
   enrichment = null,
   initialEmailId = "",
@@ -68,6 +69,7 @@ export function ContactProfile({
   allTags: Tag[]
   allGroups: Group[]
   targetLists?: TargetList[]
+  targetListMemberships?: ContactTargetListMembership[]
   intelligenceEnabled?: boolean
   enrichment?: EnrichmentView | null
   /** When set (from ?email=<id>), open that email on load — e.g. from the activity feed. */
@@ -300,6 +302,7 @@ export function ContactProfile({
               allTags={allTags}
               allGroups={allGroups}
               targetLists={targetLists}
+              targetListMemberships={targetListMemberships}
             />
           </CardContent>
         </Card>
