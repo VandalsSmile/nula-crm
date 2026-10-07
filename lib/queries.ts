@@ -32,7 +32,7 @@ import {
   mapTask,
   mapBooking,
 } from "@/lib/mappers"
-import type { AiSearchHit, Booking, Company, Contact, ContactDocument, DashboardStats, Deal, InboxConversation, Location, Message, OutreachStatus, ReportData, TargetList, TargetListMember, Task } from "@/lib/crm-types"
+import type { AiSearchHit, Booking, Company, Contact, ContactDocument, ContactTargetListMembership, DashboardStats, Deal, InboxConversation, Location, Message, OutreachStatus, ReportData, TargetList, TargetListMember, Task } from "@/lib/crm-types"
 import { contactDisplayLabel, isRespondedStatus, isWorkedStatus, LIFECYCLE_STAGES, OUTREACH_STATUSES, personName, TARGET_LIST_TYPE } from "@/lib/crm-types"
 import { APP_ROUTES, companyPath, contactPath, groupPath } from "@/lib/routes"
 import { getWorkspaceUserLabels, labelForUserId } from "@/lib/workspace-users"
@@ -421,6 +421,52 @@ export async function getTargetListById(
     wonCount: members.filter((m) => m.status === "won").length,
   }
   return { list, members }
+}
+
+/** A contact's target-list memberships with per-list outreach status/owner/note. */
+export async function getTargetListsForContact(
+  contactId: string,
+): Promise<ContactTargetListMembership[]> {
+  const { user, workspaceId, scopeIds, role } = await getActingUser()
+  const isAdmin = canManageTeam(role)
+
+  const rows = await db
+    .select({
+      group: groups,
+      status: contactGroups.status,
+      ownerId: contactGroups.ownerId,
+      lastTouchedAt: contactGroups.lastTouchedAt,
+      note: contactGroups.note,
+    })
+    .from(contactGroups)
+    .innerJoin(groups, eq(groups.id, contactGroups.groupId))
+    .where(
+      and(
+        eq(contactGroups.contactId, contactId),
+        eq(groups.type, TARGET_LIST_TYPE),
+        workspaceUserIdMatches(groups.userId, scopeIds),
+      ),
+    )
+    .orderBy(groups.name)
+
+  // Private lists are only visible to their owner and Owners/Admins.
+  const visible = rows.filter(
+    (r) => isAdmin || r.group.visibility !== "private" || r.group.ownerId === user.id,
+  )
+  if (visible.length === 0) return []
+
+  const users = await getWorkspaceUserLabels(workspaceId)
+  return visible.map((r) => ({
+    listId: r.group.id,
+    listName: r.group.name,
+    status: (OUTREACH_STATUSES as readonly string[]).includes(r.status)
+      ? (r.status as OutreachStatus)
+      : "new",
+    ownerId: r.ownerId,
+    ownerName: r.ownerId ? labelForUserId(users, r.ownerId) : "",
+    lastTouchedAt: r.lastTouchedAt ? r.lastTouchedAt.toISOString() : null,
+    note: r.note,
+  }))
 }
 
 export async function getActivitiesForContact(contactId: string, limit = 30) {
