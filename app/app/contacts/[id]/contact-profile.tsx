@@ -32,6 +32,8 @@ import {
 import { addContactNote } from "@/app/actions/activities"
 import { deleteContact } from "@/app/actions/contacts"
 import { deleteDeal } from "@/app/actions/deals"
+import { deleteTask, setTaskStatus } from "@/app/actions/tasks"
+import { Checkbox } from "@/components/ui/checkbox"
 import { NulaIntelligenceCard } from "@/components/enrichment/nula-intelligence-card"
 import { ContactDocuments } from "@/components/contact-documents"
 import { EmailViewDialog } from "@/components/email-view-dialog"
@@ -85,6 +87,7 @@ export function ContactProfile({
   const [taskOpen, setTaskOpen] = useState(false)
   const [bookingOpen, setBookingOpen] = useState(false)
   const [editDeal, setEditDeal] = useState<Deal | null>(null)
+  const [editTask, setEditTask] = useState<Task | null>(null)
   const [note, setNote] = useState("")
   const [enrichBusy, setEnrichBusy] = useState(false)
   const [pending, startTransition] = useTransition()
@@ -146,6 +149,29 @@ export function ContactProfile({
         router.refresh()
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Could not delete deal")
+      }
+    })
+  }
+
+  function removeTask(taskId: string) {
+    startTransition(async () => {
+      try {
+        await deleteTask(taskId)
+        toast.success("Task deleted")
+        router.refresh()
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Could not delete task")
+      }
+    })
+  }
+
+  function toggleTask(task: Task) {
+    startTransition(async () => {
+      try {
+        await setTaskStatus(task.id, task.status !== "done")
+        router.refresh()
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Could not update task")
       }
     })
   }
@@ -365,7 +391,7 @@ export function ContactProfile({
             <ListChecks className="size-4 text-muted-foreground" />
             Tasks
           </CardTitle>
-          <Button size="sm" variant="outline" onClick={() => setTaskOpen(true)}>
+          <Button size="sm" variant="outline" onClick={() => { setEditTask(null); setTaskOpen(true) }}>
             <Plus data-icon="inline-start" />
             Add task
           </Button>
@@ -377,15 +403,47 @@ export function ContactProfile({
             <ul className="divide-y divide-border">
               {tasks.map((task) => (
                 <li key={task.id} className="flex items-center justify-between gap-3 py-3">
-                  <div className="min-w-0">
-                    <p className={task.status === "done" ? "font-medium text-muted-foreground line-through" : "font-medium"}>
-                      {task.title}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {task.dueAt ? formatDateTime(task.dueAt) : "No due date"} · {task.priority}
-                    </p>
+                  <div className="flex min-w-0 items-start gap-3">
+                    <Checkbox
+                      className="mt-0.5"
+                      checked={task.status === "done"}
+                      onCheckedChange={() => toggleTask(task)}
+                      aria-label={task.status === "done" ? "Mark open" : "Mark done"}
+                      disabled={pending}
+                    />
+                    <button
+                      type="button"
+                      className="min-w-0 text-left"
+                      onClick={() => { setEditTask(task); setTaskOpen(true) }}
+                    >
+                      <p className={task.status === "done" ? "font-medium text-muted-foreground line-through" : "font-medium hover:underline"}>
+                        {task.title}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {task.dueAt ? formatDateTime(task.dueAt) : "No due date"} · {task.priority}
+                      </p>
+                    </button>
                   </div>
-                  <Badge variant={task.status === "done" ? "secondary" : "outline"}>{task.status}</Badge>
+                  <div className="flex items-center gap-1">
+                    <Badge variant={task.status === "done" ? "secondary" : "outline"}>{task.status}</Badge>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Edit task"
+                      onClick={() => { setEditTask(task); setTaskOpen(true) }}
+                    >
+                      <Pencil />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Delete task"
+                      disabled={pending}
+                      onClick={() => removeTask(task.id)}
+                    >
+                      <Trash2 />
+                    </Button>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -525,7 +583,12 @@ export function ContactProfile({
         contactName={contact.fullName}
       />
       <RecordPurchaseDialog open={purchaseOpen} onOpenChange={setPurchaseOpen} contactId={contact.id} />
-      <TaskFormDialog open={taskOpen} onOpenChange={setTaskOpen} defaultContactId={contact.id} />
+      <TaskFormDialog
+        open={taskOpen}
+        onOpenChange={(open) => { setTaskOpen(open); if (!open) setEditTask(null) }}
+        task={editTask}
+        defaultContactId={contact.id}
+      />
       <BookingFormDialog open={bookingOpen} onOpenChange={setBookingOpen} defaultContactId={contact.id} />
       <DealFormDialog
         open={dealOpen}
