@@ -1,5 +1,7 @@
 # Nula B2B Intelligence Module — Stage 1 Design
 
+> Billing implementation has moved to Stripe. See [Stripe billing setup](stripe-billing.md) for current checkout, webhooks, credentials, and migration steps. Square references below describe the original design.
+
 Status: **Design proposal** (not yet implemented).
 
 Goal: turn a thin lead (`name`, `email`, `company`, `website`, `phone`) into a

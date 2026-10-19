@@ -29,6 +29,7 @@ export type ModuleState = {
   addonId: ModuleId
   enabled: boolean
   status: string
+  cancelAtPeriodEnd: boolean
   renewsAt: string | null
   creditsUsed: number
   creditLimit: number
@@ -101,6 +102,7 @@ export async function getModuleState(
     enabled,
     status: row?.status ?? "",
     renewsAt: row?.currentPeriodEnd?.toISOString() ?? null,
+    cancelAtPeriodEnd: row?.cancelAtPeriodEnd ?? false,
     creditsUsed: used,
     creditLimit: limit,
     creditsRemaining: remaining,

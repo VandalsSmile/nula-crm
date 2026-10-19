@@ -13,6 +13,7 @@ import { activatePlan, getTrialStatus } from "@/app/actions/workspace"
 import {
   cancelSubscription,
   createCheckout,
+  createBillingPortal,
   getBillingState,
   type BillingState,
   type PlanOption,
@@ -48,7 +49,7 @@ export function PlanSettings() {
     mutateTrial()
   }, [mutateBilling, mutateTrial])
 
-  // Surface returning from Square's hosted checkout success URL.
+  // Surface returning from Stripe's hosted checkout success URL.
   useEffect(() => {
     if (searchParams.get("checkout") === "success") {
       toast.success("Thanks! Your subscription is being activated.")
@@ -84,6 +85,19 @@ export function PlanSettings() {
     }
   }
 
+  async function handlePortal() {
+    setBusy("portal")
+    try {
+      const result = await createBillingPortal()
+      if (result.url) window.location.assign(result.url)
+      else toast.error(result.error || "Could not open billing")
+    } catch {
+      toast.error("Could not open billing")
+    } finally {
+      setBusy(null)
+    }
+  }
+
   async function handleActivate() {
     setBusy("activate")
     try {
@@ -112,7 +126,7 @@ export function PlanSettings() {
             {isComp ? (
               <Badge>Complimentary</Badge>
             ) : subscribed ? (
-              <Badge>Active</Badge>
+              <Badge>{billing?.subscriptionStatus === "active" || billing?.subscriptionStatus === "trialing" ? "Active" : "Needs attention"}</Badge>
             ) : isExpired ? (
               <Badge variant="destructive">Trial ended</Badge>
             ) : (
@@ -134,6 +148,12 @@ export function PlanSettings() {
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
+          {canManageBilling && billing?.canOpenPortal ? (
+            <Button variant="outline" className="w-fit" onClick={handlePortal} disabled={busy === "portal"}>
+              {busy === "portal" ? <Loader2 className="size-4 animate-spin" /> : null}
+              Manage billing &amp; payment method
+            </Button>
+          ) : null}
           {isComp ? (
             <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm">
               <Check className="size-4 text-primary" />
@@ -146,12 +166,14 @@ export function PlanSettings() {
                 <span>
                   {billing?.subscriptionStatus === "past_due"
                     ? "Your payment is past due — update your card to avoid interruption."
-                    : "You have full access to Nula."}
+                    : billing?.subscriptionStatus === "active" || billing?.subscriptionStatus === "trialing"
+                      ? "You have full access to Nula."
+                      : "Your subscription needs attention. Open billing to resolve it."}
                 </span>
               </div>
               {billing?.currentPeriodEnd ? (
                 <p className="text-sm text-muted-foreground">
-                  Renews on{" "}
+                  {billing.cancelAtPeriodEnd ? "Access ends on" : "Renews on"}{" "}
                   <span className="font-medium text-foreground">
                     {formatDate(billing.currentPeriodEnd)}
                   </span>
@@ -162,14 +184,14 @@ export function PlanSettings() {
                   variant="outline"
                   className="w-fit"
                   onClick={handleManage}
-                  disabled={busy === "manage"}
+                  disabled={busy === "manage" || billing?.cancelAtPeriodEnd}
                 >
                   {busy === "manage" ? (
                     <Loader2 className="size-4 animate-spin" />
                   ) : (
                     <XCircle className="size-4" />
                   )}
-                  Cancel subscription
+                  {billing?.cancelAtPeriodEnd ? "Cancellation scheduled" : "Cancel subscription"}
                 </Button>
               ) : (
                 <p className="text-sm text-muted-foreground">
@@ -240,20 +262,20 @@ export function PlanSettings() {
                       </li>
                     ))}
                   </ul>
-                  {canManageBilling ? (
+                  {canManageBilling && billing?.manualActivationAllowed ? (
                     <div className="mt-4 flex flex-col gap-1.5">
                       <Button onClick={handleActivate} disabled={busy === "activate"} className="w-fit">
                         {busy === "activate" ? <Loader2 className="size-4 animate-spin" /> : null}
                         Upgrade now
                       </Button>
                       <p className="text-xs text-muted-foreground">
-                        Card checkout activates once Square is connected; this activates your
+                        Card checkout activates once Stripe is connected; this activates your
                         workspace in the meantime.
                       </p>
                     </div>
                   ) : (
                     <p className="mt-4 text-sm text-muted-foreground">
-                      Ask the account owner to upgrade.
+                      {canManageBilling ? "Payments are being set up. Please contact support to subscribe." : "Ask the account owner to upgrade."}
                     </p>
                   )}
                 </div>

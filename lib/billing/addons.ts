@@ -8,8 +8,8 @@ import { addonByPriceId } from "@/lib/billing/plans"
 import { DEFAULT_CREDIT_LIMIT, MODULE_IDS, type ModuleId } from "@/lib/modules"
 import { randomId } from "@/lib/library-helpers"
 
-/** Square subscription statuses that grant full access. */
-const ACTIVE_STATUSES = new Set(["ACTIVE", "PENDING", "PAUSED"])
+/** Stripe subscription statuses that grant full access. */
+const ACTIVE_STATUSES = new Set(["ACTIVE", "TRIALING", "PAST_DUE"])
 
 const PERIOD_MS = 30 * 24 * 60 * 60 * 1000
 
@@ -17,8 +17,9 @@ export type AddonSubscriptionState = {
   subscriptionId: string
   customerId: string
   status: string
-  planVariationId: string
+  priceId: string
   currentPeriodEnd: Date | null
+  cancelAtPeriodEnd?: boolean
 }
 
 /**
@@ -29,31 +30,35 @@ export async function applyAddonSubscription(
   workspaceId: string,
   sub: AddonSubscriptionState,
   enabledBy = "",
+  executor: Pick<typeof db, "insert" | "update" | "select"> = db,
 ): Promise<void> {
-  const addon = addonByPriceId(sub.planVariationId)
+  const addon = addonByPriceId(sub.priceId)
   const addonId: ModuleId = (addon?.addonId as ModuleId) ?? MODULE_IDS.b2bIntelligence
   const active = ACTIVE_STATUSES.has(sub.status.toUpperCase())
 
-  const [existing] = await db
-    .select({ id: workspaceAddons.id })
+  const [existing] = await executor
+    .select({ id: workspaceAddons.id, status: workspaceAddons.status })
     .from(workspaceAddons)
     .where(and(eq(workspaceAddons.workspaceId, workspaceId), eq(workspaceAddons.addonId, addonId)))
     .limit(1)
 
+  if (existing?.status === "comped") return
+
   const set = {
     status: active ? "active" : sub.status.toLowerCase(),
-    squareSubscriptionId: sub.subscriptionId,
-    squareCustomerId: sub.customerId,
-    priceId: sub.planVariationId,
+    stripeSubscriptionId: sub.subscriptionId,
+    stripeCustomerId: sub.customerId,
+    priceId: sub.priceId,
     currentPeriodEnd: sub.currentPeriodEnd,
+    cancelAtPeriodEnd: sub.cancelAtPeriodEnd ?? false,
     creditLimit: addon?.creditLimit ?? DEFAULT_CREDIT_LIMIT,
     updatedAt: new Date(),
   }
 
   if (existing) {
-    await db.update(workspaceAddons).set(set).where(eq(workspaceAddons.id, existing.id))
+    await executor.update(workspaceAddons).set(set).where(eq(workspaceAddons.id, existing.id))
   } else {
-    await db.insert(workspaceAddons).values({
+    await executor.insert(workspaceAddons).values({
       id: randomId("addon"),
       workspaceId,
       addonId,
@@ -75,7 +80,7 @@ export async function clearAddonSubscription(
     .where(and(eq(workspaceAddons.workspaceId, workspaceId), eq(workspaceAddons.addonId, addonId)))
 }
 
-/** Dev/no-Square fallback: enable the module immediately without checkout. */
+/** Dev/no-Stripe fallback: enable the module immediately without checkout. */
 export async function enableAddonLocally(
   workspaceId: string,
   addonId: ModuleId = MODULE_IDS.b2bIntelligence,
@@ -113,7 +118,7 @@ const COMP_CREDIT_LIMIT = 5000
 
 /**
  * Super-admin override: grant or revoke complimentary ("comped") access to an
- * add-on module — no Square subscription, no charge. Revoking sets the row to
+ * add-on module — no Stripe subscription, no charge. Revoking sets the row to
  * canceled with access ended immediately.
  */
 export async function setAddonComp(
@@ -131,7 +136,7 @@ export async function setAddonComp(
   const set = comped
     ? {
         status: "comped",
-        squareSubscriptionId: "",
+        stripeSubscriptionId: "",
         priceId: "",
         currentPeriodEnd: null,
         creditLimit: COMP_CREDIT_LIMIT,
@@ -158,7 +163,7 @@ export async function findWorkspaceByAddonCustomer(customerId: string): Promise<
   const [row] = await db
     .select({ workspaceId: workspaceAddons.workspaceId })
     .from(workspaceAddons)
-    .where(eq(workspaceAddons.squareCustomerId, customerId))
+    .where(eq(workspaceAddons.stripeCustomerId, customerId))
     .limit(1)
   return row?.workspaceId ?? null
 }

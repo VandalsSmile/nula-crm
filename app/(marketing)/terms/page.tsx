@@ -41,7 +41,7 @@ export default function TermsPage() {
         <ul>
           <li>Paid plans are billed per active user on a monthly or annual basis, plus applicable taxes.</li>
           <li>Subscriptions renew automatically until cancelled. You can cancel anytime; access continues through the end of the current billing period.</li>
-          <li>Payments are processed by Square, our payment processor. By subscribing you authorize recurring charges to your payment method until you cancel.</li>
+          <li>Payments are processed by Stripe, our payment processor. By subscribing you authorize recurring charges to your payment method until you cancel.</li>
           <li>Except where required by law, fees are non-refundable. We may change pricing with reasonable notice; changes apply to the next billing period.</li>
         </ul>
       </LegalSection>
@@ -81,7 +81,7 @@ export default function TermsPage() {
       <LegalSection heading="8. Third-party services">
         <p>
           The Service relies on third parties, including cloud hosting, our payment processor
-          (Square), email delivery (Resend), and AI model providers. Your use may
+          (Stripe), email delivery (Resend), and AI model providers. Your use may
           be subject to their terms, and we are not responsible for third-party services.
         </p>
       </LegalSection>

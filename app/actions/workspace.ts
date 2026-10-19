@@ -17,7 +17,7 @@ import {
 } from "@/lib/crm-defaults"
 import { seedDefaultAutomations } from "@/lib/automations/engine"
 import { randomId } from "@/lib/library-helpers"
-import { isBillingConfigured } from "@/lib/square"
+import { isBillingConfigured } from "@/lib/stripe"
 import { computeTrialStatus, trialEndDate, type TrialStatus } from "@/lib/trial"
 
 export type CompanyProfile = {
@@ -250,14 +250,14 @@ export async function getTrialStatus(): Promise<TrialStatus> {
 }
 
 /**
- * Manual plan activation fallback for environments where Square billing isn't
+ * Manual plan activation fallback for environments where Stripe billing isn't
  * configured yet (local/dev). Once billing IS configured (production), this is
  * blocked so the only way to reach the paid plan is real checkout — closing the
  * free "active" bypass.
  */
 export async function activatePlan(): Promise<TrialStatus> {
   const { workspaceId } = await requireOwner()
-  if (isBillingConfigured()) {
+  if (process.env.NODE_ENV === "production" || isBillingConfigured()) {
     throw new Error("Please subscribe through checkout to activate your plan.")
   }
   await db

@@ -189,7 +189,7 @@ export async function setSuspended(workspaceId: string, suspended: boolean) {
 
 /**
  * Super-admin: grant or revoke complimentary ("comped") access to the B2B
- * Intelligence module for an account — free, no Square subscription required.
+ * Intelligence module for an account — free, no Stripe subscription required.
  */
 export async function setAccountB2BIntelligence(workspaceId: string, enabled: boolean) {
   const admin = await requireSuperAdmin()

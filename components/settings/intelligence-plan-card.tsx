@@ -52,23 +52,25 @@ export function IntelligencePlanCard() {
   const isB2c = companyModel === "b2c"
   const isComped = module.status === "comped"
   const monthly = plans.find((p) => p.interval === "month")
+  const annual = plans.find((p) => p.interval === "year")
 
-  async function handleSubscribe() {
-    if (!monthly && configured) {
+  async function handleSubscribe(planId = monthly?.id) {
+    const selected = plans.find((p) => p.id === planId)
+    if (!selected && configured) {
       toast.error("This add-on isn't available yet.")
       return
     }
     setBusy("subscribe")
     try {
-      if (configured && monthly) {
-        const res = await createAddonCheckout(monthly.id)
+      if (configured && selected) {
+        const res = await createAddonCheckout(selected.id)
         if (res.url) {
           window.location.assign(res.url)
           return
         }
         toast.error(res.error || "Could not start checkout")
       } else {
-        // Dev/no-Square fallback.
+        // Dev/no-Stripe fallback.
         await enableAddonNow()
         toast.success("B2B Intelligence enabled")
         refresh()
@@ -124,16 +126,16 @@ export function IntelligencePlanCard() {
             </div>
             <p className="text-sm text-muted-foreground">
               {module.creditsUsed} of {module.creditLimit} monthly enrichments used
-              {module.renewsAt ? ` · renews ${formatDate(module.renewsAt)}` : ""}
+              {module.renewsAt ? ` · ${module.cancelAtPeriodEnd ? "ends" : "renews"} ${formatDate(module.renewsAt)}` : ""}
             </p>
             {isComped ? (
               <p className="text-sm text-muted-foreground">
                 Your workspace has complimentary access — no charge.
               </p>
             ) : canManage ? (
-              <Button variant="outline" className="w-fit" onClick={handleCancel} disabled={busy === "cancel"}>
+              <Button variant="outline" className="w-fit" onClick={handleCancel} disabled={busy === "cancel" || module.cancelAtPeriodEnd}>
                 {busy === "cancel" ? <Loader2 className="size-4 animate-spin" /> : <XCircle className="size-4" />}
-                Cancel add-on
+                {module.cancelAtPeriodEnd ? "Cancellation scheduled" : "Cancel add-on"}
               </Button>
             ) : (
               <p className="text-sm text-muted-foreground">Only the account owner can manage billing.</p>
@@ -154,16 +156,21 @@ export function IntelligencePlanCard() {
               <span className="mb-1 text-sm text-muted-foreground">/ month, on top of your plan</span>
             </div>
             {canManage ? (
-              <Button className="w-fit" onClick={handleSubscribe} disabled={busy === "subscribe"}>
+              <Button className="w-fit" onClick={() => handleSubscribe()} disabled={busy === "subscribe" || (!configured && !data?.manualActivationAllowed)}>
                 {busy === "subscribe" ? <Loader2 className="size-4 animate-spin" data-icon="inline-start" /> : null}
                 {configured ? "Add B2B Intelligence" : "Enable B2B Intelligence"}
               </Button>
             ) : (
               <p className="text-sm text-muted-foreground">Ask the account owner to add this module.</p>
             )}
+            {configured && canManage && annual ? (
+              <Button variant="outline" className="w-fit" onClick={() => handleSubscribe(annual.id)} disabled={busy === "subscribe"}>
+                Subscribe annually · {annual.priceLabel}
+              </Button>
+            ) : null}
             {!configured && canManage ? (
               <p className="text-xs text-muted-foreground">
-                Card checkout activates once Square is connected; this enables the module in the meantime.
+                {data.manualActivationAllowed ? "Development mode: enable the module without payment." : "Payments are being set up. Please contact support to subscribe."}
               </p>
             ) : null}
           </>

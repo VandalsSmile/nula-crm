@@ -1,21 +1,13 @@
-/**
- * Paid plan catalog. Square subscription plan *variation* IDs come from env so
- * the same code works across sandbox/production and lets you change pricing in
- * Square without a deploy.
- *
- * Set these to the subscription plan VARIATION ids (not the plan id) created in
- * the Square Dashboard/Catalog:
- *   SQUARE_PLAN_PRO_MONTHLY, SQUARE_PLAN_PRO_ANNUAL
- */
+/** Recurring Stripe Price IDs come from environment configuration. */
 export type BillingInterval = "month" | "year"
 
 export type Plan = {
   id: string
   name: string
   interval: BillingInterval
-  /** Square subscription plan variation id. */
+  /** Stripe recurring Price ID. */
   priceId: string
-  amount: number // in cents, charged + displayed
+  amount: number // in cents, displayed; Stripe Price is validated before checkout
   currency: string
   blurb: string
 }
@@ -33,7 +25,7 @@ export const PLANS: Plan[] = [
     id: "pro-monthly",
     name: "Nula Pro",
     interval: "month",
-    priceId: process.env.SQUARE_PLAN_PRO_MONTHLY?.trim() ?? "",
+    priceId: process.env.STRIPE_PRICE_PRO_MONTHLY?.trim() ?? "",
     amount: 2900,
     currency: "usd",
     blurb: "Billed monthly",
@@ -42,7 +34,7 @@ export const PLANS: Plan[] = [
     id: "pro-annual",
     name: "Nula Pro",
     interval: "year",
-    priceId: process.env.SQUARE_PLAN_PRO_ANNUAL?.trim() ?? "",
+    priceId: process.env.STRIPE_PRICE_PRO_ANNUAL?.trim() ?? "",
     amount: 29000,
     currency: "usd",
     blurb: "Billed annually — save ~17%",
@@ -51,8 +43,8 @@ export const PLANS: Plan[] = [
 
 /**
  * Paid add-on modules — a second, independent subscription on top of the base
- * plan. Square plan *variation* ids come from env:
- *   SQUARE_PLAN_ADDON_B2B_INTEL_MONTHLY, SQUARE_PLAN_ADDON_B2B_INTEL_ANNUAL
+ * plan. Stripe recurring Price IDs come from env:
+ *   STRIPE_PRICE_ADDON_B2B_INTEL_MONTHLY, STRIPE_PRICE_ADDON_B2B_INTEL_ANNUAL
  */
 export type Addon = Plan & {
   /** The module this subscription unlocks (see lib/modules.ts). */
@@ -76,7 +68,7 @@ export const ADDONS: Addon[] = [
     addonId: "b2b_intelligence",
     name: "B2B Intelligence",
     interval: "month",
-    priceId: process.env.SQUARE_PLAN_ADDON_B2B_INTEL_MONTHLY?.trim() ?? "",
+    priceId: process.env.STRIPE_PRICE_ADDON_B2B_INTEL_MONTHLY?.trim() ?? "",
     amount: 4900,
     currency: "usd",
     blurb: "Billed monthly, on top of your plan",
@@ -87,7 +79,7 @@ export const ADDONS: Addon[] = [
     addonId: "b2b_intelligence",
     name: "B2B Intelligence",
     interval: "year",
-    priceId: process.env.SQUARE_PLAN_ADDON_B2B_INTEL_ANNUAL?.trim() ?? "",
+    priceId: process.env.STRIPE_PRICE_ADDON_B2B_INTEL_ANNUAL?.trim() ?? "",
     amount: 49000,
     currency: "usd",
     blurb: "Billed annually — save ~17%",
@@ -113,12 +105,12 @@ export function addonByPriceId(priceId: string): Addon | undefined {
   return ADDONS.find((a) => a.priceId === priceId)
 }
 
-/** Add-ons for a given module that have a Square variation configured. */
+/** Add-ons for a given module that have a Stripe Price configured. */
 export function availableAddons(addonId: string): Addon[] {
   return ADDONS.filter((a) => a.addonId === addonId && a.priceId)
 }
 
-/** Plans that have a Square plan variation id configured (i.e. are purchasable). */
+/** Plans that have a Stripe Price ID configured (i.e. are purchasable). */
 export function availablePlans(): Plan[] {
   return PLANS.filter((p) => p.priceId)
 }

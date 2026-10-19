@@ -1,40 +1,43 @@
 import "server-only"
 
-import { eq } from "drizzle-orm"
+import { eq, sql } from "drizzle-orm"
 
 import { db } from "@/lib/db"
 import { workspaceSettings } from "@/lib/db/schema"
 
-/** Square subscription statuses that grant full access. */
-const ACTIVE_STATUSES = new Set(["ACTIVE", "PENDING", "PAUSED"])
+/** Stripe subscription statuses that grant full access. */
+const ACTIVE_STATUSES = new Set(["ACTIVE", "TRIALING", "PAST_DUE"])
 
 export type SubscriptionState = {
   subscriptionId: string
   customerId: string
   status: string
-  planVariationId: string
+  priceId: string
   currentPeriodEnd: Date | null
+  cancelAtPeriodEnd?: boolean
 }
 
-/** Persist a Square subscription's state onto the workspace. */
+/** Persist a Stripe subscription's state onto the workspace. */
 export async function applySubscription(
   workspaceId: string,
   sub: SubscriptionState,
+  executor: Pick<typeof db, "insert" | "update" | "select"> = db,
 ): Promise<void> {
   const active = ACTIVE_STATUSES.has(sub.status.toUpperCase())
   const set = {
-    plan: active ? "active" : "trial",
+    plan: sql`case when ${workspaceSettings.plan} = 'free' then 'free' else ${active ? "active" : "trial"} end`,
     subscriptionStatus: sub.status.toLowerCase(),
-    squareSubscriptionId: sub.subscriptionId,
-    squareCustomerId: sub.customerId,
-    priceId: sub.planVariationId,
+    stripeSubscriptionId: sub.subscriptionId,
+    stripeCustomerId: sub.customerId,
+    priceId: sub.priceId,
     currentPeriodEnd: sub.currentPeriodEnd,
+    cancelAtPeriodEnd: sub.cancelAtPeriodEnd ?? false,
     updatedAt: new Date(),
   }
 
-  await db
+  await executor
     .insert(workspaceSettings)
-    .values({ workspaceId, ...set, onboardingComplete: true })
+    .values({ workspaceId, ...set, plan: active ? "active" : "trial", onboardingComplete: true })
     .onConflictDoUpdate({ target: workspaceSettings.workspaceId, set })
 }
 
@@ -45,7 +48,7 @@ export async function clearSubscription(workspaceId: string): Promise<void> {
     .set({
       plan: "trial",
       subscriptionStatus: "canceled",
-      squareSubscriptionId: "",
+      stripeSubscriptionId: "",
       priceId: "",
       currentPeriodEnd: null,
       updatedAt: new Date(),
@@ -58,7 +61,7 @@ export async function findWorkspaceByCustomer(customerId: string): Promise<strin
   const [row] = await db
     .select({ workspaceId: workspaceSettings.workspaceId })
     .from(workspaceSettings)
-    .where(eq(workspaceSettings.squareCustomerId, customerId))
+    .where(eq(workspaceSettings.stripeCustomerId, customerId))
     .limit(1)
   return row?.workspaceId ?? null
 }
