@@ -383,6 +383,8 @@ export async function createBillingPortal(): Promise<{
     if (!row?.customerId) return { error: "No Stripe billing account yet." }
     const session = await getStripe().billingPortal.sessions.create({
       customer: row.customerId,
+      configuration:
+        process.env.STRIPE_PORTAL_CONFIGURATION_ID?.trim() || undefined,
       return_url: `${appOrigin(await headers())}/app/settings?tab=plan`,
     })
     return { url: session.url }

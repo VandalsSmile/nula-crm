@@ -25,6 +25,7 @@ Configure `.env.local` for local development and the `nula-crm` Vercel project's
 - `NEXT_PUBLIC_APP_URL` and `BETTER_AUTH_URL`: the application origin; production is `https://www.nulacrm.ai`.
 - `STRIPE_SECRET_KEY`: server API key. Never use a `NEXT_PUBLIC_` prefix or commit the value.
 - `STRIPE_WEBHOOK_SECRET`: signing secret for this specific endpoint or local Stripe CLI listener.
+- `STRIPE_PORTAL_CONFIGURATION_ID`: the dedicated Nula portal configuration (`bpc_...`).
 - The four Price IDs above, using test equivalents in development and preview environments.
 - `STRIPE_AUTOMATIC_TAX`: defaults to `false`. Set to `true` after configuring Stripe Tax and applicable registrations. When enabled, Checkout collects a billing address and requests automatic tax calculation.
 
@@ -46,7 +47,7 @@ Register `https://www.nulacrm.ai/api/webhooks/stripe` in the same Stripe account
 
 The handler verifies Stripe's signature against the raw request body and rejects invalid signatures. It retrieves the latest subscription under a workspace lock, so duplicate or delayed events converge on current Stripe state. It requires Nula metadata, a recognized price, and an exact match with the workspace's stored Stripe customer. Unrelated subscriptions in the shared Stripe account are ignored.
 
-Enable the customer portal in Stripe Billing settings. Allow invoice history, payment method updates, and cancellation at the end of the billing period. Leave subscription switching and quantity changes disabled: Nula currently supports one item with quantity one per subscription and identifies each product using its configured Price ID.
+Create a dedicated Nula customer portal configuration and set `STRIPE_PORTAL_CONFIGURATION_ID` so the shared account's default portal settings remain independent. Allow invoice history, payment method updates, and cancellation at the end of the billing period. Leave subscription switching and quantity changes disabled: Nula currently supports one item with quantity one per subscription and identifies each product using its configured Price ID.
 
 For local forwarding with the official Stripe CLI:
 
