@@ -78,3 +78,30 @@ Use a dedicated test workspace and Stripe test mode before enabling live checkou
 Automated checks: `npm test`, `npm run typecheck`, targeted ESLint on changed billing code, and `npm run build`. Database migration and end-to-end payment verification require the configured database, application auth, and Stripe test credentials.
 
 Stripe references: [Checkout metadata](https://support.stripe.com/questions/using-metadata-with-checkout-sessions), [Checkout Sessions API](https://docs.stripe.com/api/checkout/sessions), and [subscription billing periods](https://support.stripe.com/questions/how-to-determine-when-a-subscription-cycles-using-webhooks).
+
+## Production cutover record — October 19, 2026
+
+Stripe billing was deployed in v1.190. The production build confirmed zero legacy base or add-on subscription IDs and validated the live Stripe prices and dedicated portal configuration. Live checks confirmed that the homepage responds successfully, unsigned webhook requests are rejected, and a signed diagnostic event is accepted. A temporary live Checkout session displayed the expected Pro monthly amount; it was expired without taking a payment, and its temporary customer was deleted. The old Chargebee event destinations were disabled.
+
+The obsolete `SQUARE_*`, `PADDLE_*`, and `NEXT_PUBLIC_PADDLE_*` environment variables were removed from Production. Current billing code does not use them; Stripe configuration remains in Production.
+
+### Unresolved Preview configuration incident
+
+The cleanup used Vercel CLI 53.1.1's `vercel env rm NAME production`. For variables shared between Production and Preview, this removed the entire environment-variable record. Twelve Preview assignments were also deleted:
+
+- `SQUARE_PLAN_PRO_MONTHLY`
+- `SQUARE_PLAN_PRO_ANNUAL`
+- `SQUARE_WEBHOOK_SIGNATURE_KEY`
+- `SQUARE_LOCATION_ID`
+- `SQUARE_ACCESS_TOKEN`
+- `PADDLE_WEBHOOK_SECRET`
+- `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN`
+- `PADDLE_ENV`
+- `NEXT_PUBLIC_PADDLE_ENV`
+- `PADDLE_PRICE_PRO_ANNUAL`
+- `PADDLE_PRICE_PRO_MONTHLY`
+- `PADDLE_API_KEY`
+
+Their original sensitive values have not been recovered. A deleted-record update returned 404, and a deliberately stopped Preview redeployment probe received none of the deleted values. Restoration requires an original backup or provider assistance, with Preview as the only target. Do not consider this incident resolved by a successful Production deployment.
+
+Development assignments and unrelated configuration were unchanged. The live Stripe deployment was unaffected. Before future environment cleanup, inspect every record's targets and edit the target list to preserve other environments; do not use `env rm` on a shared record to remove only one assignment.
