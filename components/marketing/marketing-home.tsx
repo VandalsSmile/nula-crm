@@ -18,10 +18,14 @@ import {
   Undo2,
   X,
   Check,
+  HelpCircle,
+  Plus,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { ContactForm } from "@/components/marketing/contact-form"
+import { SalesPhoneLink } from "@/components/marketing/sales-phone-link"
+import { HOME_FAQS } from "@/lib/marketing-schema"
 import {
   AboutIllustration,
   HeroIllustration,
@@ -584,6 +588,38 @@ export function MarketingHome() {
         </div>
       </section>
 
+      {/* FAQ — same questions and answers as the FAQPage JSON-LD */}
+      <section id="faq" aria-labelledby="home-faq-heading" className="border-t border-border/60 marketing-warm-bg py-20 md:py-24">
+        <div className="mx-auto max-w-3xl px-4 md:px-6">
+          <div className="text-center">
+            <SectionEyebrow>
+              <HelpCircle className="size-3.5" />
+              FAQ
+            </SectionEyebrow>
+            <h2 id="home-faq-heading" className="mt-4 text-3xl font-semibold tracking-tight text-nula-ink md:text-4xl">
+              Common questions
+            </h2>
+            <p className="mt-4 text-lg leading-relaxed text-nula-ink/65">
+              A few things owners ask before they get started.
+            </p>
+          </div>
+          <div className="mt-10 flex flex-col gap-3">
+            {HOME_FAQS.map((item) => (
+              <details
+                key={item.question}
+                className="group rounded-2xl border border-nula-violet/10 bg-white/90 p-5 marketing-card-soft [&_summary::-webkit-details-marker]:hidden"
+              >
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-base font-medium text-nula-ink">
+                  <span>{item.question}</span>
+                  <Plus aria-hidden className="size-5 shrink-0 text-nula-violet transition-transform duration-200 group-open:rotate-45" />
+                </summary>
+                <p className="mt-3 text-sm leading-relaxed text-nula-ink/70">{item.answer}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Contact */}
       <section id="contact" className="border-t border-border/60 py-20 md:py-24">
         <div className="mx-auto max-w-6xl px-4 md:px-6">
@@ -616,7 +652,8 @@ export function MarketingHome() {
                   Prefer email? Reach us at{" "}
                   <a href="mailto:info@nulacrm.ai" className="text-nula-signal hover:underline">
                     info@nulacrm.ai
-                  </a>
+                  </a>{" "}
+                  or call <SalesPhoneLink className="text-nula-signal hover:underline" />.
                 </p>
               </div>
               <ContactForm />
