@@ -8,8 +8,17 @@ import { toast } from "sonner"
 import { PageHeader } from "@/components/page-header"
 import { TagFormDialog } from "@/components/tag-form-dialog"
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog"
+import { ViewToggle } from "@/components/view-toggle"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +26,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { deleteTag } from "@/app/actions/tags"
+import { useViewMode } from "@/hooks/use-view-mode"
 import type { Tag } from "@/lib/crm-types"
 
 export function TagsView({ tags }: { tags: Tag[] }) {
@@ -24,6 +34,7 @@ export function TagsView({ tags }: { tags: Tag[] }) {
   const [createOpen, setCreateOpen] = useState(false)
   const [editTag, setEditTag] = useState<Tag | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Tag | null>(null)
+  const [view, setView] = useViewMode("tags")
   const [, startTransition] = useTransition()
 
   function handleDelete(tag: Tag) {
@@ -39,16 +50,43 @@ export function TagsView({ tags }: { tags: Tag[] }) {
     })
   }
 
+  function renderActions(tag: Tag) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button variant="ghost" size="icon-sm">
+              <MoreHorizontal />
+            </Button>
+          }
+        />
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => setEditTag(tag)}>
+            <Pencil />
+            Edit
+          </DropdownMenuItem>
+          <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(tag)}>
+            <Trash2 />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Tags"
         description="Labels for facts about a contact — source, status, interests. To pick who to message, use Groups."
         actions={
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus data-icon="inline-start" />
-            Create tag
-          </Button>
+          <div className="flex items-center gap-2">
+            <ViewToggle mode={view} onChange={setView} />
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus data-icon="inline-start" />
+              Create tag
+            </Button>
+          </div>
         }
       />
 
@@ -58,7 +96,7 @@ export function TagsView({ tags }: { tags: Tag[] }) {
             No tags yet. Create tags to organize and filter contacts.
           </CardContent>
         </Card>
-      ) : (
+      ) : view === "grid" ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {tags.map((tag) => (
             <Card key={tag.id}>
@@ -71,25 +109,7 @@ export function TagsView({ tags }: { tags: Tag[] }) {
                   />
                   <CardTitle className="text-base">{tag.name}</CardTitle>
                 </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={
-                      <Button variant="ghost" size="icon-sm">
-                        <MoreHorizontal />
-                      </Button>
-                    }
-                  />
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setEditTag(tag)}>
-                      <Pencil />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(tag)}>
-                      <Trash2 />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                {renderActions(tag)}
               </CardHeader>
               <CardContent>
                 {tag.description ? (
@@ -101,6 +121,42 @@ export function TagsView({ tags }: { tags: Tag[] }) {
             </Card>
           ))}
         </div>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Tag</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead className="w-10" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {tags.map((tag) => (
+                    <TableRow key={tag.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="size-3 rounded-full"
+                            style={{ backgroundColor: tag.color }}
+                            aria-hidden
+                          />
+                          <span className="font-medium">{tag.name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {tag.description || "—"}
+                      </TableCell>
+                      <TableCell>{renderActions(tag)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       <TagFormDialog open={createOpen} onOpenChange={setCreateOpen} />
