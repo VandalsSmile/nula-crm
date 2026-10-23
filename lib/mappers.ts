@@ -74,7 +74,7 @@ export function mapTag(row: TagRow): Tag {
   }
 }
 
-export function mapCompany(row: CompanyRow, contactCount = 0): Company {
+export function mapCompany(row: CompanyRow, contactCount = 0, tags: Tag[] = []): Company {
   return {
     id: row.id,
     name: row.name,
@@ -98,6 +98,7 @@ export function mapCompany(row: CompanyRow, contactCount = 0): Company {
     fitScore: row.fitScore,
     enrichedAt: iso(row.enrichedAt),
     enrichmentStatus: row.enrichmentStatus,
+    tags,
     createdAt: iso(row.createdAt) ?? "",
   }
 }

@@ -3,6 +3,7 @@ import {
   activities,
   campaigns,
   companies,
+  companyTags,
   contactDocuments,
   contactGroups,
   contacts,
@@ -147,6 +148,29 @@ export async function getContactById(id: string): Promise<Contact | null> {
   })
 }
 
+/** Map of companyId -> its tags, for the workspace's companies. */
+async function loadCompanyTags(
+  companyIds: string[],
+  scopeIds: string[],
+): Promise<Map<string, ReturnType<typeof mapTag>[]>> {
+  const tagMap = new Map<string, ReturnType<typeof mapTag>[]>()
+  if (companyIds.length === 0) return tagMap
+
+  const [tagLinks, tagRows] = await Promise.all([
+    db.select().from(companyTags).where(inArray(companyTags.companyId, companyIds)),
+    db.select().from(tags).where(workspaceUserIdMatches(tags.userId, scopeIds)),
+  ])
+  const tagById = new Map(tagRows.map((t) => [t.id, mapTag(t)]))
+  for (const link of tagLinks) {
+    const tag = tagById.get(link.tagId)
+    if (!tag) continue
+    const list = tagMap.get(link.companyId) ?? []
+    list.push(tag)
+    tagMap.set(link.companyId, list)
+  }
+  return tagMap
+}
+
 export async function getCompanies(): Promise<Company[]> {
   const { scopeIds } = await getWorkspaceScope()
   const [companyRows, counts] = await Promise.all([
@@ -163,7 +187,11 @@ export async function getCompanies(): Promise<Company[]> {
   ])
 
   const countMap = new Map(counts.map((r) => [r.companyId, r.count]))
-  return companyRows.map((c) => mapCompany(c, countMap.get(c.id) ?? 0))
+  const tagMap = await loadCompanyTags(
+    companyRows.map((c) => c.id),
+    scopeIds,
+  )
+  return companyRows.map((c) => mapCompany(c, countMap.get(c.id) ?? 0, tagMap.get(c.id) ?? []))
 }
 
 /** Contacts that have a free-text company name but aren't linked to a company record. */
@@ -191,12 +219,15 @@ export async function getCompanyById(id: string): Promise<Company | null> {
     .limit(1)
   if (!row) return null
 
-  const [countRow] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(contacts)
-    .where(and(eq(contacts.companyId, id), workspaceUserIdMatches(contacts.userId, scopeIds)))
+  const [[countRow], tagMap] = await Promise.all([
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(contacts)
+      .where(and(eq(contacts.companyId, id), workspaceUserIdMatches(contacts.userId, scopeIds))),
+    loadCompanyTags([id], scopeIds),
+  ])
 
-  return mapCompany(row, countRow?.count ?? 0)
+  return mapCompany(row, countRow?.count ?? 0, tagMap.get(id) ?? [])
 }
 
 export async function getLocationsForCompany(companyId: string): Promise<Location[]> {

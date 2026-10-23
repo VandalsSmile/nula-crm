@@ -176,6 +176,13 @@ export const contactTags = pgTable("contact_tags", {
   addedBy: text("addedBy").notNull().default(""),
 })
 
+export const companyTags = pgTable("company_tags", {
+  companyId: text("companyId").notNull(),
+  tagId: text("tagId").notNull(),
+  addedAt: timestamp("addedAt").notNull().defaultNow(),
+  addedBy: text("addedBy").notNull().default(""),
+})
+
 export const contactGroups = pgTable("contact_groups", {
   contactId: text("contactId").notNull(),
   groupId: text("groupId").notNull(),
