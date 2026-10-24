@@ -4,14 +4,14 @@ import { and, eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
 import { db } from "@/lib/db"
-import { activities, contactTags, contacts, tags } from "@/lib/db/schema"
+import { activities, companies, companyTags, contactTags, contacts, tags } from "@/lib/db/schema"
 import { workspaceUserIdMatches } from "@/lib/auth-helpers"
 import { getActingWriter } from "@/lib/entitlements"
 import { slugifyTag } from "@/lib/crm-defaults"
 import { randomId } from "@/lib/library-helpers"
 import { getTags } from "@/lib/queries"
 import type { Tag } from "@/lib/crm-types"
-import { APP_ROUTES } from "@/lib/routes"
+import { APP_ROUTES, companyPath } from "@/lib/routes"
 
 export type TagInput = {
   name: string
@@ -42,6 +42,16 @@ async function assertContactAccess(contactId: string, scopeIds: string[]) {
     .where(and(eq(contacts.id, contactId), workspaceUserIdMatches(contacts.userId, scopeIds)))
     .limit(1)
   if (!row) throw new Error("Contact not found")
+}
+
+/** Ensure the company belongs to the acting workspace before linking a tag. */
+async function assertCompanyAccess(companyId: string, scopeIds: string[]) {
+  const [row] = await db
+    .select({ id: companies.id })
+    .from(companies)
+    .where(and(eq(companies.id, companyId), workspaceUserIdMatches(companies.userId, scopeIds)))
+    .limit(1)
+  if (!row) throw new Error("Company not found")
 }
 
 export async function createTag(input: TagInput) {
@@ -92,10 +102,12 @@ export async function deleteTag(tagId: string) {
   const row = await assertTagAccess(tagId, scopeIds)
 
   await db.delete(contactTags).where(eq(contactTags.tagId, tagId))
+  await db.delete(companyTags).where(eq(companyTags.tagId, tagId))
   await db.delete(tags).where(eq(tags.id, tagId))
 
   revalidatePath(APP_ROUTES.tags)
   revalidatePath(APP_ROUTES.contacts)
+  revalidatePath(APP_ROUTES.companies)
   return { ok: true, name: row.name }
 }
 
@@ -141,5 +153,34 @@ export async function removeTagFromContact(contactId: string, tagId: string) {
   })
 
   revalidatePath(`${APP_ROUTES.contacts}/${contactId}`)
+  revalidatePath(APP_ROUTES.tags)
+}
+
+export async function addTagToCompany(companyId: string, tagId: string) {
+  const { user, scopeIds } = await getActingWriter()
+  await assertTagAccess(tagId, scopeIds)
+  await assertCompanyAccess(companyId, scopeIds)
+
+  await db
+    .insert(companyTags)
+    .values({ companyId, tagId, addedBy: user.id })
+    .onConflictDoNothing()
+
+  revalidatePath(companyPath(companyId))
+  revalidatePath(APP_ROUTES.companies)
+  revalidatePath(APP_ROUTES.tags)
+}
+
+export async function removeTagFromCompany(companyId: string, tagId: string) {
+  const { scopeIds } = await getActingWriter()
+  await assertTagAccess(tagId, scopeIds)
+  await assertCompanyAccess(companyId, scopeIds)
+
+  await db
+    .delete(companyTags)
+    .where(and(eq(companyTags.companyId, companyId), eq(companyTags.tagId, tagId)))
+
+  revalidatePath(companyPath(companyId))
+  revalidatePath(APP_ROUTES.companies)
   revalidatePath(APP_ROUTES.tags)
 }

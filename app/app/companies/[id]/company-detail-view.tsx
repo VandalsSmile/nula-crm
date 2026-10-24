@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Building2, Globe, ListChecks, Mail, MapPin, MapPinned, Merge, Pencil, Phone, Plus, Sparkles, Trash2, UserPlus, UserRound } from "lucide-react"
+import { Building2, Globe, ListChecks, Mail, MapPin, MapPinned, Merge, Pencil, Phone, Plus, Sparkles, Tag as TagIcon, Trash2, UserPlus, UserRound } from "lucide-react"
 import { toast } from "sonner"
 
 import { PageHeader } from "@/components/page-header"
@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { LifecycleBadge } from "@/components/lifecycle-badge"
+import { CompanyTagsEditor } from "@/components/company-tags-editor"
 import { AddContactDialog } from "@/components/add-contact-dialog"
 import { CompanyFormDialog } from "@/components/company-form-dialog"
 import { LocationFormDialog } from "@/components/location-form-dialog"
@@ -38,12 +39,13 @@ import { OutreachScorecardCard } from "@/components/outreach/scorecard-card"
 import { enrichCompany, type EnrichmentView } from "@/app/actions/enrichment"
 import { useWriteGuard } from "@/lib/use-write-guard"
 import { APP_ROUTES, contactPath } from "@/lib/routes"
-import type { Company, Contact, Location, TargetList } from "@/lib/crm-types"
+import type { Company, Contact, Location, Tag, TargetList } from "@/lib/crm-types"
 
 export function CompanyDetailView({
   company,
   contacts,
   locations,
+  allTags = [],
   targetLists = [],
   intelligenceEnabled = false,
   enrichment = null,
@@ -51,6 +53,7 @@ export function CompanyDetailView({
   company: Company
   contacts: Contact[]
   locations: Location[]
+  allTags?: Tag[]
   targetLists?: TargetList[]
   intelligenceEnabled?: boolean
   enrichment?: EnrichmentView | null
@@ -291,6 +294,18 @@ export function CompanyDetailView({
                   <p className="text-muted-foreground">{company.notes}</p>
                 </>
               ) : null}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <TagIcon className="size-4 text-muted-foreground" />
+                Tags
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CompanyTagsEditor company={company} allTags={allTags} />
             </CardContent>
           </Card>
 

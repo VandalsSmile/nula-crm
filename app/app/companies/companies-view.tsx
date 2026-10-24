@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { CompanyFormDialog } from "@/components/company-form-dialog"
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog"
+import { TagBadge } from "@/components/tag-badge"
 import { ViewToggle } from "@/components/view-toggle"
 import { addCompanyByWebsite, backfillCompaniesFromContacts, deleteCompany } from "@/app/actions/companies"
 import { useViewMode } from "@/hooks/use-view-mode"
@@ -265,6 +266,13 @@ export function CompaniesView({
                   <div className="flex items-center gap-2">
                     <Globe className="size-4" />
                     <span className="truncate">{company.website}</span>
+                  </div>
+                ) : null}
+                {company.tags.length ? (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {company.tags.map((t) => (
+                      <TagBadge key={t.id} name={t.name} color={t.color} />
+                    ))}
                   </div>
                 ) : null}
               </CardContent>

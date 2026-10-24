@@ -184,6 +184,7 @@ export type Company = {
   fitScore: number
   enrichedAt: string | null
   enrichmentStatus: string
+  tags: Tag[]
   createdAt: string
 }
 
