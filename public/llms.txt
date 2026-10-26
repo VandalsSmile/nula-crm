@@ -1,0 +1,29 @@
+# Nula CRM
+
+> Nula is a friendly, AI-first CRM for small businesses. It organizes contacts, suggests next steps, and helps you follow up without the CRM headache.
+
+## Business info
+
+- Name: Nula CRM
+- Email: info@nulacrm.ai
+- Website: https://www.nulacrm.ai
+
+## Services
+
+- AI-first CRM for small business owners and teams. Tell Nula what you need in plain English. You preview and approve every action before it runs.
+- Lead follow-up, smart segmentation, and outreach campaigns (reactivation and nurture) drafted for you.
+- Contacts, companies, deals, tags, groups, a unified inbox, automations, and reports.
+- B2B Intelligence add-on ($49/month, 250 enrichments included): fills in industry, company size, revenue, and job title, scores fit, and recommends the next step.
+- Pricing: $29 per user per month, or $24 per user per month billed annually ($290/user/year). AI is included. 7-day free trial, no credit card required.
+
+## Key pages
+
+- [Home](https://www.nulacrm.ai/): AI-first CRM for small business
+- [Pricing](https://www.nulacrm.ai/pricing): One price, AI included, 7-day free trial
+- [FAQ](https://www.nulacrm.ai/faq): Why CRMs fail small businesses and how Nula helps
+- [B2B Intelligence](https://www.nulacrm.ai/b2b-intelligence): Prospect enrichment add-on
+- [Sign up](https://www.nulacrm.ai/signup): Create a free workspace
+- [Sign in](https://www.nulacrm.ai/login): Sign in to your workspace
+- [Privacy](https://www.nulacrm.ai/privacy): How Nula CRM collects, uses, and protects information
+- [Terms](https://www.nulacrm.ai/terms): Terms of service
+- [Sitemap](https://www.nulacrm.ai/sitemap.xml): Public page index

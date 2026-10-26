@@ -58,9 +58,9 @@ export function pageMetadata({
 }
 
 export const marketingHomeMetadata = pageMetadata({
-  title: `${SITE_NAME} — ${SITE_TAGLINE}`,
+  title: `${SITE_NAME} — easier way to manage customers for small business`,
   description:
-    "Friendly AI-first CRM for small businesses. Sell more without the CRM headache — simple follow-up, smart segmentation, and outreach that converts. No IT team required.",
+    "Friendly AI-first CRM for small businesses. Sell more without the CRM headache — simple follow-up, smart segmentation, and outreach. No IT team required.",
   path: "/",
   index: true,
   absoluteTitle: true,
