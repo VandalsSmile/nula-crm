@@ -1,6 +1,7 @@
 import Link from "next/link"
 
 import { Logo } from "@/components/logo"
+import { SalesPhoneLink } from "@/components/marketing/sales-phone-link"
 import { APP_ROUTES } from "@/lib/routes"
 
 export function MarketingFooter() {
@@ -57,6 +58,9 @@ export function MarketingFooter() {
               <Link href="#contact" className="transition-colors hover:text-nula-violet">
                 Contact
               </Link>
+            </li>
+            <li>
+              <SalesPhoneLink className="transition-colors hover:text-nula-violet" />
             </li>
             <li>
               <a href="mailto:info@nulacrm.ai" className="transition-colors hover:text-nula-violet">
