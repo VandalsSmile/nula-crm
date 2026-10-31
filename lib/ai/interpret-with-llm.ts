@@ -80,7 +80,7 @@ export async function interpretCommandAsync(command: string): Promise<Interprete
 Return JSON only with this shape:
 {
   "intent": "search_crm" | "search_contacts" | "create_company" | "add_to_group" | "apply_tag" | "normalize_tags" | "find_duplicates" | "create_reactivation_campaign" | "summarize_conversion" | "draft_follow_up" | "outreach_angle" | "draft_outreach" | "unknown",
-  "params": { "query"?: string, "name"?: string, "website"?: string, "groupName"?: string, "tagName"?: string, "product"?: string, "days"?: string, "topic"?: string, "filter"?: string, "audience"?: string },
+  "params": { "query"?: string, "name"?: string, "website"?: string, "groupName"?: string, "tagName"?: string, "sourceTag"?: string, "product"?: string, "days"?: string, "topic"?: string, "filter"?: string, "audience"?: string },
   "requiresApproval": boolean,
   "preview": {
     "title": string,
@@ -96,6 +96,7 @@ Intent guidance:
 - Use "draft_outreach" when the user asks to draft/write a cold outreach email to someone (e.g. "draft a cold email to Jane", "write outreach for Acme"). Put the target name in params.query. Never requires approval.
 - Use "outreach_angle" when the user asks which angle/approach to use for a prospect (e.g. "what's the best angle for Jane?", "how should I approach Acme?"). Put the target name in params.query. Never requires approval.
 - Use the action intents (add_to_group, apply_tag, normalize_tags, create_reactivation_campaign, etc.) only for changes.
+- For apply_tag, when the user wants to tag records that already carry an existing tag (e.g. "add a tag 'current client' to all records tagged with 'source-lacrm-import'"), put the NEW tag in params.tagName and the EXISTING filter tag in params.sourceTag.
 
 Safety rules:
 - Bulk edits, deletes, sends, opt-in changes, lifecycle moves, campaigns, merges, exports require approval (requiresApproval: true).
