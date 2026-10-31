@@ -11,6 +11,32 @@ describe("interpretCommand (regex fallback)", () => {
     expect(result.params.product).toContain("gold plan")
   })
 
+  it("maps 'tag X to records tagged with Y' to apply_tag with a sourceTag filter", () => {
+    const result = interpretCommand(
+      'add a tag "current client" to all records tagged with "source-lacrm-import"',
+    )
+    expect(result.intent).toBe("apply_tag")
+    expect(result.requiresApproval).toBe(true)
+    expect(result.params.tagName).toBe("current client")
+    expect(result.params.sourceTag).toBe("source-lacrm-import")
+  })
+
+  it("parses the tag-by-tag command without quotes", () => {
+    const result = interpretCommand(
+      "add a tag current client to all records tagged with source-lacrm-import",
+    )
+    expect(result.intent).toBe("apply_tag")
+    expect(result.params.tagName).toBe("current client")
+    expect(result.params.sourceTag).toBe("source-lacrm-import")
+  })
+
+  it("keeps product-based tagging separate (no sourceTag)", () => {
+    const result = interpretCommand("tag all who bought the gold plan")
+    expect(result.intent).toBe("apply_tag")
+    expect(result.params.sourceTag).toBeUndefined()
+    expect(result.params.product).toContain("gold plan")
+  })
+
   it("detects reactivation campaigns and requires approval", () => {
     const result = interpretCommand("create a reactivation campaign for customers inactive 90 days")
     expect(result.intent).toBe("create_reactivation_campaign")

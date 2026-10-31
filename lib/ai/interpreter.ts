@@ -186,6 +186,26 @@ export function interpretCommand(command: string): InterpretedCommand {
     }
   }
 
+  // "add a tag 'current client' to all records tagged with 'source-lacrm-import'"
+  // Apply a tag to every record that already carries another (existing) tag.
+  const tagByTag = extractTagByTag(command)
+  if (tagByTag) {
+    const { target, source } = tagByTag
+    return {
+      intent: "apply_tag",
+      requiresApproval: true,
+      params: { tag: target, tagName: target, sourceTag: source },
+      preview: {
+        ...basePreview(
+          `Apply tag: ${target}`,
+          `Add the tag "${target}" to every record already tagged "${source}".`,
+        ),
+        criteria: [`Records currently tagged "${source}"`, `Apply the tag "${target}"`],
+        warnings: ["No records will be deleted"],
+      },
+    }
+  }
+
   const tagMatch = text.match(/^tag\b.*?\b(bought|purchased|interested in)\s+(.+)$/)
   if (tagMatch) {
     const product = tagMatch[2].replace(/[.!?]+$/, "").trim()
@@ -217,6 +237,40 @@ export function interpretCommand(command: string): InterpretedCommand {
 function extractProductKeyword(text: string): string | null {
   const bought = text.match(/\b(?:bought|purchased|buy|buys)\s+([a-z0-9+\s'&-]+)/)
   return bought?.[1]?.replace(/[.!?]+$/, "").trim() || null
+}
+
+function cleanTagName(raw: string): string {
+  return raw
+    .trim()
+    .replace(/^["']|["']$/g, "")
+    .replace(/[.!?,]+$/, "")
+    .trim()
+}
+
+/**
+ * Parse "tag <target> to (all) records tagged (with) <source>" style commands,
+ * i.e. apply one tag to every record that already has another tag. Returns null
+ * when the command isn't that shape. Case-insensitive; preserves tag-name casing
+ * and supports quoted multi-word tag names.
+ */
+function extractTagByTag(command: string): { target: string; source: string } | null {
+  const text = command.toLowerCase()
+  // Must both apply a tag and filter by an existing tag.
+  if (!/\btag\b/.test(text) || !/\btagged\b/.test(text)) return null
+
+  const srcMatch = command.match(/\btagged\s+(?:with\s+|as\s+)?["']?([^"']+?)["']?\s*[.!?]*\s*$/i)
+  if (!srcMatch) return null
+  const source = cleanTagName(srcMatch[1])
+
+  // Target tag: the text between the leading "tag" keyword and the " to/on/for "
+  // that precedes the "... tagged ..." filter.
+  const head = command.slice(0, text.lastIndexOf("tagged"))
+  const tgtMatch = head.match(/\btag\s+(?:of\s+)?["']?(.+?)["']?\s+(?:to|on|for)\b/i)
+  if (!tgtMatch) return null
+  const target = cleanTagName(tgtMatch[1])
+
+  if (!target || !source) return null
+  return { target, source }
 }
 
 /** Pull the target contact/company name out of an outreach command. */

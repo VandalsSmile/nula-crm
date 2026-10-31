@@ -7,6 +7,8 @@ import { db } from "@/lib/db"
 import {
   activities,
   aiActions,
+  companies,
+  companyTags,
   contactGroups,
   contactTags,
   contacts,
@@ -123,6 +125,20 @@ async function applyTagToContacts(
       actorId,
     })
   }
+  return applied
+}
+
+async function applyTagToCompanies(companyIds: string[], tagId: string, actorId: string) {
+  const applied: string[] = []
+  for (const companyId of companyIds) {
+    const inserted = await db
+      .insert(companyTags)
+      .values({ companyId, tagId, addedBy: actorId })
+      .onConflictDoNothing()
+      .returning()
+    if (inserted.length > 0) applied.push(companyId)
+  }
+  // Companies have no activity feed, so nothing is logged here.
   return applied
 }
 
@@ -247,33 +263,82 @@ async function executeAiActionInternal(
   if (intent === "apply_tag") {
     const tagName =
       params.tagName || params.tag || preview.title.replace(/^Apply tag:\s*/i, "").trim() || "ai-tag"
+    const sourceTagName = (params.sourceTag ?? "").trim()
     const product = params.product
 
-    let matches
-    if (product) {
+    let contactIds: string[] = []
+    let companyIds: string[] = []
+    let sourceMissing = false
+
+    if (sourceTagName) {
+      // Select every record (contact or company) that already carries the
+      // existing source tag. The source tag is workspace-scoped.
+      const [sourceTag] = await db
+        .select()
+        .from(tags)
+        .where(and(workspaceUserIdMatches(tags.userId, scopeIds), eq(tags.slug, slugifyTag(sourceTagName))))
+        .limit(1)
+      if (!sourceTag) {
+        sourceMissing = true
+      } else {
+        const [contactLinks, companyLinks] = await Promise.all([
+          db
+            .select({ id: contactTags.contactId })
+            .from(contactTags)
+            .innerJoin(contacts, eq(contacts.id, contactTags.contactId))
+            .where(and(eq(contactTags.tagId, sourceTag.id), workspaceUserIdMatches(contacts.userId, scopeIds))),
+          db
+            .select({ id: companyTags.companyId })
+            .from(companyTags)
+            .innerJoin(companies, eq(companies.id, companyTags.companyId))
+            .where(and(eq(companyTags.tagId, sourceTag.id), workspaceUserIdMatches(companies.userId, scopeIds))),
+        ])
+        contactIds = contactLinks.map((r) => r.id)
+        companyIds = companyLinks.map((r) => r.id)
+      }
+    } else if (product) {
       const keywords = productKeywordsForIntent(product)
       const all = await Promise.all(keywords.map((k) => searchContactsByProductKeyword(k, scopeIds)))
       const seen = new Set<string>()
-      matches = all.flat().filter((c) => {
-        if (seen.has(c.id)) return false
-        seen.add(c.id)
-        return true
-      })
+      contactIds = all
+        .flat()
+        .filter((c) => {
+          if (seen.has(c.id)) return false
+          seen.add(c.id)
+          return true
+        })
+        .map((c) => c.id)
     } else {
-      matches = await db.select().from(contacts).where(workspaceUserIdMatches(contacts.userId, scopeIds))
+      const all = await db
+        .select({ id: contacts.id })
+        .from(contacts)
+        .where(workspaceUserIdMatches(contacts.userId, scopeIds))
+      contactIds = all.map((c) => c.id)
     }
 
-    const { tag, created } = await ensureTag(workspaceId, scopeIds, tagName)
-    const contactIds = matches.map((c) => c.id)
-    const applied = await applyTagToContacts(contactIds, tag.id, user.id, workspaceId)
-    undoPayload = {
-      kind: "tag_apply",
-      tagId: tag.id,
-      contactIds: applied,
-      createdTagId: created ? tag.id : null,
+    if (sourceMissing) {
+      impactCount = 0
+      summary = `No tag named "${sourceTagName}" exists in your workspace, so nothing was changed.`
+    } else {
+      const { tag, created } = await ensureTag(workspaceId, scopeIds, tagName)
+      const [appliedContacts, appliedCompanies] = await Promise.all([
+        applyTagToContacts(contactIds, tag.id, user.id, workspaceId),
+        applyTagToCompanies(companyIds, tag.id, user.id),
+      ])
+      undoPayload = {
+        kind: "tag_apply",
+        tagId: tag.id,
+        contactIds: appliedContacts,
+        companyIds: appliedCompanies,
+        createdTagId: created ? tag.id : null,
+      }
+      impactCount = appliedContacts.length + appliedCompanies.length
+      summary = sourceTagName
+        ? `Applied tag "${tag.name}" to ${impactCount} record(s) previously tagged "${sourceTagName}" (${appliedContacts.length} contact${
+            appliedContacts.length === 1 ? "" : "s"
+          }, ${appliedCompanies.length} compan${appliedCompanies.length === 1 ? "y" : "ies"}).`
+        : `Applied tag "${tag.name}" to ${impactCount} contact(s).`
     }
-    impactCount = applied.length
-    summary = `Applied tag "${tag.name}" to ${impactCount} contact(s).`
   }
 
   if (intent === "create_reactivation_campaign") {
@@ -463,7 +528,9 @@ async function executeAiActionInternal(
 
   revalidatePath(APP_ROUTES.dashboard)
   revalidatePath(APP_ROUTES.contacts)
+  revalidatePath(APP_ROUTES.companies)
   revalidatePath(APP_ROUTES.groups)
+  revalidatePath(APP_ROUTES.tags)
   revalidatePath(APP_ROUTES.ai)
 
   return { summary, impactCount, hits }
@@ -493,6 +560,7 @@ export async function undoLastAiAction() {
   type UndoPayload = {
     kind?: "group_add" | "tag_apply" | "tag_merge"
     contactIds?: string[]
+    companyIds?: string[]
     groupId?: string
     tagId?: string
     createdTagId?: string | null
@@ -510,8 +578,14 @@ export async function undoLastAiAction() {
         .delete(contactTags)
         .where(and(eq(contactTags.contactId, contactId), eq(contactTags.tagId, payload.tagId!)))
     }
+    for (const companyId of payload.companyIds ?? []) {
+      await db
+        .delete(companyTags)
+        .where(and(eq(companyTags.companyId, companyId), eq(companyTags.tagId, payload.tagId!)))
+    }
     if (payload.createdTagId) {
       await db.delete(contactTags).where(eq(contactTags.tagId, payload.createdTagId))
+      await db.delete(companyTags).where(eq(companyTags.tagId, payload.createdTagId))
       await db.delete(tags).where(eq(tags.id, payload.createdTagId))
     }
   } else if (payload.kind === "tag_merge") {
@@ -556,7 +630,9 @@ export async function undoLastAiAction() {
 
   revalidatePath(APP_ROUTES.dashboard)
   revalidatePath(APP_ROUTES.contacts)
+  revalidatePath(APP_ROUTES.companies)
   revalidatePath(APP_ROUTES.groups)
+  revalidatePath(APP_ROUTES.tags)
   revalidatePath(APP_ROUTES.ai)
 
   return { ok: true, summary: "Undid the last AI action." }
