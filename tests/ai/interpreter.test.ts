@@ -30,6 +30,24 @@ describe("interpretCommand (regex fallback)", () => {
     expect(result.params.sourceTag).toBe("source-lacrm-import")
   })
 
+  it("parses the filter-first phrasing (tagged with X … add the tag Y)", () => {
+    const result = interpretCommand(
+      'for all contacts tagged with "source-lacrm-import" add the tag "current client"',
+    )
+    expect(result.intent).toBe("apply_tag")
+    expect(result.params.sourceTag).toBe("source-lacrm-import")
+    expect(result.params.tagName).toBe("current client")
+  })
+
+  it("parses the filter-first phrasing without quotes", () => {
+    const result = interpretCommand(
+      "for all contacts tagged with source-lacrm-import add the tag current client",
+    )
+    expect(result.intent).toBe("apply_tag")
+    expect(result.params.sourceTag).toBe("source-lacrm-import")
+    expect(result.params.tagName).toBe("current client")
+  })
+
   it("keeps product-based tagging separate (no sourceTag)", () => {
     const result = interpretCommand("tag all who bought the gold plan")
     expect(result.intent).toBe("apply_tag")

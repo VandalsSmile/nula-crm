@@ -248,26 +248,39 @@ function cleanTagName(raw: string): string {
 }
 
 /**
- * Parse "tag <target> to (all) records tagged (with) <source>" style commands,
- * i.e. apply one tag to every record that already has another tag. Returns null
- * when the command isn't that shape. Case-insensitive; preserves tag-name casing
- * and supports quoted multi-word tag names.
+ * Parse commands that apply one tag to every record already carrying another
+ * tag, in either phrasing order:
+ *   - "add a tag <new> to (all) records tagged with <existing>"
+ *   - "(for all) records tagged with <existing> add the tag <new>"
+ * Returns null when the command isn't that shape. Case-insensitive; preserves
+ * tag-name casing and supports quoted multi-word tag names.
  */
 function extractTagByTag(command: string): { target: string; source: string } | null {
   const text = command.toLowerCase()
   // Must both apply a tag and filter by an existing tag.
   if (!/\btag\b/.test(text) || !/\btagged\b/.test(text)) return null
 
-  const srcMatch = command.match(/\btagged\s+(?:with\s+|as\s+)?["']?([^"']+?)["']?\s*[.!?]*\s*$/i)
+  // The existing (source) tag always follows "tagged (with|as)". It ends at a
+  // quote, an action verb (add/apply/… / tag), or the end of the command.
+  const srcMatch = command.match(
+    /\btagged\s+(?:with\s+|as\s+)?(?:"([^"]+)"|'([^']+)'|(.+?))(?=\s+(?:and\s+)?(?:add|apply|put|give|set|assign|tag)\b|\s*["']?\s*$)/i,
+  )
   if (!srcMatch) return null
-  const source = cleanTagName(srcMatch[1])
+  const source = cleanTagName(srcMatch[1] ?? srcMatch[2] ?? srcMatch[3] ?? "")
 
-  // Target tag: the text between the leading "tag" keyword and the " to/on/for "
-  // that precedes the "... tagged ..." filter.
-  const head = command.slice(0, text.lastIndexOf("tagged"))
-  const tgtMatch = head.match(/\btag\s+(?:of\s+)?["']?(.+?)["']?\s+(?:to|on|for)\b/i)
-  if (!tgtMatch) return null
-  const target = cleanTagName(tgtMatch[1])
+  // The new (target) tag is either before the filter ("tag <new> to … tagged …")
+  // or after it ("… tagged … add the tag <new>").
+  let target = ""
+  const beforeFilter = command.slice(0, text.lastIndexOf("tagged"))
+  const orderA = beforeFilter.match(/\btag\s+(?:of\s+)?["']?(.+?)["']?\s+(?:to|on|for)\b/i)
+  if (orderA) {
+    target = cleanTagName(orderA[1])
+  } else {
+    const orderB = command.match(
+      /\b(?:add|apply|put|give|set|assign)\s+(?:a\s+|an\s+|the\s+)?tag\s+(?:of\s+)?(?:"([^"]+)"|'([^']+)'|(.+?))\s*[.!?]*\s*$/i,
+    )
+    if (orderB) target = cleanTagName(orderB[1] ?? orderB[2] ?? orderB[3] ?? "")
+  }
 
   if (!target || !source) return null
   return { target, source }
