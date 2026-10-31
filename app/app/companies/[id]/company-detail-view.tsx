@@ -11,12 +11,22 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { LifecycleBadge } from "@/components/lifecycle-badge"
+import { ViewToggle } from "@/components/view-toggle"
+import { useViewMode } from "@/hooks/use-view-mode"
 import { CompanyTagsEditor } from "@/components/company-tags-editor"
 import { AddContactDialog } from "@/components/add-contact-dialog"
 import { CompanyFormDialog } from "@/components/company-form-dialog"
@@ -85,6 +95,7 @@ export function CompanyDetailView({
   const [addContactOpen, setAddContactOpen] = useState(false)
   const [editLocation, setEditLocation] = useState<Location | null>(null)
   const [deleteLocationTarget, setDeleteLocationTarget] = useState<Location | null>(null)
+  const [contactsView, setContactsView] = useViewMode("company-contacts")
   const [, startTransition] = useTransition()
 
   // Group contacts by location for display.
@@ -369,10 +380,15 @@ export function CompanyDetailView({
         <Card className="lg:col-span-2">
           <CardHeader className="flex-row items-center justify-between gap-2">
             <CardTitle className="text-base">Contacts</CardTitle>
-            <Button variant="outline" size="sm" onClick={() => setAddContactOpen(true)}>
-              <UserPlus data-icon="inline-start" />
-              Add contact
-            </Button>
+            <div className="flex items-center gap-2">
+              {contacts.length > 0 ? (
+                <ViewToggle mode={contactsView} onChange={setContactsView} />
+              ) : null}
+              <Button variant="outline" size="sm" onClick={() => setAddContactOpen(true)}>
+                <UserPlus data-icon="inline-start" />
+                Add contact
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {contacts.length === 0 ? (
@@ -385,7 +401,7 @@ export function CompanyDetailView({
                   Add contact
                 </Button>
               </div>
-            ) : (
+            ) : contactsView === "grid" ? (
               <div className="flex flex-col gap-5">
                 {locations.map((loc) => {
                   const rows = contactsByLocation.get(loc.id) ?? []
@@ -410,6 +426,39 @@ export function CompanyDetailView({
                     <div className="flex flex-col divide-y">{unassigned.map(renderContactRow)}</div>
                   </div>
                 ) : null}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Stage</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Owner</TableHead>
+                      <TableHead>Location</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {contacts.map((contact) => (
+                      <TableRow key={contact.id}>
+                        <TableCell>
+                          <Link href={contactPath(contact.id)} className="font-medium hover:underline">
+                            {contact.fullName}
+                          </Link>
+                        </TableCell>
+                        <TableCell>
+                          <LifecycleBadge stage={contact.lifecycleStage} />
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">{contact.email || "—"}</TableCell>
+                        <TableCell className="text-muted-foreground">{contact.phone || "—"}</TableCell>
+                        <TableCell className="text-muted-foreground">{contact.ownerName || "—"}</TableCell>
+                        <TableCell className="text-muted-foreground">{contact.locationName || "—"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             )}
           </CardContent>
