@@ -11,6 +11,7 @@ import { getActingUser, normalizeRole, requireRole, type WorkspaceRole } from "@
 import { ASSIGNABLE_ROLES, canManageMember } from "@/lib/roles"
 import { APP_ROUTES } from "@/lib/routes"
 import { sendTeamInviteEmail } from "@/lib/team/invite-email"
+import { inviteBlockReason } from "@/lib/team/invite-eligibility"
 
 function toAssignableRole(role: WorkspaceRole): WorkspaceRole {
   const normalized = normalizeRole(role)
@@ -91,16 +92,20 @@ export async function createTeamInvite(
     throw new Error("Enter a valid email address.")
   }
 
-  // Already a member of this workspace?
+  // A person can be (re-)invited unless they're already on this team or are an
+  // active member of another shared workspace. A solo/detached account — e.g. a
+  // teammate who was removed and reverted to their own account — can be invited
+  // again; accepting rebinds them to this workspace (see acceptTeamInvite).
   const [existingUser] = await db
     .select({ id: userTable.id, workspaceId: userTable.workspaceId })
     .from(userTable)
     .where(eq(userTable.email, email))
     .limit(1)
-  if (existingUser?.workspaceId === workspaceId) {
+  const blocked = inviteBlockReason(existingUser, workspaceId)
+  if (blocked === "already_member") {
     throw new Error("That person is already on your team.")
   }
-  if (existingUser) {
+  if (blocked === "other_workspace") {
     throw new Error("That email already belongs to another account.")
   }
 
@@ -293,12 +298,14 @@ export async function removeMember(userId: string): Promise<void> {
 }
 
 export type InviteLookup =
-  | { ok: true; email: string; invitedByName: string; workspaceId: string }
+  | { ok: true; email: string; invitedByName: string; workspaceId: string; hasAccount: boolean }
   | { ok: false; reason: "not_found" | "revoked" | "accepted" | "expired" }
 
 /**
  * Public, unauthenticated lookup used by the accept-invite page to show who
  * invited the user and prefill their email. Token acts as the bearer secret.
+ * `hasAccount` lets the page route an already-registered invitee (e.g. a
+ * previously-removed teammate) to sign-in instead of sign-up.
  */
 export async function lookupTeamInvite(token: string): Promise<InviteLookup> {
   const [row] = await db.select().from(teamInvites).where(eq(teamInvites.id, token)).limit(1)
@@ -306,7 +313,20 @@ export async function lookupTeamInvite(token: string): Promise<InviteLookup> {
   if (row.status === "Revoked") return { ok: false, reason: "revoked" }
   if (row.status === "Accepted") return { ok: false, reason: "accepted" }
   if (row.expiresAt.getTime() < Date.now()) return { ok: false, reason: "expired" }
-  return { ok: true, email: row.email, invitedByName: row.invitedByName, workspaceId: row.workspaceId }
+
+  const [account] = await db
+    .select({ id: userTable.id })
+    .from(userTable)
+    .where(eq(userTable.email, row.email.toLowerCase()))
+    .limit(1)
+
+  return {
+    ok: true,
+    email: row.email,
+    invitedByName: row.invitedByName,
+    workspaceId: row.workspaceId,
+    hasAccount: !!account,
+  }
 }
 
 /**
