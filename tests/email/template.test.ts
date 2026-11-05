@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest"
 
-import { renderCampaignEmail } from "@/lib/email/template"
+import {
+  plainTextToParagraphs,
+  renderCampaignEmail,
+  wrapDirectEmailHtml,
+} from "@/lib/email/template"
 import { sanitizeEmailHtml } from "@/lib/email/sanitize"
 
 const brand = {
@@ -59,6 +63,36 @@ describe("renderCampaignEmail", () => {
     expect(text).toContain("Hi")
     expect(text).toContain("there")
     expect(text).not.toContain("<h2>")
+  })
+})
+
+describe("plainTextToParagraphs", () => {
+  it("splits blank-line-separated text into separate paragraphs", () => {
+    const html = plainTextToParagraphs("Hi Jane,\n\nThanks for your time.\n\nBest,\nAlex")
+    expect(html).toBe("<p>Hi Jane,</p><p>Thanks for your time.</p><p>Best,<br>Alex</p>")
+  })
+
+  it("keeps single newlines as line breaks within a paragraph", () => {
+    expect(plainTextToParagraphs("line one\nline two")).toBe("<p>line one<br>line two</p>")
+  })
+
+  it("escapes HTML special characters", () => {
+    expect(plainTextToParagraphs("a < b & c")).toBe("<p>a &lt; b &amp; c</p>")
+  })
+
+  it("returns empty string for empty input", () => {
+    expect(plainTextToParagraphs("")).toBe("")
+    expect(plainTextToParagraphs("   \n\n  ")).toBe("")
+  })
+})
+
+describe("wrapDirectEmailHtml", () => {
+  it("wraps a body in a styled sans-serif document shell", () => {
+    const html = wrapDirectEmailHtml("<p>Hello</p>")
+    expect(html).toContain("<!doctype html>")
+    expect(html).toMatch(/font-family:[^"]*Arial/i)
+    expect(html).toContain("line-height:1.6")
+    expect(html).toContain("<p>Hello</p>")
   })
 })
 

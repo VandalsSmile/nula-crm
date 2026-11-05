@@ -17,6 +17,38 @@ function escapeHtml(s: string): string {
 }
 
 /**
+ * Wrap a 1:1 (non-campaign) email body — e.g. a contact email or an inbox reply —
+ * in a minimal, consistently-styled HTML document. Without this, the raw body
+ * fragment inherits each mail client's defaults (often a cramped serif font),
+ * which reads like one undifferentiated chunk. A base sans-serif font + line
+ * height here, plus the body's own `<p>` paragraphs, keep it cleanly formatted
+ * everywhere. The body is expected to already be sanitized HTML.
+ */
+/**
+ * Convert a plain-text body into HTML paragraphs: blank lines separate
+ * paragraphs and single newlines become `<br>`. This keeps a plain-text email
+ * from collapsing into one run-on block.
+ */
+export function plainTextToParagraphs(text: string): string {
+  return (text || "")
+    .split(/\n{2,}/)
+    .map((block) => block.trim())
+    .filter(Boolean)
+    .map((block) => `<p>${escapeHtml(block).replace(/\r?\n/g, "<br>")}</p>`)
+    .join("")
+}
+
+export function wrapDirectEmailHtml(bodyHtml: string): string {
+  return `<!doctype html>
+<html>
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head>
+<body style="margin:0;padding:0;background:#ffffff;">
+<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#2c2440;word-wrap:break-word;">${bodyHtml}</div>
+</body>
+</html>`
+}
+
+/**
  * Render a branded marketing email: header logo, an optional featured image
  * above the copy, the author's rich-text body, and a footer with the account's
  * contact info + the legally-expected disclaimers (who it's from, physical

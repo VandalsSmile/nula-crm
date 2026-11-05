@@ -12,6 +12,7 @@ import { randomId } from "@/lib/library-helpers"
 import { getWorkspaceEmailConfig, sendEmailViaResend } from "@/lib/email/sender"
 import { parseEmailList } from "@/lib/email/addresses"
 import { htmlToPlainText, sanitizeEmailHtml } from "@/lib/email/sanitize"
+import { plainTextToParagraphs, wrapDirectEmailHtml } from "@/lib/email/template"
 import { appendSignature } from "@/lib/email/signature"
 import {
   ensureReplyRoute,
@@ -21,14 +22,6 @@ import {
 } from "@/lib/email/threading"
 import { APP_ROUTES } from "@/lib/routes"
 import type { Message } from "@/lib/crm-types"
-
-/** Escape plain-text so it's safe to drop into the HTML email body. */
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-}
 
 export async function loadConversation(contactId: string): Promise<Message[]> {
   await requireRole("Admin", "Member")
@@ -53,9 +46,9 @@ export async function sendMessage(input: {
   const isHtml = /<[a-z][\s\S]*>/i.test(rawBody)
   const plainBody = (isHtml ? htmlToPlainText(rawBody) : rawBody).trim()
   if (!plainBody) throw new Error("Message body is required")
-  const safeHtml = isHtml
-    ? sanitizeEmailHtml(rawBody)
-    : `<p>${escapeHtml(plainBody).replace(/\n/g, "<br>")}</p>`
+  // Plain-text bodies become real paragraphs (blank line = new paragraph) so the
+  // email never arrives as one run-on block; rich bodies are sanitized as-is.
+  const safeHtml = isHtml ? sanitizeEmailHtml(rawBody) : plainTextToParagraphs(plainBody)
   // What we persist on the message row (HTML keeps formatting; text stays text).
   const storedBody = isHtml ? safeHtml : plainBody
 
@@ -85,12 +78,14 @@ export async function sendMessage(input: {
         // capturing the full two-way thread without any mailbox access.
         const route = await ensureReplyRoute(workspaceId, input.contactId, user.id)
         messageId = generateMessageId()
-        // Append the author's saved signature to the email they send.
+        // Append the author's saved signature, then wrap in a consistently-styled
+        // shell so the email renders cleanly (sans-serif, spaced paragraphs) in
+        // every client instead of inheriting a cramped default.
         const { html, text } = await appendSignature(user.id, safeHtml, plainBody)
         const result = await sendEmailViaResend(config, {
           to: contact.email,
           subject: input.subject || "Message from Nula",
-          html,
+          html: wrapDirectEmailHtml(html),
           text,
           replyTo: replyAddressForToken(route.token),
           cc: ccList,
